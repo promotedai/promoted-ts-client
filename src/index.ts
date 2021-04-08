@@ -23,6 +23,11 @@ export interface PromotedClient {
    * ranks it.  Supports running conditionally.
    */
   deliver(deliveryRequest: DeliveryRequest): Promise<DeliveryResponse>;
+
+  /**
+   * Used to only log the Delivery request.
+   */
+  logRequest(deliveryRequest: DeliveryRequest): Promise<DeliveryResponse>;
 }
 
 /**
@@ -118,6 +123,10 @@ export interface ErrorHandler {
   (err: Error): void;
 }
 
+export interface InsertionMapFn {
+  (insertion: Insertion): Insertion;
+}
+
 /**
  * Used to set default values on BaseRequests in the Client's constructor.
  */
@@ -125,6 +134,18 @@ export interface BaseRequest {
   /* Defaults to true */
   shouldOptimize?: boolean;
   // If you modify, please update fillInMissingBaseFields.
+
+  toCompactDeliveryInsertion?: InsertionMapFn;
+  toCompactMetricsInsertion?: InsertionMapFn;
+}
+
+/**
+ * Used to set default values on BaseRequests in the Client's constructor.
+ */
+export interface RequiredBaseRequest {
+  shouldOptimize: boolean;
+  toCompactDeliveryInsertion: InsertionMapFn;
+  toCompactMetricsInsertion: InsertionMapFn;
 }
 
 /**
@@ -135,6 +156,9 @@ export interface DeliveryRequest extends BaseRequest {
    * The Request for content.  Contains insertions of incoming results.
    */
   request: Request;
+
+  fullInsertions: Insertion[];
+
   /**
    * If set, this is runs delivery as a client-side experiment.  The CONTROL
    * arm does not run delivery.  TREATMENT arm uses Delivery API for results.
@@ -176,14 +200,17 @@ export const newPromotedClient = (args: PromotedClientArguments) => {
  */
 export class NoopPromotedClient implements PromotedClient {
   public async deliver(deliveryRequest: DeliveryRequest): Promise<DeliveryResponse> {
-    const { request } = deliveryRequest;
+    const { request, fullInsertions } = deliveryRequest;
     const limit = request.limit === undefined ? DEFAULT_LIMIT : request.limit;
-    const { insertion } = request;
-    const resultInsertions = insertion === undefined ? [] : insertion.slice(0, limit);
+    const resultInsertions = fullInsertions.slice(0, limit);
     return Promise.resolve({
       finishAfterResponse: () => Promise.resolve(undefined),
       insertion: resultInsertions,
     });
+  }
+
+  public async logRequest(deliveryRequest: DeliveryRequest): Promise<DeliveryResponse> {
+    return this.deliver(deliveryRequest);
   }
 }
 
@@ -194,7 +221,7 @@ export class PromotedClientImpl implements PromotedClient {
   private deliveryClient: ApiClient<Request, Response>;
   private metricsClient: ApiClient<LogRequest, LogResponse>;
   private performChecks: boolean;
-  private defaultRequestValues: BaseRequest;
+  private defaultRequestValues: RequiredBaseRequest;
   private handleError: ErrorHandler;
   private uuid: () => string;
   private deliveryTimeoutMillis: number;
@@ -215,12 +242,18 @@ export class PromotedClientImpl implements PromotedClient {
     this.deliveryClient = args.deliveryClient;
     this.metricsClient = args.metricsClient;
     this.performChecks = args.performChecks === undefined ? true : args.performChecks;
-    this.defaultRequestValues =
-      args.defaultRequestValues === undefined
-        ? {
-            shouldOptimize: true,
-          }
-        : args.defaultRequestValues;
+    const { defaultRequestValues } = args;
+    this.defaultRequestValues = {
+      shouldOptimize: defaultRequestValues?.shouldOptimize === undefined ? true : defaultRequestValues.shouldOptimize,
+      toCompactDeliveryInsertion:
+        defaultRequestValues?.toCompactDeliveryInsertion === undefined
+          ? (insertion) => insertion
+          : defaultRequestValues.toCompactDeliveryInsertion,
+      toCompactMetricsInsertion:
+        defaultRequestValues?.toCompactMetricsInsertion === undefined
+          ? (insertion) => insertion
+          : defaultRequestValues.toCompactMetricsInsertion,
+    };
     this.handleError = args.handleError;
     this.uuid = args.uuid;
     this.deliveryTimeoutMillis =
@@ -235,6 +268,14 @@ export class PromotedClientImpl implements PromotedClient {
     this.metricsTimeoutWrapper = args.metricsTimeoutWrapper === undefined ? timeoutWrapper : args.metricsTimeoutWrapper;
   }
 
+  public async logRequest(deliveryRequest: DeliveryRequest): Promise<DeliveryResponse> {
+    // Use deliver method but force shouldOptimize to false.
+    return this.deliver({
+      ...deliveryRequest,
+      shouldOptimize: false,
+    });
+  }
+
   /**
    * Used to optimize a list of content.  This function modifies deliveryRequest.
    */
@@ -245,6 +286,8 @@ export class PromotedClientImpl implements PromotedClient {
         this.handleError(error);
       }
     }
+    const shouldOptimize = this.getShouldOptimize(deliveryRequest);
+    const toCompactDeliveryInsertion = this.getToCompactDeliveryInsertion(deliveryRequest);
     this.preDeliveryFillInFields(deliveryRequest);
 
     // TODO - if response only passes back IDs that are passed in, then we can
@@ -261,15 +304,19 @@ export class PromotedClientImpl implements PromotedClient {
 
     let insertionsFromPromoted = false;
     try {
-      if (!!deliveryRequest.shouldOptimize) {
+      if (shouldOptimize) {
         cohortMembershipToLog = newCohortMembershipToLog(deliveryRequest);
         if (this.shouldApplyTreatment(cohortMembershipToLog)) {
-          const deliveryResponse = await this.deliveryTimeoutWrapper(
-            this.deliveryClient(deliveryRequest.request),
+          const delRequest = {
+            ...deliveryRequest.request,
+            insertion: deliveryRequest.fullInsertions.map(toCompactDeliveryInsertion),
+          };
+          const response = await this.deliveryTimeoutWrapper(
+            this.deliveryClient(delRequest),
             this.deliveryTimeoutMillis
           );
           insertionsFromPromoted = true;
-          resultInsertions = deliveryResponse.insertion;
+          resultInsertions = getResultInsertions(response, deliveryRequest);
         }
       }
     } catch (error) {
@@ -279,7 +326,7 @@ export class PromotedClientImpl implements PromotedClient {
       // If you update this, update the no-op version too.
       requestToLog = deliveryRequest.request;
       const limit = requestToLog.limit === undefined ? DEFAULT_LIMIT : requestToLog.limit;
-      resultInsertions = requestToLog.insertion?.slice(0, limit);
+      resultInsertions = deliveryRequest.fullInsertions.slice(0, limit);
     }
     const insertion = resultInsertions === undefined ? [] : resultInsertions;
     this.addMissingRequestId(requestToLog);
@@ -305,9 +352,14 @@ export class PromotedClientImpl implements PromotedClient {
     }
     return async () => {
       try {
+        const toCompactMetricsInsertion = this.getToCompactMetricsInsertion(deliveryRequest);
         const logRequest = newLogRequest(deliveryRequest);
         if (request) {
-          logRequest.request = [request];
+          const copyRequest = {
+            ...request,
+            insertion: deliveryRequest.fullInsertions.map(toCompactMetricsInsertion),
+          };
+          logRequest.request = [copyRequest];
         }
         if (cohortMembership) {
           logRequest.cohortMembership = [cohortMembership];
@@ -320,10 +372,28 @@ export class PromotedClientImpl implements PromotedClient {
     };
   }
 
-  preDeliveryFillInFields = (deliveryRequest: DeliveryRequest) => {
-    if (deliveryRequest.shouldOptimize === undefined) {
-      deliveryRequest.shouldOptimize = this.defaultRequestValues.shouldOptimize;
+  getShouldOptimize = (deliveryRequest: DeliveryRequest): boolean => {
+    if (deliveryRequest.shouldOptimize !== undefined) {
+      return deliveryRequest.shouldOptimize;
     }
+    return this.defaultRequestValues.shouldOptimize;
+  };
+
+  getToCompactDeliveryInsertion = (deliveryRequest: DeliveryRequest): InsertionMapFn => {
+    if (deliveryRequest.toCompactDeliveryInsertion !== undefined) {
+      return deliveryRequest.toCompactDeliveryInsertion;
+    }
+    return this.defaultRequestValues.toCompactDeliveryInsertion;
+  };
+
+  getToCompactMetricsInsertion = (deliveryRequest: DeliveryRequest): InsertionMapFn => {
+    if (deliveryRequest.toCompactMetricsInsertion !== undefined) {
+      return deliveryRequest.toCompactMetricsInsertion;
+    }
+    return this.defaultRequestValues.toCompactMetricsInsertion;
+  };
+
+  preDeliveryFillInFields = (deliveryRequest: DeliveryRequest) => {
     const { request } = deliveryRequest;
     let { timing } = request;
     if (!timing) {
@@ -412,19 +482,54 @@ const newLogRequest = (deliveryRequest: DeliveryRequest): LogRequest => {
 };
 
 const checkThatLogIdsNotSet = (deliveryRequest: DeliveryRequest): Error | undefined => {
-  const { request } = deliveryRequest;
+  const { request, fullInsertions } = deliveryRequest;
   if (request.requestId) {
     return new Error('Request.requestId should not be set');
   }
   if (request.insertion) {
-    for (const insertion of request.insertion) {
-      if (insertion.requestId) {
-        return new Error('Insertion.requestId should not be set');
-      }
-      if (insertion.insertionId) {
-        return new Error('Insertion.insertionId should not be set');
-      }
+    return new Error('Do not set Request.insertion.  Set fullInsertions.');
+  }
+
+  for (const insertion of fullInsertions) {
+    if (insertion.requestId) {
+      return new Error('Insertion.requestId should not be set');
+    }
+    if (insertion.insertionId) {
+      return new Error('Insertion.insertionId should not be set');
+    }
+    if (!insertion.contentId) {
+      return new Error('Insertion.contentId should be set');
     }
   }
   return undefined;
+};
+
+/**
+ *
+ */
+const getResultInsertions = (response: Response, deliveryRequest: DeliveryRequest): Insertion[] => {
+  const contentIdToInputInsertion = deliveryRequest.fullInsertions.reduce(
+    (map: { [contnetId: string]: Insertion }, insertion) => {
+      if (insertion.contentId !== undefined) {
+        map[insertion.contentId] = insertion;
+      }
+      return map;
+    },
+    {}
+  );
+
+  if (!response.insertion) {
+    return [];
+  }
+  return response.insertion?.map((responseInsertion) => {
+    if (responseInsertion.contentId === undefined) {
+      return responseInsertion;
+    }
+    const copy = { ...responseInsertion };
+    const inputInsertion = contentIdToInputInsertion[responseInsertion.contentId];
+    if (inputInsertion) {
+      copy.properties = inputInsertion.properties;
+    }
+    return copy;
+  });
 };
