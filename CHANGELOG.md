@@ -1,3 +1,15 @@
+# [2.0.0](https://github.com/promotedai/promoted-ts-client/compare/v1.1.0...v2.0.0) (2021-04-11)
+
+
+### Code Refactoring
+
+* rename methods and variables ([5333b2a](https://github.com/promotedai/promoted-ts-client/commit/5333b2af2fd9c447ad65bb04619e2bc66facaaba))
+
+
+### BREAKING CHANGES
+
+* this changes the interface
+
 # [1.1.0](https://github.com/promotedai/promoted-ts-client/compare/v1.0.0...v1.1.0) (2021-04-11)
 
 
