@@ -105,7 +105,6 @@ describe('no-op deliver', () => {
 });
 
 describe('deliver', () => {
-  /*
   it('simple good case', async () => {
     const deliveryClient = jest.fn((request) => {
       expect(request).toEqual({
@@ -356,7 +355,6 @@ describe('deliver', () => {
       expect(metricsClient.mock.calls.length).toBe(1);
     });
   });
-*/
 
   describe('toCompact', () => {
     it('toCompactMetricsInsertion arm=CONTROL', async () => {
@@ -654,7 +652,6 @@ describe('deliver', () => {
     });
   });
 
-  /*
   it('limit 1', async () => {
     const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
     const metricsClient: any = jest.fn((request) => {
@@ -989,5 +986,4 @@ describe('deliver', () => {
       ).rejects.toEqual(new Error('Insertion.insertionId should not be set'));
     });
   });
-  */
 });
