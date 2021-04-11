@@ -25,7 +25,7 @@ export interface PromotedClient {
   deliver(deliveryRequest: DeliveryRequest): Promise<ClientResponse>;
 
   /**
-   * Used to only log the Delivery request.
+   * Used to only log Requests and Insertions.
    */
   prepareForLogging(metricsRequest: MetricsRequest): Promise<ClientResponse>;
 }
