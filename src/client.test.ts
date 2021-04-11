@@ -98,7 +98,7 @@ describe('no-op', () => {
         request: {
           ...newBaseRequest(),
         },
-        fullInsertions: toInsertions(products),
+        fullInsertion: toInsertions(products),
       });
       expect(response.insertion).toEqual(toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]));
       await response.log();
@@ -117,7 +117,7 @@ describe('no-op', () => {
         request: {
           ...newBaseRequest(),
         },
-        fullInsertions: toInsertions(products),
+        fullInsertion: toInsertions(products),
       });
       expect(response.insertion).toEqual(toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]));
       await response.log();
@@ -153,7 +153,7 @@ describe('deliver', () => {
     const products = [newProduct('3'), newProduct('2'), newProduct('1')];
     const response = await promotedClient.deliver({
       request: newBaseRequest(),
-      fullInsertions: toInsertions(products),
+      fullInsertion: toInsertions(products),
     });
     expect(deliveryClient.mock.calls.length).toBe(1);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -217,7 +217,7 @@ describe('deliver', () => {
       const products = [newProduct('3'), newProduct('2'), newProduct('1')];
       const response = await promotedClient.deliver({
         request: newBaseRequest(),
-        fullInsertions: toInsertions(products),
+        fullInsertion: toInsertions(products),
         experiment: {
           cohortId: 'HOLD_OUT',
           arm: 'CONTROL',
@@ -285,7 +285,7 @@ describe('deliver', () => {
 
       const response = await promotedClient.deliver({
         request: newBaseRequest(),
-        fullInsertions: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+        fullInsertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
         experiment: {
           cohortId: 'HOLD_OUT',
           arm: 'TREATMENT',
@@ -356,7 +356,7 @@ describe('deliver', () => {
       const products = [newProduct('3'), newProduct('2'), newProduct('1')];
       const response = await promotedClient.deliver({
         request: newBaseRequest(),
-        fullInsertions: toInsertions(products),
+        fullInsertion: toInsertions(products),
         experiment: {
           cohortId: 'HOLD_OUT',
           arm: 'TREATMENT',
@@ -425,7 +425,7 @@ describe('deliver', () => {
       const products = [newProduct('3'), newProduct('2'), newProduct('1')];
       const response = await promotedClient.deliver({
         request: newBaseRequest(),
-        fullInsertions: toInsertions(products),
+        fullInsertion: toInsertions(products),
         toCompactMetricsInsertion: (insertion) => ({
           contentId: insertion.contentId,
         }),
@@ -500,7 +500,7 @@ describe('deliver', () => {
       const products = [newProduct('3'), newProduct('2'), newProduct('1')];
       const response = await promotedClient.deliver({
         request: newBaseRequest(),
-        fullInsertions: toInsertions(products),
+        fullInsertion: toInsertions(products),
         experiment: {
           cohortId: 'HOLD_OUT',
           arm: 'CONTROL',
@@ -572,7 +572,7 @@ describe('deliver', () => {
 
       const response = await promotedClient.deliver({
         request: newBaseRequest(),
-        fullInsertions: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+        fullInsertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
         toCompactDeliveryInsertion: (insertion) => ({
           contentId: insertion.contentId,
         }),
@@ -652,7 +652,7 @@ describe('deliver', () => {
 
       const response = await promotedClient.deliver({
         request: newBaseRequest(),
-        fullInsertions: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+        fullInsertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
         experiment: {
           cohortId: 'HOLD_OUT',
           arm: 'TREATMENT',
@@ -720,7 +720,7 @@ describe('deliver', () => {
         ...newBaseRequest(),
         limit: 1,
       },
-      fullInsertions: toInsertions(products),
+      fullInsertion: toInsertions(products),
       experiment: {
         cohortId: 'HOLD_OUT',
         arm: 'CONTROL',
@@ -792,7 +792,7 @@ describe('deliver', () => {
           clientLogTimestamp: 87654321,
         },
       },
-      fullInsertions: toInsertions(products),
+      fullInsertion: toInsertions(products),
       experiment: {
         cohortId: 'HOLD_OUT',
         arm: 'CONTROL',
@@ -863,7 +863,7 @@ describe('deliver', () => {
 
       const response = await promotedClient.deliver({
         request: newBaseRequest(),
-        fullInsertions: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+        fullInsertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
         experiment: {
           cohortId: 'HOLD_OUT',
           arm: 'TREATMENT',
@@ -938,7 +938,7 @@ describe('deliver', () => {
 
       const response = await promotedClient.deliver({
         request: newBaseRequest(),
-        fullInsertions: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+        fullInsertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
         experiment: {
           cohortId: 'HOLD_OUT',
           arm: 'TREATMENT',
@@ -968,7 +968,7 @@ describe('deliver', () => {
             ...newBaseRequest(),
             requestId: 'uuid0',
           },
-          fullInsertions: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+          fullInsertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
         })
       ).rejects.toEqual(new Error('Request.requestId should not be set'));
     });
@@ -978,7 +978,7 @@ describe('deliver', () => {
       await expect(
         promotedClient.deliver({
           request: newBaseRequest(),
-          fullInsertions: [
+          fullInsertion: [
             {
               ...toInsertion(newProduct('3')),
               requestId: 'uuid0',
@@ -995,7 +995,7 @@ describe('deliver', () => {
       await expect(
         promotedClient.deliver({
           request: newBaseRequest(),
-          fullInsertions: [
+          fullInsertion: [
             {
               ...toInsertion(newProduct('3')),
               insertionId: 'uuid0',
@@ -1045,7 +1045,7 @@ describe('metrics', () => {
     const products = [newProduct('3'), newProduct('2'), newProduct('1')];
     const response = await promotedClient.prepareForLogging({
       request: newBaseRequest(),
-      fullInsertions: toInsertions(products),
+      fullInsertion: toInsertions(products),
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);

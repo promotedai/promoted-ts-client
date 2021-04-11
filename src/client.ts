@@ -178,9 +178,9 @@ export interface DeliveryRequest {
 
   /**
    * Insertions with all metadata.  The `toCompact` functions are used to
-   * transform the fullInsertions to Insertions on each of the requests.
+   * transform the fullInsertion to Insertions on each of the requests.
    */
-  fullInsertions: Insertion[];
+  fullInsertion: Insertion[];
 
   /**
    * A way to customize when `deliver` should not run an experiment and just log
@@ -219,9 +219,9 @@ export interface MetricsRequest {
 
   /**
    * Insertions with all metadata.  The `toCompact` functions are used to
-   * transform the fullInsertions to Insertions on each of the requests.
+   * transform the fullInsertion to Insertions on each of the requests.
    */
-  fullInsertions: Insertion[];
+  fullInsertion: Insertion[];
 }
 
 /**
@@ -258,9 +258,9 @@ export const newPromotedClient = (args: PromotedClientArguments) => {
  */
 export class NoopPromotedClient implements PromotedClient {
   public async deliver(deliveryRequest: DeliveryRequest): Promise<ClientResponse> {
-    const { request, fullInsertions } = deliveryRequest;
+    const { request, fullInsertion } = deliveryRequest;
     const limit = request.limit === undefined ? DEFAULT_LIMIT : request.limit;
-    const resultInsertions = fullInsertions.slice(0, limit);
+    const resultInsertions = fullInsertion.slice(0, limit);
     return Promise.resolve({
       log: () => Promise.resolve(undefined),
       insertion: resultInsertions,
@@ -361,7 +361,7 @@ export class PromotedClientImpl implements PromotedClient {
           const toCompactDeliveryInsertion = this.getToCompactDeliveryInsertion(deliveryRequest);
           const singleRequest = {
             ...deliveryRequest.request,
-            insertion: deliveryRequest.fullInsertions.map(toCompactDeliveryInsertion),
+            insertion: deliveryRequest.fullInsertion.map(toCompactDeliveryInsertion),
           };
           const response = await this.deliveryTimeoutWrapper(
             this.deliveryClient(singleRequest),
@@ -370,7 +370,7 @@ export class PromotedClientImpl implements PromotedClient {
           insertionsFromPromoted = true;
           resultInsertions = fillInDetails(
             response.insertion === undefined ? [] : response.insertion,
-            deliveryRequest.fullInsertions
+            deliveryRequest.fullInsertion
           );
         }
       } catch (error) {
@@ -383,7 +383,7 @@ export class PromotedClientImpl implements PromotedClient {
       // If you update this, update the no-op version too.
       requestToLog = deliveryRequest.request;
       const limit = requestToLog.limit === undefined ? DEFAULT_LIMIT : requestToLog.limit;
-      resultInsertions = deliveryRequest.fullInsertions.slice(0, limit);
+      resultInsertions = deliveryRequest.fullInsertion.slice(0, limit);
     }
     const insertion = resultInsertions === undefined ? [] : resultInsertions;
     this.addMissingRequestId(requestToLog);
@@ -414,7 +414,7 @@ export class PromotedClientImpl implements PromotedClient {
         if (requestToLog) {
           const copyRequest = {
             ...requestToLog,
-            insertion: deliveryRequest.fullInsertions.map(toCompactMetricsInsertion),
+            insertion: deliveryRequest.fullInsertion.map(toCompactMetricsInsertion),
           };
           logRequest.request = [copyRequest];
         }
@@ -539,15 +539,15 @@ const newLogRequest = (deliveryRequest: DeliveryRequest): LogRequest => {
 };
 
 const checkThatLogIdsNotSet = (deliveryRequest: DeliveryRequest): Error | undefined => {
-  const { request, fullInsertions } = deliveryRequest;
+  const { request, fullInsertion } = deliveryRequest;
   if (request.requestId) {
     return new Error('Request.requestId should not be set');
   }
   if (request.insertion) {
-    return new Error('Do not set Request.insertion.  Set fullInsertions.');
+    return new Error('Do not set Request.insertion.  Set fullInsertion.');
   }
 
-  for (const insertion of fullInsertions) {
+  for (const insertion of fullInsertion) {
     if (insertion.requestId) {
       return new Error('Insertion.requestId should not be set');
     }
@@ -562,11 +562,11 @@ const checkThatLogIdsNotSet = (deliveryRequest: DeliveryRequest): Error | undefi
 };
 
 /**
- * Fills in responseInsertion details using fullInsertions.  It un-compacts
+ * Fills in responseInsertion details using fullInsertion.  It un-compacts
  * the response.
  */
-const fillInDetails = (responseInsertions: Insertion[], fullInsertions: Insertion[]): Insertion[] => {
-  const contentIdToInputInsertion = fullInsertions.reduce((map: { [contnetId: string]: Insertion }, insertion) => {
+const fillInDetails = (responseInsertions: Insertion[], fullInsertion: Insertion[]): Insertion[] => {
+  const contentIdToInputInsertion = fullInsertion.reduce((map: { [contnetId: string]: Insertion }, insertion) => {
     if (insertion.contentId !== undefined) {
       map[insertion.contentId] = insertion;
     }
