@@ -1,3 +1,15 @@
+# [3.0.0](https://github.com/promotedai/promoted-ts-client/compare/v2.0.0...v3.0.0) (2021-04-11)
+
+
+### Features
+
+* rename shouldOptimize to onlyLog ([7a5d984](https://github.com/promotedai/promoted-ts-client/commit/7a5d98435d5dd5dab9da4e0bbe05dc01d6d026e3))
+
+
+### BREAKING CHANGES
+
+* - this changes the interface
+
 # [2.0.0](https://github.com/promotedai/promoted-ts-client/compare/v1.1.0...v2.0.0) (2021-04-11)
 
 
