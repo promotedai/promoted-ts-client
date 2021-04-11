@@ -1,12 +1,17 @@
 # promoted-ts-client
 
-A Typescript Client to contact Promoted APIs.
+A Typescript Client to contact Promoted APIs.  This is primarily intended to be used when logging `Request`s and `Insertion`s on a Node.js server.
+
+Client logging libraries:
+- [promoted-ts-client](https://github.com/promotedai/promoted-ts-client) - for logging `Request`s and `Insertion`s from your server.
+- [promoted-snowplow-logger](https://github.com/promotedai/promoted-snowplow-logger) - for logging events from a browser.
+- [ios-metrics-sdk](https://github.com/promotedai/ios-metrics-sdk) - for iOS logging.
 
 ## Creating a PromotedClient
 
-We recommend creating a PromotedClient in a separate file so (1) it can be shared between files and (2) hides some of the configuration.
+We recommend creating a PromotedClient in a separate file so it can be reused.
 
-PromotedClient avoids having direct dependencies to certain implementation details so we can support customization and keep the binary small.
+PromotedClient avoids having direct dependencies so customer's have more options for customization and can keep dependencies smaller.
 
 promotedClient.js
 ```
@@ -14,6 +19,7 @@ import { logOnError, newPromotedClient, throwOnError } from 'promoted-ts-client'
 import { v5 as uuid } from 'uuid';
 import axios from 'axios';
 
+// Client can choose their preferred RPC client.
 const axiosApiClient = <Req, Res>(url: string, apiKey: string, timeout: number) => (request: Req): Promise<Res> =>
   axios.post(
     url,
@@ -22,7 +28,7 @@ const axiosApiClient = <Req, Res>(url: string, apiKey: string, timeout: number) 
       headers: {
         "x-api-key": apiKey,
       },
-      timeout: 3000,
+      timeout,
     });
 
 // These values will vary depending on dev vs prod.
@@ -33,7 +39,7 @@ const metricsApi = 'https://....com/...';
 const metricsApiKey = 'AbCSomeRLongString2';
 const metricsTimeoutMillis = 3000;
 
-// NextJS example.  Throw in dev.  Console log in prod.
+// NextJS example.  For errors, if inDev then throw else log.
 const throwError =
   process?.env?.NODE_ENV !== 'production' ||
   (typeof location !== "undefined" && location?.hostname === "localhost");
@@ -70,29 +76,43 @@ static async getProducts(req: any, res: Response) {
       useCase: 'FEED',
       sessionId: req.sessionId,
       viewId: req.viewId,
-      insertion: products.map(product => ({
-        contentId: product.id,
-        properties: {
-          struct: {
-            product,
-          },
-        },
-      })),
     },
+    fullInsertions: products.map(product => ({
+      // Must be filled in.
+      contentId: product.id,
+      // You can set custom properties here.
+      properties: {
+        struct: {
+          product,
+        },
+      },
+    })),
   });
   // Change the result Product list to use the values in the returned Insertions.
   sendSuccessToClient(res, {
-    products: response.insertion.map(insertion => insertion.properties.struct),
+    products: response.insertion.map(insertion => insertion.properties.struct.product),
   });
-  await response.finishAfterResponse();
+  await response.log();
 }
 ```
 
-There are a bunch of additional options.
+There are other optional options.
 
-# When modifying this library.
+| Argument | Type | Default Value | Description |
+| --- | --- | --- | --- |
+| `onlyLog` | `boolean` | `false` | Can be used to conditionally disable deliver per request |
+| `toCompactDeliveryInsertion` | `Insertion => Insertion` | Returns the argument | Can be used to strip out fields being passed into Delivery API |
+| `toCompactMetricsInsertion` | `Insertion => Insertion` | Returns the argument | Can be used to strip out fields being passed into Metrics API |
 
-## Features
+## Logging only
+
+There are two ways of doing this with `PromotedClient`:
+1. You can use `deliver` but add a `shouldOptimize: false` property.
+2. You can use `prepareForLogging` method call instead.  The `prepareForLogging` signature is similar to `deliver` and should be integrated the same way.
+
+# Improving this library
+
+## Tech used
 
 Uses
 - [TypeScript](https://www.typescriptlang.org/) support

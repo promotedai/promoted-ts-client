@@ -131,7 +131,14 @@ export interface InsertionMapFn {
  * Used to set default values on BaseRequests in the Client's constructor.
  */
 export interface RequiredBaseRequest {
-  shouldOptimize: boolean;
+  /**
+   * A way to customize when `deliver` should not run an experiment and just log
+   * (CONTROL) vs run through the experiment deliver code path.
+   * Defaults to false.
+   */
+  onlyLog: boolean;
+
+  /** A function to shrink the Insertions on Delivery API. */
   toCompactDeliveryInsertion: InsertionMapFn;
   toCompactMetricsInsertion: InsertionMapFn;
 }
@@ -140,13 +147,17 @@ export interface RequiredBaseRequest {
  * Common interface so we can set request values in PromotedClient's constructor.
  */
 export interface BaseRequest {
-  /** Defaults to true */
-  shouldOptimize?: boolean;
+  /**
+   * A way to customize when `deliver` should not run an experiment and just log
+   * (CONTROL) vs run through the experiment deliver code path.
+   * Defaults to false.
+   */
+  onlyLog?: boolean;
 
-  /** A function to shrink the Insertions on Delivery API. */
+  /** Removes unnecessary fields on Insertions for Delivery API. */
   toCompactDeliveryInsertion?: InsertionMapFn;
 
-  /** A function to shrink the Insertions on Metrics API. */
+  /** Removes unnecessary fields on Insertions for Metrics API. */
   toCompactMetricsInsertion?: InsertionMapFn;
 }
 
@@ -154,13 +165,10 @@ export interface BaseRequest {
  * Represents a single call for retrieving and ranking content.
  */
 export interface DeliveryRequest {
-  /** Defaults to true */
-  shouldOptimize?: boolean;
-
-  /** A function to shrink the Insertions on Delivery API. */
+  /** Removes unnecessary fields on Insertions for Delivery API. */
   toCompactDeliveryInsertion?: InsertionMapFn;
 
-  /** A function to shrink the Insertions on Metrics API. */
+  /** Removes unnecessary fields on Insertions for Metrics API. */
   toCompactMetricsInsertion?: InsertionMapFn;
 
   /**
@@ -175,8 +183,22 @@ export interface DeliveryRequest {
   fullInsertions: Insertion[];
 
   /**
-   * If set, this is runs delivery as a client-side experiment.  The CONTROL
-   * arm does not run delivery.  TREATMENT arm uses Delivery API for results.
+   * A way to customize when `deliver` should not run an experiment and just log
+   * (CONTROL) vs run through the experiment deliver code path.
+   * Defaults to false.
+   */
+  onlyLog?: boolean;
+
+  /**
+   * Used to run a client-side experiment.  Activation happens
+   *
+   * If undefined, no experiment is run.  By default, Delivery API is called.
+   * Can be called if `onlyLog` is set to true.
+   *
+   * If set, this is runs `deliver` as a client-side experiment.  The CONTROL
+   * arm does not call Delivery API.  It only logs.  The TREATMENT arm uses
+   * Delivery API to change Insertions.
+   *
    * This CohortMembership is also logged to Metrics.
    */
   cohortMembershipIfActivated?: CohortMembership;
@@ -277,11 +299,9 @@ export class PromotedClientImpl implements PromotedClient {
     this.deliveryClient = args.deliveryClient;
     this.metricsClient = args.metricsClient;
     this.performChecks = args.performChecks === undefined ? true : args.performChecks;
-    const {
-      defaultRequestValues: { shouldOptimize, toCompactDeliveryInsertion, toCompactMetricsInsertion } = {},
-    } = args;
+    const { defaultRequestValues: { onlyLog, toCompactDeliveryInsertion, toCompactMetricsInsertion } = {} } = args;
     this.defaultRequestValues = {
-      shouldOptimize: shouldOptimize === undefined ? true : shouldOptimize,
+      onlyLog: onlyLog === undefined ? false : onlyLog,
       toCompactDeliveryInsertion:
         toCompactDeliveryInsertion === undefined ? (insertion) => insertion : toCompactDeliveryInsertion,
       toCompactMetricsInsertion:
@@ -302,10 +322,10 @@ export class PromotedClientImpl implements PromotedClient {
   }
 
   public async prepareForLogging(metricsRequest: MetricsRequest): Promise<ClientResponse> {
-    // Use deliver method but force shouldOptimize to false.
+    // Use deliver method but force onlyLog to true.
     return this.deliver({
       ...metricsRequest,
-      shouldOptimize: false,
+      onlyLog: true,
     });
   }
 
@@ -320,7 +340,7 @@ export class PromotedClientImpl implements PromotedClient {
       }
     }
     this.preDeliveryFillInFields(deliveryRequest);
-    const shouldOptimize = this.getShouldOptimize(deliveryRequest);
+    const onlyLog = this.getOnlyLog(deliveryRequest);
 
     // TODO - if response only passes back IDs that are passed in, then we can
     // return just IDs back.
@@ -333,7 +353,7 @@ export class PromotedClientImpl implements PromotedClient {
     // TODO - add deliveryRequestId.
 
     let insertionsFromPromoted = false;
-    if (shouldOptimize) {
+    if (!onlyLog) {
       try {
         cohortMembershipToLog = newCohortMembershipToLog(deliveryRequest);
         if (this.shouldApplyTreatment(cohortMembershipToLog)) {
@@ -408,11 +428,11 @@ export class PromotedClientImpl implements PromotedClient {
     };
   }
 
-  getShouldOptimize = (deliveryRequest: DeliveryRequest): boolean => {
-    if (deliveryRequest.shouldOptimize !== undefined) {
-      return deliveryRequest.shouldOptimize;
+  getOnlyLog = (deliveryRequest: DeliveryRequest): boolean => {
+    if (deliveryRequest.onlyLog !== undefined) {
+      return deliveryRequest.onlyLog;
     }
-    return this.defaultRequestValues.shouldOptimize;
+    return this.defaultRequestValues.onlyLog;
   };
 
   getToCompactDeliveryInsertion = (deliveryRequest: DeliveryRequest): InsertionMapFn => {
