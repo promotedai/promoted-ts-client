@@ -1,3 +1,15 @@
+# [4.0.0](https://github.com/promotedai/promoted-ts-client/compare/v3.0.0...v4.0.0) (2021-04-11)
+
+
+### Features
+
+* add library to help run experiments ([24a1b8a](https://github.com/promotedai/promoted-ts-client/commit/24a1b8a1bf1573e2251f69cdcf6517b988409520))
+
+
+### BREAKING CHANGES
+
+* this changes the external interface
+
 # [3.0.0](https://github.com/promotedai/promoted-ts-client/compare/v2.0.0...v3.0.0) (2021-04-11)
 
 
