@@ -34,6 +34,10 @@ const toInsertion = (product: Product): Insertion => ({
   },
 });
 
+const toInsertionOnlyContentId = (product: Product): Insertion => ({
+  contentId: product.id.toString(),
+});
+
 const toInsertionWithInsertionId = (product: Product, insertionId: string): Insertion => {
   const insertion = toInsertion(product);
   insertion.insertionId = insertionId;
@@ -92,8 +96,8 @@ describe('no-op deliver', () => {
     const response = await promotedClient.deliver({
       request: {
         ...newBaseRequest(),
-        insertion: toInsertions(products),
       },
+      fullInsertions: toInsertions(products),
     });
     expect(response.insertion).toEqual(toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]));
     await response.finishAfterResponse();
@@ -127,10 +131,8 @@ describe('deliver', () => {
 
     const products = [newProduct('3'), newProduct('2'), newProduct('1')];
     const response = await promotedClient.deliver({
-      request: {
-        ...newBaseRequest(),
-        insertion: toInsertions(products),
-      },
+      request: newBaseRequest(),
+      fullInsertions: toInsertions(products),
     });
     expect(deliveryClient.mock.calls.length).toBe(1);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -193,10 +195,8 @@ describe('deliver', () => {
 
       const products = [newProduct('3'), newProduct('2'), newProduct('1')];
       const response = await promotedClient.deliver({
-        request: {
-          ...newBaseRequest(),
-          insertion: toInsertions(products),
-        },
+        request: newBaseRequest(),
+        fullInsertions: toInsertions(products),
         cohortMembershipIfActivated: {
           cohortId: 'HOLD_OUT',
           arm: 'CONTROL',
@@ -263,10 +263,8 @@ describe('deliver', () => {
       });
 
       const response = await promotedClient.deliver({
-        request: {
-          ...newBaseRequest(),
-          insertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
-        },
+        request: newBaseRequest(),
+        fullInsertions: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
         cohortMembershipIfActivated: {
           cohortId: 'HOLD_OUT',
           arm: 'TREATMENT',
@@ -336,10 +334,8 @@ describe('deliver', () => {
 
       const products = [newProduct('3'), newProduct('2'), newProduct('1')];
       const response = await promotedClient.deliver({
-        request: {
-          ...newBaseRequest(),
-          insertion: toInsertions(products),
-        },
+        request: newBaseRequest(),
+        fullInsertions: toInsertions(products),
         cohortMembershipIfActivated: {
           cohortId: 'HOLD_OUT',
           arm: 'TREATMENT',
@@ -360,7 +356,303 @@ describe('deliver', () => {
     });
   });
 
-  it('arm=CONTROL', async () => {
+  describe('toCompact', () => {
+    it('toCompactMetricsInsertion arm=CONTROL', async () => {
+      const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
+      const metricsClient: any = jest.fn((request) => {
+        expect(request).toEqual({
+          userInfo: {
+            logUserId: 'logUserId1',
+          },
+          timing: {
+            clientLogTimestamp: 12345678,
+          },
+          cohortMembership: [
+            {
+              arm: 'CONTROL',
+              cohortId: 'HOLD_OUT',
+              timing: {
+                clientLogTimestamp: 12345678,
+              },
+              userInfo: {
+                logUserId: 'logUserId1',
+              },
+            },
+          ],
+          request: [
+            {
+              ...newBaseRequest(),
+              requestId: 'uuid0',
+              timing: {
+                clientLogTimestamp: 12345678,
+              },
+              insertion: [
+                toInsertionOnlyContentId(newProduct('3')),
+                toInsertionOnlyContentId(newProduct('2')),
+                toInsertionOnlyContentId(newProduct('1')),
+              ],
+            },
+          ],
+        });
+      });
+
+      const promotedClient = newFakePromotedClient({
+        deliveryClient,
+        metricsClient,
+      });
+
+      const products = [newProduct('3'), newProduct('2'), newProduct('1')];
+      const response = await promotedClient.deliver({
+        request: newBaseRequest(),
+        fullInsertions: toInsertions(products),
+        toCompactMetricsInsertion: (insertion) => ({
+          contentId: insertion.contentId,
+        }),
+        cohortMembershipIfActivated: {
+          cohortId: 'HOLD_OUT',
+          arm: 'CONTROL',
+        },
+      });
+      expect(deliveryClient.mock.calls.length).toBe(0);
+      expect(metricsClient.mock.calls.length).toBe(0);
+
+      expect(response.insertion).toEqual([
+        toInsertionWithInsertionId(newProduct('3'), 'uuid1'),
+        toInsertionWithInsertionId(newProduct('2'), 'uuid2'),
+        toInsertionWithInsertionId(newProduct('1'), 'uuid3'),
+      ]);
+      // Here is where clients will return their response.
+      await response.finishAfterResponse();
+      expect(deliveryClient.mock.calls.length).toBe(0);
+      expect(metricsClient.mock.calls.length).toBe(1);
+    });
+
+    it('toCompactMetricsInsertion arm=CONTROL defaultRequestValues', async () => {
+      const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
+      const metricsClient: any = jest.fn((request) => {
+        expect(request).toEqual({
+          userInfo: {
+            logUserId: 'logUserId1',
+          },
+          timing: {
+            clientLogTimestamp: 12345678,
+          },
+          cohortMembership: [
+            {
+              arm: 'CONTROL',
+              cohortId: 'HOLD_OUT',
+              timing: {
+                clientLogTimestamp: 12345678,
+              },
+              userInfo: {
+                logUserId: 'logUserId1',
+              },
+            },
+          ],
+          request: [
+            {
+              ...newBaseRequest(),
+              requestId: 'uuid0',
+              timing: {
+                clientLogTimestamp: 12345678,
+              },
+              insertion: [
+                toInsertionOnlyContentId(newProduct('3')),
+                toInsertionOnlyContentId(newProduct('2')),
+                toInsertionOnlyContentId(newProduct('1')),
+              ],
+            },
+          ],
+        });
+      });
+
+      const promotedClient = newFakePromotedClient({
+        deliveryClient,
+        metricsClient,
+        defaultRequestValues: {
+          toCompactMetricsInsertion: (insertion) => ({
+            contentId: insertion.contentId,
+          }),
+        },
+      });
+
+      const products = [newProduct('3'), newProduct('2'), newProduct('1')];
+      const response = await promotedClient.deliver({
+        request: newBaseRequest(),
+        fullInsertions: toInsertions(products),
+        cohortMembershipIfActivated: {
+          cohortId: 'HOLD_OUT',
+          arm: 'CONTROL',
+        },
+      });
+      expect(deliveryClient.mock.calls.length).toBe(0);
+      expect(metricsClient.mock.calls.length).toBe(0);
+
+      expect(response.insertion).toEqual([
+        toInsertionWithInsertionId(newProduct('3'), 'uuid1'),
+        toInsertionWithInsertionId(newProduct('2'), 'uuid2'),
+        toInsertionWithInsertionId(newProduct('1'), 'uuid3'),
+      ]);
+      // Here is where clients will return their response.
+      await response.finishAfterResponse();
+      expect(deliveryClient.mock.calls.length).toBe(0);
+      expect(metricsClient.mock.calls.length).toBe(1);
+    });
+
+    it('toCompactDeliveryInsertions arm=TREATMENT', async () => {
+      const deliveryClient: any = jest.fn((request) => {
+        expect(request).toEqual({
+          ...newBaseRequest(),
+          timing: {
+            clientLogTimestamp: 12345678,
+          },
+          insertion: [
+            toInsertionOnlyContentId(newProduct('3')),
+            toInsertionOnlyContentId(newProduct('2')),
+            toInsertionOnlyContentId(newProduct('1')),
+          ],
+        });
+        return Promise.resolve({
+          insertion: [
+            toInsertionWithInsertionId(newProduct('1'), 'uuid1'),
+            toInsertionWithInsertionId(newProduct('2'), 'uuid2'),
+            toInsertionWithInsertionId(newProduct('3'), 'uuid3'),
+          ],
+        });
+      });
+      const metricsClient: any = jest.fn((request) => {
+        expect(request).toEqual({
+          userInfo: {
+            logUserId: 'logUserId1',
+          },
+          timing: {
+            clientLogTimestamp: 12345678,
+          },
+          cohortMembership: [
+            {
+              arm: 'TREATMENT',
+              cohortId: 'HOLD_OUT',
+              timing: {
+                clientLogTimestamp: 12345678,
+              },
+              userInfo: {
+                logUserId: 'logUserId1',
+              },
+            },
+          ],
+          // Request is not logged since it's already logged on the server-side.
+        });
+      });
+
+      const promotedClient = newFakePromotedClient({
+        deliveryClient,
+        metricsClient,
+      });
+
+      const response = await promotedClient.deliver({
+        request: newBaseRequest(),
+        fullInsertions: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+        toCompactDeliveryInsertion: (insertion) => ({
+          contentId: insertion.contentId,
+        }),
+        cohortMembershipIfActivated: {
+          cohortId: 'HOLD_OUT',
+          arm: 'TREATMENT',
+        },
+      });
+      expect(deliveryClient.mock.calls.length).toBe(1);
+      expect(metricsClient.mock.calls.length).toBe(0);
+
+      expect(response.insertion).toEqual([
+        toInsertionWithInsertionId(newProduct('1'), 'uuid1'),
+        toInsertionWithInsertionId(newProduct('2'), 'uuid2'),
+        toInsertionWithInsertionId(newProduct('3'), 'uuid3'),
+      ]);
+      // Here is where clients will return their response.
+      await response.finishAfterResponse();
+      expect(deliveryClient.mock.calls.length).toBe(1);
+      expect(metricsClient.mock.calls.length).toBe(1);
+    });
+
+    it('toCompactDeliveryInsertions arm=TREATMENT defaultRequestValues', async () => {
+      const deliveryClient: any = jest.fn((request) => {
+        expect(request).toEqual({
+          ...newBaseRequest(),
+          timing: {
+            clientLogTimestamp: 12345678,
+          },
+          insertion: [
+            toInsertionOnlyContentId(newProduct('3')),
+            toInsertionOnlyContentId(newProduct('2')),
+            toInsertionOnlyContentId(newProduct('1')),
+          ],
+        });
+        return Promise.resolve({
+          insertion: [
+            toInsertionWithInsertionId(newProduct('1'), 'uuid1'),
+            toInsertionWithInsertionId(newProduct('2'), 'uuid2'),
+            toInsertionWithInsertionId(newProduct('3'), 'uuid3'),
+          ],
+        });
+      });
+      const metricsClient: any = jest.fn((request) => {
+        expect(request).toEqual({
+          userInfo: {
+            logUserId: 'logUserId1',
+          },
+          timing: {
+            clientLogTimestamp: 12345678,
+          },
+          cohortMembership: [
+            {
+              arm: 'TREATMENT',
+              cohortId: 'HOLD_OUT',
+              timing: {
+                clientLogTimestamp: 12345678,
+              },
+              userInfo: {
+                logUserId: 'logUserId1',
+              },
+            },
+          ],
+          // Request is not logged since it's already logged on the server-side.
+        });
+      });
+
+      const promotedClient = newFakePromotedClient({
+        deliveryClient,
+        metricsClient,
+        defaultRequestValues: {
+          toCompactDeliveryInsertion: (insertion) => ({
+            contentId: insertion.contentId,
+          }),
+        },
+      });
+
+      const response = await promotedClient.deliver({
+        request: newBaseRequest(),
+        fullInsertions: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+        cohortMembershipIfActivated: {
+          cohortId: 'HOLD_OUT',
+          arm: 'TREATMENT',
+        },
+      });
+      expect(deliveryClient.mock.calls.length).toBe(1);
+      expect(metricsClient.mock.calls.length).toBe(0);
+
+      expect(response.insertion).toEqual([
+        toInsertionWithInsertionId(newProduct('1'), 'uuid1'),
+        toInsertionWithInsertionId(newProduct('2'), 'uuid2'),
+        toInsertionWithInsertionId(newProduct('3'), 'uuid3'),
+      ]);
+      // Here is where clients will return their response.
+      await response.finishAfterResponse();
+      expect(deliveryClient.mock.calls.length).toBe(1);
+      expect(metricsClient.mock.calls.length).toBe(1);
+    });
+  });
+
+  it('limit 1', async () => {
     const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
     const metricsClient: any = jest.fn((request) => {
       expect(request).toEqual({
@@ -406,8 +698,8 @@ describe('deliver', () => {
       request: {
         ...newBaseRequest(),
         limit: 1,
-        insertion: toInsertions(products),
       },
+      fullInsertions: toInsertions(products),
       cohortMembershipIfActivated: {
         cohortId: 'HOLD_OUT',
         arm: 'CONTROL',
@@ -478,8 +770,8 @@ describe('deliver', () => {
         timing: {
           clientLogTimestamp: 87654321,
         },
-        insertion: toInsertions(products),
       },
+      fullInsertions: toInsertions(products),
       cohortMembershipIfActivated: {
         cohortId: 'HOLD_OUT',
         arm: 'CONTROL',
@@ -549,10 +841,8 @@ describe('deliver', () => {
       });
 
       const response = await promotedClient.deliver({
-        request: {
-          ...newBaseRequest(),
-          insertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
-        },
+        request: newBaseRequest(),
+        fullInsertions: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
         cohortMembershipIfActivated: {
           cohortId: 'HOLD_OUT',
           arm: 'TREATMENT',
@@ -626,10 +916,8 @@ describe('deliver', () => {
       });
 
       const response = await promotedClient.deliver({
-        request: {
-          ...newBaseRequest(),
-          insertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
-        },
+        request: newBaseRequest(),
+        fullInsertions: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
         cohortMembershipIfActivated: {
           cohortId: 'HOLD_OUT',
           arm: 'TREATMENT',
@@ -658,8 +946,8 @@ describe('deliver', () => {
           request: {
             ...newBaseRequest(),
             requestId: 'uuid0',
-            insertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
           },
+          fullInsertions: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
         })
       ).rejects.toEqual(new Error('Request.requestId should not be set'));
     });
@@ -668,17 +956,15 @@ describe('deliver', () => {
       const promotedClient = newFakePromotedClient({});
       await expect(
         promotedClient.deliver({
-          request: {
-            ...newBaseRequest(),
-            insertion: [
-              {
-                ...toInsertion(newProduct('3')),
-                requestId: 'uuid0',
-              },
-              toInsertion(newProduct('2')),
-              toInsertion(newProduct('1')),
-            ],
-          },
+          request: newBaseRequest(),
+          fullInsertions: [
+            {
+              ...toInsertion(newProduct('3')),
+              requestId: 'uuid0',
+            },
+            toInsertion(newProduct('2')),
+            toInsertion(newProduct('1')),
+          ],
         })
       ).rejects.toEqual(new Error('Insertion.requestId should not be set'));
     });
@@ -687,17 +973,15 @@ describe('deliver', () => {
       const promotedClient = newFakePromotedClient({});
       await expect(
         promotedClient.deliver({
-          request: {
-            ...newBaseRequest(),
-            insertion: [
-              {
-                ...toInsertion(newProduct('3')),
-                insertionId: 'uuid0',
-              },
-              toInsertion(newProduct('2')),
-              toInsertion(newProduct('1')),
-            ],
-          },
+          request: newBaseRequest(),
+          fullInsertions: [
+            {
+              ...toInsertion(newProduct('3')),
+              insertionId: 'uuid0',
+            },
+            toInsertion(newProduct('2')),
+            toInsertion(newProduct('1')),
+          ],
         })
       ).rejects.toEqual(new Error('Insertion.insertionId should not be set'));
     });

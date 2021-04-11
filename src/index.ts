@@ -22,7 +22,12 @@ export interface PromotedClient {
    * Used to call Delivery API.  Takes the inputted list of Content and
    * ranks it.  Supports running conditionally.
    */
-  deliver(deliveryRequest: DeliveryRequest): Promise<DeliveryResponse>;
+  deliver(clientRequest: ClientRequest): Promise<ClientResponse>;
+
+  /**
+   * Used to only log the Delivery request.
+   */
+  logRequest(clientRequest: ClientRequest): Promise<ClientResponse>;
 }
 
 /**
@@ -52,7 +57,7 @@ export interface PromotedClientArguments {
   performChecks?: boolean;
 
   /**
-   * Default values to use on DeliveryRequests.
+   * Default values to use on ClientRequests.
    */
   defaultRequestValues?: BaseRequest;
 
@@ -118,6 +123,10 @@ export interface ErrorHandler {
   (err: Error): void;
 }
 
+export interface InsertionMapFn {
+  (insertion: Insertion): Insertion;
+}
+
 /**
  * Used to set default values on BaseRequests in the Client's constructor.
  */
@@ -125,16 +134,31 @@ export interface BaseRequest {
   /* Defaults to true */
   shouldOptimize?: boolean;
   // If you modify, please update fillInMissingBaseFields.
+
+  toCompactDeliveryInsertion?: InsertionMapFn;
+  toCompactMetricsInsertion?: InsertionMapFn;
+}
+
+/**
+ * Used to set default values on BaseRequests in the Client's constructor.
+ */
+export interface RequiredBaseRequest {
+  shouldOptimize: boolean;
+  toCompactDeliveryInsertion: InsertionMapFn;
+  toCompactMetricsInsertion: InsertionMapFn;
 }
 
 /**
  * The input into our deliver call to optimize content ranking.
  */
-export interface DeliveryRequest extends BaseRequest {
+export interface ClientRequest extends BaseRequest {
   /**
    * The Request for content.  Contains insertions of incoming results.
    */
   request: Request;
+
+  fullInsertions: Insertion[];
+
   /**
    * If set, this is runs delivery as a client-side experiment.  The CONTROL
    * arm does not run delivery.  TREATMENT arm uses Delivery API for results.
@@ -146,7 +170,7 @@ export interface DeliveryRequest extends BaseRequest {
 /**
  * The result of the delivery call.  Provides hooks for delay calls.
  */
-export interface DeliveryResponse {
+export interface ClientResponse {
   /**
    * Should be called after sending response to the client.
    * Allows clients to delay logging until after a response is sent to clients.
@@ -175,15 +199,18 @@ export const newPromotedClient = (args: PromotedClientArguments) => {
  * Used for clients to disable external calls.
  */
 export class NoopPromotedClient implements PromotedClient {
-  public async deliver(deliveryRequest: DeliveryRequest): Promise<DeliveryResponse> {
-    const { request } = deliveryRequest;
+  public async deliver(clientRequest: ClientRequest): Promise<ClientResponse> {
+    const { request, fullInsertions } = clientRequest;
     const limit = request.limit === undefined ? DEFAULT_LIMIT : request.limit;
-    const { insertion } = request;
-    const resultInsertions = insertion === undefined ? [] : insertion.slice(0, limit);
+    const resultInsertions = fullInsertions.slice(0, limit);
     return Promise.resolve({
       finishAfterResponse: () => Promise.resolve(undefined),
       insertion: resultInsertions,
     });
+  }
+
+  public async logRequest(clientRequest: ClientRequest): Promise<ClientResponse> {
+    return this.deliver(clientRequest);
   }
 }
 
@@ -194,7 +221,7 @@ export class PromotedClientImpl implements PromotedClient {
   private deliveryClient: ApiClient<Request, Response>;
   private metricsClient: ApiClient<LogRequest, LogResponse>;
   private performChecks: boolean;
-  private defaultRequestValues: BaseRequest;
+  private defaultRequestValues: RequiredBaseRequest;
   private handleError: ErrorHandler;
   private uuid: () => string;
   private deliveryTimeoutMillis: number;
@@ -215,12 +242,16 @@ export class PromotedClientImpl implements PromotedClient {
     this.deliveryClient = args.deliveryClient;
     this.metricsClient = args.metricsClient;
     this.performChecks = args.performChecks === undefined ? true : args.performChecks;
-    this.defaultRequestValues =
-      args.defaultRequestValues === undefined
-        ? {
-            shouldOptimize: true,
-          }
-        : args.defaultRequestValues;
+    const {
+      defaultRequestValues: { shouldOptimize, toCompactDeliveryInsertion, toCompactMetricsInsertion } = {},
+    } = args;
+    this.defaultRequestValues = {
+      shouldOptimize: shouldOptimize === undefined ? true : shouldOptimize,
+      toCompactDeliveryInsertion:
+        toCompactDeliveryInsertion === undefined ? (insertion) => insertion : toCompactDeliveryInsertion,
+      toCompactMetricsInsertion:
+        toCompactMetricsInsertion === undefined ? (insertion) => insertion : toCompactMetricsInsertion,
+    };
     this.handleError = args.handleError;
     this.uuid = args.uuid;
     this.deliveryTimeoutMillis =
@@ -235,17 +266,27 @@ export class PromotedClientImpl implements PromotedClient {
     this.metricsTimeoutWrapper = args.metricsTimeoutWrapper === undefined ? timeoutWrapper : args.metricsTimeoutWrapper;
   }
 
+  public async logRequest(clientRequest: ClientRequest): Promise<ClientResponse> {
+    // Use deliver method but force shouldOptimize to false.
+    return this.deliver({
+      ...clientRequest,
+      shouldOptimize: false,
+    });
+  }
+
   /**
-   * Used to optimize a list of content.  This function modifies deliveryRequest.
+   * Used to optimize a list of content.  This function modifies clientRequest.
    */
-  public async deliver(deliveryRequest: DeliveryRequest): Promise<DeliveryResponse> {
+  public async deliver(clientRequest: ClientRequest): Promise<ClientResponse> {
     if (this.performChecks) {
-      const error = checkThatLogIdsNotSet(deliveryRequest);
+      const error = checkThatLogIdsNotSet(clientRequest);
       if (error) {
         this.handleError(error);
       }
     }
-    this.preDeliveryFillInFields(deliveryRequest);
+    const shouldOptimize = this.getShouldOptimize(clientRequest);
+    const toCompactDeliveryInsertion = this.getToCompactDeliveryInsertion(clientRequest);
+    this.preDeliveryFillInFields(clientRequest);
 
     // TODO - if response only passes back IDs that are passed in, then we can
     // return just IDs back.
@@ -253,23 +294,27 @@ export class PromotedClientImpl implements PromotedClient {
     // We default to returning the input insertions.
     let resultInsertions: Insertion[] | undefined = undefined;
     // If defined, log the CohortMembership to Metrics API.
-    let cohortMembershipToLog: CohortMembership | undefined = undefined;
+    let cohortMembershipRecord: CohortMembership | undefined = undefined;
     // If defined, log the Request to Metrics API.
-    let requestToLog: Request | undefined = undefined;
+    let requestRecord: Request | undefined = undefined;
 
     // TODO - add clientRequestId.
 
     let insertionsFromPromoted = false;
     try {
-      if (!!deliveryRequest.shouldOptimize) {
-        cohortMembershipToLog = newCohortMembershipToLog(deliveryRequest);
-        if (this.shouldApplyTreatment(cohortMembershipToLog)) {
-          const deliveryResponse = await this.deliveryTimeoutWrapper(
-            this.deliveryClient(deliveryRequest.request),
+      if (shouldOptimize) {
+        cohortMembershipRecord = newCohortMembershipToLog(clientRequest);
+        if (this.shouldApplyTreatment(cohortMembershipRecord)) {
+          const deliveryRequest = {
+            ...clientRequest.request,
+            insertion: clientRequest.fullInsertions.map(toCompactDeliveryInsertion),
+          };
+          const response = await this.deliveryTimeoutWrapper(
+            this.deliveryClient(deliveryRequest),
             this.deliveryTimeoutMillis
           );
           insertionsFromPromoted = true;
-          resultInsertions = deliveryResponse.insertion;
+          resultInsertions = getResultInsertions(response, clientRequest);
         }
       }
     } catch (error) {
@@ -277,15 +322,15 @@ export class PromotedClientImpl implements PromotedClient {
     }
     if (!insertionsFromPromoted) {
       // If you update this, update the no-op version too.
-      requestToLog = deliveryRequest.request;
-      const limit = requestToLog.limit === undefined ? DEFAULT_LIMIT : requestToLog.limit;
-      resultInsertions = requestToLog.insertion?.slice(0, limit);
+      requestRecord = clientRequest.request;
+      const limit = requestRecord.limit === undefined ? DEFAULT_LIMIT : requestRecord.limit;
+      resultInsertions = clientRequest.fullInsertions.slice(0, limit);
     }
     const insertion = resultInsertions === undefined ? [] : resultInsertions;
-    this.addMissingRequestId(requestToLog);
+    this.addMissingRequestId(requestRecord);
     this.addMissingIdsOnInsertionArray(insertion);
     return {
-      finishAfterResponse: this.newFinishAfterResponse(deliveryRequest, requestToLog, cohortMembershipToLog),
+      finishAfterResponse: this.newFinishAfterResponse(clientRequest, requestRecord, cohortMembershipRecord),
       insertion,
     };
   }
@@ -293,9 +338,9 @@ export class PromotedClientImpl implements PromotedClient {
   /**
    * Creates a function that can be used after sending the response.
    */
-  // TODO - it's confusing to take both DeliveryRequest and Request.
+  // TODO - it's confusing to take both ClientRequest and Request.
   newFinishAfterResponse(
-    deliveryRequest: DeliveryRequest,
+    clientRequest: ClientRequest,
     request?: Request,
     cohortMembership?: CohortMembership
   ): () => Promise<void> {
@@ -305,9 +350,14 @@ export class PromotedClientImpl implements PromotedClient {
     }
     return async () => {
       try {
-        const logRequest = newLogRequest(deliveryRequest);
+        const toCompactMetricsInsertion = this.getToCompactMetricsInsertion(clientRequest);
+        const logRequest = newLogRequest(clientRequest);
         if (request) {
-          logRequest.request = [request];
+          const copyRequest = {
+            ...request,
+            insertion: clientRequest.fullInsertions.map(toCompactMetricsInsertion),
+          };
+          logRequest.request = [copyRequest];
         }
         if (cohortMembership) {
           logRequest.cohortMembership = [cohortMembership];
@@ -320,11 +370,29 @@ export class PromotedClientImpl implements PromotedClient {
     };
   }
 
-  preDeliveryFillInFields = (deliveryRequest: DeliveryRequest) => {
-    if (deliveryRequest.shouldOptimize === undefined) {
-      deliveryRequest.shouldOptimize = this.defaultRequestValues.shouldOptimize;
+  getShouldOptimize = (clientRequest: ClientRequest): boolean => {
+    if (clientRequest.shouldOptimize !== undefined) {
+      return clientRequest.shouldOptimize;
     }
-    const { request } = deliveryRequest;
+    return this.defaultRequestValues.shouldOptimize;
+  };
+
+  getToCompactDeliveryInsertion = (clientRequest: ClientRequest): InsertionMapFn => {
+    if (clientRequest.toCompactDeliveryInsertion !== undefined) {
+      return clientRequest.toCompactDeliveryInsertion;
+    }
+    return this.defaultRequestValues.toCompactDeliveryInsertion;
+  };
+
+  getToCompactMetricsInsertion = (clientRequest: ClientRequest): InsertionMapFn => {
+    if (clientRequest.toCompactMetricsInsertion !== undefined) {
+      return clientRequest.toCompactMetricsInsertion;
+    }
+    return this.defaultRequestValues.toCompactMetricsInsertion;
+  };
+
+  preDeliveryFillInFields = (clientRequest: ClientRequest) => {
+    const { request } = clientRequest;
     let { timing } = request;
     if (!timing) {
       timing = {};
@@ -376,12 +444,12 @@ const defaultShouldApplyTreatment = (cohortMembership: CohortMembership) => {
   return arm === undefined || arm !== 'CONTROL';
 };
 
-const newCohortMembershipToLog = (deliveryRequest: DeliveryRequest): CohortMembership | undefined => {
-  if (deliveryRequest.cohortMembershipIfActivated === undefined) {
+const newCohortMembershipToLog = (clientRequest: ClientRequest): CohortMembership | undefined => {
+  if (clientRequest.cohortMembershipIfActivated === undefined) {
     return undefined;
   }
-  const { request } = deliveryRequest;
-  const cohortMembership = { ...deliveryRequest.cohortMembershipIfActivated };
+  const { request } = clientRequest;
+  const cohortMembership = { ...clientRequest.cohortMembershipIfActivated };
   if (!cohortMembership.platformId && request.platformId) {
     cohortMembership.platformId = request.platformId;
   }
@@ -394,10 +462,10 @@ const newCohortMembershipToLog = (deliveryRequest: DeliveryRequest): CohortMembe
   return cohortMembership;
 };
 
-const newLogRequest = (deliveryRequest: DeliveryRequest): LogRequest => {
+const newLogRequest = (clientRequest: ClientRequest): LogRequest => {
   const {
     request: { platformId, userInfo, timing },
-  } = deliveryRequest;
+  } = clientRequest;
   const logRequest: LogRequest = {};
   if (platformId) {
     logRequest.platformId = platformId;
@@ -411,20 +479,55 @@ const newLogRequest = (deliveryRequest: DeliveryRequest): LogRequest => {
   return logRequest;
 };
 
-const checkThatLogIdsNotSet = (deliveryRequest: DeliveryRequest): Error | undefined => {
-  const { request } = deliveryRequest;
+const checkThatLogIdsNotSet = (clientRequest: ClientRequest): Error | undefined => {
+  const { request, fullInsertions } = clientRequest;
   if (request.requestId) {
     return new Error('Request.requestId should not be set');
   }
   if (request.insertion) {
-    for (const insertion of request.insertion) {
-      if (insertion.requestId) {
-        return new Error('Insertion.requestId should not be set');
-      }
-      if (insertion.insertionId) {
-        return new Error('Insertion.insertionId should not be set');
-      }
+    return new Error('Do not set Request.insertion.  Set fullInsertions.');
+  }
+
+  for (const insertion of fullInsertions) {
+    if (insertion.requestId) {
+      return new Error('Insertion.requestId should not be set');
+    }
+    if (insertion.insertionId) {
+      return new Error('Insertion.insertionId should not be set');
+    }
+    if (!insertion.contentId) {
+      return new Error('Insertion.contentId should be set');
     }
   }
   return undefined;
+};
+
+/**
+ *
+ */
+const getResultInsertions = (response: Response, clientRequest: ClientRequest): Insertion[] => {
+  const contentIdToInputInsertion = clientRequest.fullInsertions.reduce(
+    (map: { [contnetId: string]: Insertion }, insertion) => {
+      if (insertion.contentId !== undefined) {
+        map[insertion.contentId] = insertion;
+      }
+      return map;
+    },
+    {}
+  );
+
+  if (!response.insertion) {
+    return [];
+  }
+  return response.insertion?.map((responseInsertion) => {
+    if (responseInsertion.contentId === undefined) {
+      return responseInsertion;
+    }
+    const copy = { ...responseInsertion };
+    const inputInsertion = contentIdToInputInsertion[responseInsertion.contentId];
+    if (inputInsertion) {
+      copy.properties = inputInsertion.properties;
+    }
+    return copy;
+  });
 };
