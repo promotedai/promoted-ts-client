@@ -27,7 +27,7 @@ export interface PromotedClient {
   /**
    * Used to only log the Delivery request.
    */
-  logRequest(clientRequest: ClientRequest): Promise<ClientResponse>;
+  prepareForLogging(clientRequest: ClientRequest): Promise<ClientResponse>;
 }
 
 /**
@@ -128,14 +128,16 @@ export interface InsertionMapFn {
 }
 
 /**
- * Used to set default values on BaseRequests in the Client's constructor.
+ * Common interface so we can set request values in PromotedClient's constructor.
  */
 export interface BaseRequest {
-  /* Defaults to true */
+  /** Defaults to true */
   shouldOptimize?: boolean;
-  // If you modify, please update fillInMissingBaseFields.
 
+  /** A function to shrink the Insertions on Delivery API. */
   toCompactDeliveryInsertion?: InsertionMapFn;
+
+  /** A function to shrink the Insertions on Metrics API. */
   toCompactMetricsInsertion?: InsertionMapFn;
 }
 
@@ -149,7 +151,7 @@ export interface RequiredBaseRequest {
 }
 
 /**
- * The input into our deliver call to optimize content ranking.
+ * Represents a single call for retrieving and ranking content.
  */
 export interface ClientRequest extends BaseRequest {
   /**
@@ -157,6 +159,10 @@ export interface ClientRequest extends BaseRequest {
    */
   request: Request;
 
+  /**
+   * Insertions with all metadata.  The `toCompact` functions are used to
+   * transform the fullInsertions to Insertions on each of the requests.
+   */
   fullInsertions: Insertion[];
 
   /**
@@ -172,14 +178,15 @@ export interface ClientRequest extends BaseRequest {
  */
 export interface ClientResponse {
   /**
-   * Should be called after sending response to the client.
-   * Allows clients to delay logging until after a response is sent to clients.
+   * Sends the log records to Metrics API.
+   * Clients need to call this, preferrably after they send the response to
+   * their UI/apps.
    */
-  finishAfterResponse: () => Promise<void>;
+  log: () => Promise<void>;
 
   /**
-   * A list of the resulting Insertions.  If we do not call Delivery or hit
-   * errors, we return a truncated version of the input Insertion list.
+   * A list of the resulting Insertions.  This list should be truncated
+   * based on limit.
    */
   insertion: Insertion[];
 }
@@ -204,12 +211,12 @@ export class NoopPromotedClient implements PromotedClient {
     const limit = request.limit === undefined ? DEFAULT_LIMIT : request.limit;
     const resultInsertions = fullInsertions.slice(0, limit);
     return Promise.resolve({
-      finishAfterResponse: () => Promise.resolve(undefined),
+      log: () => Promise.resolve(undefined),
       insertion: resultInsertions,
     });
   }
 
-  public async logRequest(clientRequest: ClientRequest): Promise<ClientResponse> {
+  public async prepareForLogging(clientRequest: ClientRequest): Promise<ClientResponse> {
     return this.deliver(clientRequest);
   }
 }
@@ -266,7 +273,7 @@ export class PromotedClientImpl implements PromotedClient {
     this.metricsTimeoutWrapper = args.metricsTimeoutWrapper === undefined ? timeoutWrapper : args.metricsTimeoutWrapper;
   }
 
-  public async logRequest(clientRequest: ClientRequest): Promise<ClientResponse> {
+  public async prepareForLogging(clientRequest: ClientRequest): Promise<ClientResponse> {
     // Use deliver method but force shouldOptimize to false.
     return this.deliver({
       ...clientRequest,
@@ -284,9 +291,8 @@ export class PromotedClientImpl implements PromotedClient {
         this.handleError(error);
       }
     }
-    const shouldOptimize = this.getShouldOptimize(clientRequest);
-    const toCompactDeliveryInsertion = this.getToCompactDeliveryInsertion(clientRequest);
     this.preDeliveryFillInFields(clientRequest);
+    const shouldOptimize = this.getShouldOptimize(clientRequest);
 
     // TODO - if response only passes back IDs that are passed in, then we can
     // return just IDs back.
@@ -294,17 +300,16 @@ export class PromotedClientImpl implements PromotedClient {
     // We default to returning the input insertions.
     let resultInsertions: Insertion[] | undefined = undefined;
     // If defined, log the CohortMembership to Metrics API.
-    let cohortMembershipRecord: CohortMembership | undefined = undefined;
-    // If defined, log the Request to Metrics API.
-    let requestRecord: Request | undefined = undefined;
+    let cohortMembershipToLog: CohortMembership | undefined = undefined;
 
     // TODO - add clientRequestId.
 
     let insertionsFromPromoted = false;
-    try {
-      if (shouldOptimize) {
-        cohortMembershipRecord = newCohortMembershipToLog(clientRequest);
-        if (this.shouldApplyTreatment(cohortMembershipRecord)) {
+    if (shouldOptimize) {
+      try {
+        cohortMembershipToLog = newCohortMembershipToLog(clientRequest);
+        if (this.shouldApplyTreatment(cohortMembershipToLog)) {
+          const toCompactDeliveryInsertion = this.getToCompactDeliveryInsertion(clientRequest);
           const deliveryRequest = {
             ...clientRequest.request,
             insertion: clientRequest.fullInsertions.map(toCompactDeliveryInsertion),
@@ -314,23 +319,28 @@ export class PromotedClientImpl implements PromotedClient {
             this.deliveryTimeoutMillis
           );
           insertionsFromPromoted = true;
-          resultInsertions = getResultInsertions(response, clientRequest);
+          resultInsertions = fillInDetails(
+            response.insertion === undefined ? [] : response.insertion,
+            clientRequest.fullInsertions
+          );
         }
+      } catch (error) {
+        this.handleError(error);
       }
-    } catch (error) {
-      this.handleError(error);
     }
+    // If defined, log the Request to Metrics API.
+    let requestToLog: Request | undefined = undefined;
     if (!insertionsFromPromoted) {
       // If you update this, update the no-op version too.
-      requestRecord = clientRequest.request;
-      const limit = requestRecord.limit === undefined ? DEFAULT_LIMIT : requestRecord.limit;
+      requestToLog = clientRequest.request;
+      const limit = requestToLog.limit === undefined ? DEFAULT_LIMIT : requestToLog.limit;
       resultInsertions = clientRequest.fullInsertions.slice(0, limit);
     }
     const insertion = resultInsertions === undefined ? [] : resultInsertions;
-    this.addMissingRequestId(requestRecord);
+    this.addMissingRequestId(requestToLog);
     this.addMissingIdsOnInsertionArray(insertion);
     return {
-      finishAfterResponse: this.newFinishAfterResponse(clientRequest, requestRecord, cohortMembershipRecord),
+      log: this.createLogFn(clientRequest, requestToLog, cohortMembershipToLog),
       insertion,
     };
   }
@@ -339,12 +349,12 @@ export class PromotedClientImpl implements PromotedClient {
    * Creates a function that can be used after sending the response.
    */
   // TODO - it's confusing to take both ClientRequest and Request.
-  newFinishAfterResponse(
+  createLogFn(
     clientRequest: ClientRequest,
-    request?: Request,
-    cohortMembership?: CohortMembership
+    requestToLog?: Request,
+    cohortMembershipToLog?: CohortMembership
   ): () => Promise<void> {
-    if (request === undefined && cohortMembership === undefined) {
+    if (requestToLog === undefined && cohortMembershipToLog === undefined) {
       // If no log records, short-cut.
       return () => Promise.resolve(undefined);
     }
@@ -352,15 +362,15 @@ export class PromotedClientImpl implements PromotedClient {
       try {
         const toCompactMetricsInsertion = this.getToCompactMetricsInsertion(clientRequest);
         const logRequest = newLogRequest(clientRequest);
-        if (request) {
+        if (requestToLog) {
           const copyRequest = {
-            ...request,
+            ...requestToLog,
             insertion: clientRequest.fullInsertions.map(toCompactMetricsInsertion),
           };
           logRequest.request = [copyRequest];
         }
-        if (cohortMembership) {
-          logRequest.cohortMembership = [cohortMembership];
+        if (cohortMembershipToLog) {
+          logRequest.cohortMembership = [cohortMembershipToLog];
         }
         await this.metricsTimeoutWrapper(this.metricsClient(logRequest), this.metricsTimeoutMillis);
       } catch (error) {
@@ -503,23 +513,21 @@ const checkThatLogIdsNotSet = (clientRequest: ClientRequest): Error | undefined 
 };
 
 /**
- *
+ * Fills in responseInsertion details using fullInsertions.  It un-compacts
+ * the response.
  */
-const getResultInsertions = (response: Response, clientRequest: ClientRequest): Insertion[] => {
-  const contentIdToInputInsertion = clientRequest.fullInsertions.reduce(
-    (map: { [contnetId: string]: Insertion }, insertion) => {
-      if (insertion.contentId !== undefined) {
-        map[insertion.contentId] = insertion;
-      }
-      return map;
-    },
-    {}
-  );
+const fillInDetails = (responseInsertions: Insertion[], fullInsertions: Insertion[]): Insertion[] => {
+  const contentIdToInputInsertion = fullInsertions.reduce((map: { [contnetId: string]: Insertion }, insertion) => {
+    if (insertion.contentId !== undefined) {
+      map[insertion.contentId] = insertion;
+    }
+    return map;
+  }, {});
 
-  if (!response.insertion) {
+  if (!responseInsertions) {
     return [];
   }
-  return response.insertion?.map((responseInsertion) => {
+  return responseInsertions?.map((responseInsertion) => {
     if (responseInsertion.contentId === undefined) {
       return responseInsertion;
     }
