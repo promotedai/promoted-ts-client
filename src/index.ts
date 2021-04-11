@@ -242,17 +242,15 @@ export class PromotedClientImpl implements PromotedClient {
     this.deliveryClient = args.deliveryClient;
     this.metricsClient = args.metricsClient;
     this.performChecks = args.performChecks === undefined ? true : args.performChecks;
-    const { defaultRequestValues } = args;
+    const {
+      defaultRequestValues: { shouldOptimize, toCompactDeliveryInsertion, toCompactMetricsInsertion } = {},
+    } = args;
     this.defaultRequestValues = {
-      shouldOptimize: defaultRequestValues?.shouldOptimize === undefined ? true : defaultRequestValues.shouldOptimize,
+      shouldOptimize: shouldOptimize === undefined ? true : shouldOptimize,
       toCompactDeliveryInsertion:
-        defaultRequestValues?.toCompactDeliveryInsertion === undefined
-          ? (insertion) => insertion
-          : defaultRequestValues.toCompactDeliveryInsertion,
+        toCompactDeliveryInsertion === undefined ? (insertion) => insertion : toCompactDeliveryInsertion,
       toCompactMetricsInsertion:
-        defaultRequestValues?.toCompactMetricsInsertion === undefined
-          ? (insertion) => insertion
-          : defaultRequestValues.toCompactMetricsInsertion,
+        toCompactMetricsInsertion === undefined ? (insertion) => insertion : toCompactMetricsInsertion,
     };
     this.handleError = args.handleError;
     this.uuid = args.uuid;
