@@ -1,3 +1,15 @@
+# [5.0.0](https://github.com/promotedai/promoted-ts-client/compare/v4.0.0...v5.0.0) (2021-04-11)
+
+
+### Code Refactoring
+
+* make names consistent - fullInsertion ([381e1e5](https://github.com/promotedai/promoted-ts-client/commit/381e1e5884e897a397bd6691d69b7bd8650b892f))
+
+
+### BREAKING CHANGES
+
+* - this changes the external interface
+
 # [4.0.0](https://github.com/promotedai/promoted-ts-client/compare/v3.0.0...v4.0.0) (2021-04-11)
 
 
