@@ -70,7 +70,7 @@ const newFakePromotedClient = (overrideArgs: Partial<PromotedClientArguments>) =
 
   return newPromotedClient({
     defaultRequestValues: {
-      shouldOptimize: true,
+      onlyLog: false,
     },
     deliveryClient,
     metricsClient,
