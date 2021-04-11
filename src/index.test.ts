@@ -100,7 +100,7 @@ describe('no-op deliver', () => {
       fullInsertions: toInsertions(products),
     });
     expect(response.insertion).toEqual(toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]));
-    await response.finishAfterResponse();
+    await response.log();
   });
 });
 
@@ -143,7 +143,7 @@ describe('deliver', () => {
       toInsertionWithInsertionId(newProduct('3'), 'uuid3'),
     ]);
     // Here is where clients will return their response.
-    await response.finishAfterResponse();
+    await response.log();
     expect(deliveryClient.mock.calls.length).toBe(1);
     expect(metricsClient.mock.calls.length).toBe(0);
   });
@@ -211,7 +211,7 @@ describe('deliver', () => {
         toInsertionWithInsertionId(newProduct('1'), 'uuid3'),
       ]);
       // Here is where clients will return their response.
-      await response.finishAfterResponse();
+      await response.log();
       expect(deliveryClient.mock.calls.length).toBe(0);
       expect(metricsClient.mock.calls.length).toBe(1);
     });
@@ -279,7 +279,7 @@ describe('deliver', () => {
         toInsertionWithInsertionId(newProduct('3'), 'uuid3'),
       ]);
       // Here is where clients will return their response.
-      await response.finishAfterResponse();
+      await response.log();
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(1);
     });
@@ -350,7 +350,7 @@ describe('deliver', () => {
         toInsertionWithInsertionId(newProduct('1'), 'uuid3'),
       ]);
       // Here is where clients will return their response.
-      await response.finishAfterResponse();
+      await response.log();
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(1);
     });
@@ -422,7 +422,7 @@ describe('deliver', () => {
         toInsertionWithInsertionId(newProduct('1'), 'uuid3'),
       ]);
       // Here is where clients will return their response.
-      await response.finishAfterResponse();
+      await response.log();
       expect(deliveryClient.mock.calls.length).toBe(0);
       expect(metricsClient.mock.calls.length).toBe(1);
     });
@@ -494,7 +494,7 @@ describe('deliver', () => {
         toInsertionWithInsertionId(newProduct('1'), 'uuid3'),
       ]);
       // Here is where clients will return their response.
-      await response.finishAfterResponse();
+      await response.log();
       expect(deliveryClient.mock.calls.length).toBe(0);
       expect(metricsClient.mock.calls.length).toBe(1);
     });
@@ -569,7 +569,7 @@ describe('deliver', () => {
         toInsertionWithInsertionId(newProduct('3'), 'uuid3'),
       ]);
       // Here is where clients will return their response.
-      await response.finishAfterResponse();
+      await response.log();
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(1);
     });
@@ -646,7 +646,7 @@ describe('deliver', () => {
         toInsertionWithInsertionId(newProduct('3'), 'uuid3'),
       ]);
       // Here is where clients will return their response.
-      await response.finishAfterResponse();
+      await response.log();
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(1);
     });
@@ -710,7 +710,7 @@ describe('deliver', () => {
 
     expect(response.insertion).toEqual([toInsertionWithInsertionId(newProduct('3'), 'uuid1')]);
     // Here is where clients will return their response.
-    await response.finishAfterResponse();
+    await response.log();
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(1);
   });
@@ -786,7 +786,7 @@ describe('deliver', () => {
       toInsertionWithInsertionId(newProduct('1'), 'uuid3'),
     ]);
     // Here is where clients will return their response.
-    await response.finishAfterResponse();
+    await response.log();
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(1);
   });
@@ -857,7 +857,7 @@ describe('deliver', () => {
         toInsertionWithInsertionId(newProduct('1'), 'uuid3'),
       ]);
       // Here is where clients will return their response.
-      await response.finishAfterResponse();
+      await response.log();
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(1);
     });
@@ -932,7 +932,7 @@ describe('deliver', () => {
         toInsertionWithInsertionId(newProduct('3'), 'uuid3'),
       ]);
       // Here is where clients will return their response.
-      await response.finishAfterResponse();
+      await response.log();
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(1);
     });
