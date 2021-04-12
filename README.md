@@ -136,8 +136,9 @@ Uses
 
 If you want to test local changes in an actual deployment, use `npm link`.
 
+1. Make sure your npm uses the same version as the client directory.
 1. Run `npm run updatelink`.
-4. Go to client directory and run `npm link promoted-ts-client`.
+1. Go to client directory and run `npm link promoted-ts-client`.
 
 When you update `promoted-ts-client`, run `npm run updatelink`.
 

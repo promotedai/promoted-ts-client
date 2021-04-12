@@ -1060,4 +1060,20 @@ describe('metrics', () => {
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(1);
   });
+
+  // TODO - add test where IDs are passed in.
+  describe('check input fields should be undefined', () => {
+    it('Request.requestId', async () => {
+      const promotedClient = newFakePromotedClient({});
+      await expect(
+        promotedClient.prepareForLogging({
+          request: {
+            ...newBaseRequest(),
+            requestId: 'uuid0',
+          },
+          fullInsertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+        })
+      ).rejects.toEqual(new Error('Request.requestId should not be set'));
+    });
+  });
 });
