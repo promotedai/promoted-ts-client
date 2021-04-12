@@ -254,7 +254,7 @@ export const newPromotedClient = (args: PromotedClientArguments) => {
 };
 
 /**
- * Used for clients to disable external calls.
+ * Used when clients want to disable all functionality.
  */
 export class NoopPromotedClient implements PromotedClient {
   public async deliver(deliveryRequest: DeliveryRequest): Promise<ClientResponse> {
@@ -322,12 +322,29 @@ export class PromotedClientImpl implements PromotedClient {
     this.metricsTimeoutWrapper = args.metricsTimeoutWrapper === undefined ? timeoutWrapper : args.metricsTimeoutWrapper;
   }
 
+  // Instead of reusing `deliver`, we copy/paste most of the functionality here.
+  // On a dev setup, Node.js seems to add 0.25 milliseconds of latency for
+  // having an extra layer of async/await.
   public async prepareForLogging(metricsRequest: MetricsRequest): Promise<ClientResponse> {
-    // Use deliver method but force onlyLog to true.
-    return this.deliver({
-      ...metricsRequest,
-      onlyLog: true,
-    });
+    if (this.performChecks) {
+      const error = checkThatLogIdsNotSet(metricsRequest);
+      if (error) {
+        this.handleError(error);
+      }
+    }
+    this.preDeliveryFillInFields(metricsRequest);
+
+    // If defined, log the Request to Metrics API.
+    const request = metricsRequest.request;
+    const limit = request.limit === undefined ? DEFAULT_LIMIT : request.limit;
+    const insertion = metricsRequest.fullInsertion.slice(0, limit);
+    this.addMissingRequestId(request);
+    this.addMissingIdsOnInsertionArray(insertion);
+
+    return {
+      log: this.createLogFn(metricsRequest, request, undefined),
+      insertion,
+    };
   }
 
   /**
@@ -388,6 +405,7 @@ export class PromotedClientImpl implements PromotedClient {
     const insertion = resultInsertions === undefined ? [] : resultInsertions;
     this.addMissingRequestId(requestToLog);
     this.addMissingIdsOnInsertionArray(insertion);
+
     return {
       log: this.createLogFn(deliveryRequest, requestToLog, cohortMembershipToLog),
       insertion,
@@ -450,7 +468,7 @@ export class PromotedClientImpl implements PromotedClient {
     return this.defaultRequestValues.toCompactMetricsInsertion;
   };
 
-  preDeliveryFillInFields = (deliveryRequest: DeliveryRequest) => {
+  preDeliveryFillInFields = (deliveryRequest: DeliveryRequest | MetricsRequest) => {
     const { request } = deliveryRequest;
     let { timing } = request;
     if (!timing) {
@@ -538,7 +556,7 @@ const newLogRequest = (deliveryRequest: DeliveryRequest): LogRequest => {
   return logRequest;
 };
 
-const checkThatLogIdsNotSet = (deliveryRequest: DeliveryRequest): Error | undefined => {
+const checkThatLogIdsNotSet = (deliveryRequest: DeliveryRequest | MetricsRequest): Error | undefined => {
   const { request, fullInsertion } = deliveryRequest;
   if (request.requestId) {
     return new Error('Request.requestId should not be set');
