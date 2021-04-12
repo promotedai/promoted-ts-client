@@ -10,7 +10,7 @@ import type { CohortMembership, LogRequest, LogResponse } from './types/event';
  * to the method.
  */
 
-const DEFAULT_LIMIT = 10;
+const DEFAULT_LIMIT = Number.MAX_SAFE_INTEGER;
 const DEFAULT_DELIVERY_TIMEOUT_MILLIS = 250;
 const DEFAULT_METRICS_TIMEOUT_MILLIS = 3000;
 
