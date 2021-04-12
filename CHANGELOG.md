@@ -1,3 +1,10 @@
+# [5.2.0](https://github.com/promotedai/promoted-ts-client/compare/v5.1.0...v5.2.0) (2021-04-12)
+
+
+### Features
+
+* speed up prepare for logging ([7ceebaa](https://github.com/promotedai/promoted-ts-client/commit/7ceebaa0d21d035322cb6f38b3d4e6302941270e))
+
 # [5.1.0](https://github.com/promotedai/promoted-ts-client/compare/v5.0.0...v5.1.0) (2021-04-12)
 
 
