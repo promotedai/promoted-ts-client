@@ -1,3 +1,10 @@
+# [5.1.0](https://github.com/promotedai/promoted-ts-client/compare/v5.0.0...v5.1.0) (2021-04-12)
+
+
+### Features
+
+* change the default limit size ([4bc6876](https://github.com/promotedai/promoted-ts-client/commit/4bc6876f355a2de0939e481a76859708d6870d98))
+
 # [5.0.0](https://github.com/promotedai/promoted-ts-client/compare/v4.0.0...v5.0.0) (2021-04-11)
 
 
