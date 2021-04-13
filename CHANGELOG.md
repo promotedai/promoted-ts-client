@@ -1,3 +1,10 @@
+# [5.5.0](https://github.com/promotedai/promoted-ts-client/compare/v5.4.0...v5.5.0) (2021-04-13)
+
+
+### Features
+
+* add a helper compact fn that strips properties ([be036ff](https://github.com/promotedai/promoted-ts-client/commit/be036ff19e305c30c3fdfcf5a7174b61dcbbbc04))
+
 # [5.4.0](https://github.com/promotedai/promoted-ts-client/compare/v5.3.0...v5.4.0) (2021-04-13)
 
 
