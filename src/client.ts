@@ -171,7 +171,7 @@ export interface DeliveryRequest {
   toCompactMetricsInsertion?: InsertionMapFn;
 
   /**
-   * The Request for content.  Contains insertions of incoming results.
+   * The Request for content.
    */
   request: Request;
 
@@ -212,7 +212,7 @@ export interface MetricsRequest {
   toCompactMetricsInsertion?: InsertionMapFn;
 
   /**
-   * The Request for content.  Contains insertions of incoming results.
+   * The Request for content.
    */
   request: Request;
 
@@ -229,7 +229,7 @@ export interface MetricsRequest {
  *
  * Has two main uses:
  * 1) return a modified list of Insertions.
- * 2) clients must call the log method after they send results back
+ * 2) clients must call the log method after they send their content back
  * to the client.  They call either `ClientResponse.log` or the `log` helper
  * method (which hides the Promise).
  */
@@ -242,7 +242,7 @@ export interface ClientResponse {
   log: () => Promise<void>;
 
   /**
-   * A list of the resulting Insertions.  This list should be truncated
+   * A list of the response Insertions.  This list should be truncated
    * based on limit.
    */
   insertion: Insertion[];
@@ -384,7 +384,7 @@ export class PromotedClientImpl implements PromotedClient {
     // return just IDs back.
 
     // We default to returning the input insertions.
-    let resultInsertions: Insertion[] | undefined = undefined;
+    let responseInsertions: Insertion[] | undefined = undefined;
     // If defined, log the CohortMembership to Metrics API.
     let cohortMembershipToLog: CohortMembership | undefined = undefined;
 
@@ -405,7 +405,7 @@ export class PromotedClientImpl implements PromotedClient {
             this.deliveryTimeoutMillis
           );
           insertionsFromPromoted = true;
-          resultInsertions = fillInDetails(
+          responseInsertions = fillInDetails(
             response.insertion === undefined ? [] : response.insertion,
             deliveryRequest.fullInsertion
           );
@@ -421,10 +421,10 @@ export class PromotedClientImpl implements PromotedClient {
       requestToLog = deliveryRequest.request;
       const { limit } = requestToLog;
       const { fullInsertion } = deliveryRequest;
-      resultInsertions = limit === undefined ? fullInsertion : fullInsertion.slice(0, limit);
+      responseInsertions = limit === undefined ? fullInsertion : fullInsertion.slice(0, limit);
     }
 
-    const insertion = resultInsertions === undefined ? [] : resultInsertions;
+    const insertion = responseInsertions === undefined ? [] : responseInsertions;
     this.addMissingRequestId(requestToLog);
     this.addMissingIdsOnInsertionArray(insertion);
 
