@@ -1,4 +1,4 @@
-import { log, newPromotedClient, noopFn, throwOnError } from '.';
+import { copyAndRemoveProperties, log, newPromotedClient, noopFn, throwOnError } from '.';
 import type { PromotedClientArguments } from '.';
 import type { Insertion, Request } from './types/delivery';
 
@@ -1197,6 +1197,21 @@ describe('metrics', () => {
         })
       ).rejects.toEqual(new Error('Request.requestId should not be set'));
     });
+  });
+});
+
+it('copyAndRemoveProperties', async () => {
+  expect(
+    copyAndRemoveProperties({
+      insertionId: '123',
+      properties: {
+        struct: {
+          fake: 'value',
+        },
+      },
+    })
+  ).toEqual({
+    insertionId: '123',
   });
 });
 
