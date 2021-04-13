@@ -10,7 +10,6 @@ import type { CohortMembership, LogRequest, LogResponse } from './types/event';
  * to the method.
  */
 
-const DEFAULT_LIMIT = Number.MAX_SAFE_INTEGER;
 const DEFAULT_DELIVERY_TIMEOUT_MILLIS = 250;
 const DEFAULT_METRICS_TIMEOUT_MILLIS = 3000;
 
@@ -280,11 +279,11 @@ export const newPromotedClient = (args: PromotedClientArguments) => {
 export class NoopPromotedClient implements PromotedClient {
   public async deliver(deliveryRequest: DeliveryRequest): Promise<ClientResponse> {
     const { request, fullInsertion } = deliveryRequest;
-    const limit = request.limit === undefined ? DEFAULT_LIMIT : request.limit;
-    const resultInsertions = fullInsertion.slice(0, limit);
+    const { limit } = request;
+    const insertion = limit === undefined ? fullInsertion : fullInsertion.slice(0, limit);
     return Promise.resolve({
       log: () => Promise.resolve(undefined),
-      insertion: resultInsertions,
+      insertion,
     });
   }
 
@@ -356,9 +355,9 @@ export class PromotedClientImpl implements PromotedClient {
     this.preDeliveryFillInFields(metricsRequest);
 
     // If defined, log the Request to Metrics API.
-    const request = metricsRequest.request;
-    const limit = request.limit === undefined ? DEFAULT_LIMIT : request.limit;
-    const insertion = metricsRequest.fullInsertion.slice(0, limit);
+    const { fullInsertion, request } = metricsRequest;
+    const { limit } = request;
+    const insertion = limit === undefined ? fullInsertion : fullInsertion.slice(0, limit);
     this.addMissingRequestId(request);
     this.addMissingIdsOnInsertionArray(insertion);
 
@@ -420,9 +419,11 @@ export class PromotedClientImpl implements PromotedClient {
     if (!insertionsFromPromoted) {
       // If you update this, update the no-op version too.
       requestToLog = deliveryRequest.request;
-      const limit = requestToLog.limit === undefined ? DEFAULT_LIMIT : requestToLog.limit;
-      resultInsertions = deliveryRequest.fullInsertion.slice(0, limit);
+      const { limit } = requestToLog;
+      const { fullInsertion } = deliveryRequest;
+      resultInsertions = limit === undefined ? fullInsertion : fullInsertion.slice(0, limit);
     }
+
     const insertion = resultInsertions === undefined ? [] : resultInsertions;
     this.addMissingRequestId(requestToLog);
     this.addMissingIdsOnInsertionArray(insertion);
