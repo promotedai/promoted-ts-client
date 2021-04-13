@@ -1,4 +1,4 @@
-import { newPromotedClient, throwOnError } from '.';
+import { log, newPromotedClient, noopFn, throwOnError } from '.';
 import type { PromotedClientArguments } from '.';
 import type { Insertion, Request } from './types/delivery';
 
@@ -1075,5 +1075,24 @@ describe('metrics', () => {
         })
       ).rejects.toEqual(new Error('Request.requestId should not be set'));
     });
+  });
+});
+
+describe('log helper method', () => {
+  it('simple', async () => {
+    // DanHill: I don't know if there is a good way to test this helper.
+    log({
+      log: () => Promise.resolve(undefined),
+      insertion: [
+        toInsertionWithInsertionId(newProduct('3'), 'uuid1'),
+        toInsertionWithInsertionId(newProduct('2'), 'uuid2'),
+        toInsertionWithInsertionId(newProduct('1'), 'uuid3'),
+      ],
+    });
+  });
+
+  it('noopFn helper', async () => {
+    // To increase code coverage.
+    noopFn();
   });
 });
