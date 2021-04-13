@@ -536,6 +536,15 @@ export const throwOnError: ErrorHandler = (err) => {
 export const logOnError: ErrorHandler = (err) => console.error(err);
 
 /**
+ * A common toCompact helper function implementation.
+ */
+export const copyAndRemoveProperties = (insertion: Insertion) => {
+  const copy = { ...insertion };
+  delete copy['properties'];
+  return copy;
+};
+
+/**
  * Default function for 'shouldApplyTreatment'.
  */
 const defaultShouldApplyTreatment = (cohortMembership: CohortMembership) => {
