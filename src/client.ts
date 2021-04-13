@@ -613,9 +613,6 @@ const fillInDetails = (responseInsertions: Insertion[], fullInsertion: Insertion
     return map;
   }, {});
 
-  if (!responseInsertions) {
-    return [];
-  }
   return responseInsertions?.map((responseInsertion) => {
     if (responseInsertion.contentId === undefined) {
       return responseInsertion;
