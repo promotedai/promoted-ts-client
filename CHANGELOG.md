@@ -1,3 +1,10 @@
+# [5.4.0](https://github.com/promotedai/promoted-ts-client/compare/v5.3.0...v5.4.0) (2021-04-13)
+
+
+### Features
+
+* performance - reduce unnecessary slices ([ed1a87c](https://github.com/promotedai/promoted-ts-client/commit/ed1a87c719cec0a40af27e4386f79ae0487aaa1c))
+
 # [5.3.0](https://github.com/promotedai/promoted-ts-client/compare/v5.2.0...v5.3.0) (2021-04-13)
 
 
