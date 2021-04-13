@@ -88,7 +88,7 @@ static async getProducts(req: any, res: Response) {
       },
     })),
   });
-  // Change the result Product list to use the values in the returned Insertions.
+  // Change the response Product list to use the values in the returned Insertions.
   sendSuccessToClient(res, {
     products: response.insertion.map(insertion => insertion.properties.struct.product),
   });
