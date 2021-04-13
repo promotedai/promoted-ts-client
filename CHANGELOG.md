@@ -1,3 +1,10 @@
+# [5.6.0](https://github.com/promotedai/promoted-ts-client/compare/v5.5.0...v5.6.0) (2021-04-13)
+
+
+### Features
+
+* export schema types ([3f4f4f5](https://github.com/promotedai/promoted-ts-client/commit/3f4f4f5e1859c9b019f19506f2f99e0ed5dd539b))
+
 # [5.5.0](https://github.com/promotedai/promoted-ts-client/compare/v5.4.0...v5.5.0) (2021-04-13)
 
 
