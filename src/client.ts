@@ -225,13 +225,20 @@ export interface MetricsRequest {
 }
 
 /**
- * The result of the delivery call.  Provides hooks for delay calls.
+ * A shared response for Metrics or Delivery API.  Makes it easy to swap
+ * out either method.
+ *
+ * Has two main uses:
+ * 1) return a modified list of Insertions.
+ * 2) clients must call the log method after they send results back
+ * to the client.  They call either `ClientResponse.log` or the `log` helper
+ * method (which hides the Promise).
  */
 export interface ClientResponse {
   /**
    * Sends the log records to Metrics API.
-   * Clients need to call this, preferrably after they send the response to
-   * their UI/apps.
+   * Clients need to call this one of the log methods, preferrably after they
+   * send the response to their UI/apps.
    */
   log: () => Promise<void>;
 
@@ -241,6 +248,20 @@ export interface ClientResponse {
    */
   insertion: Insertion[];
 }
+
+/**
+ * A utilty method for logging and ignoring the response.
+ */
+export const log = (clientResponse: ClientResponse) => (): void => {
+  clientResponse.log().then(noopFn, noopFn);
+};
+
+/**
+ * Noop function.  Mostly to increase code coverage.
+ */
+export const noopFn = () => {
+  /* no op */
+};
 
 /**
  * Create PromotedClients.
