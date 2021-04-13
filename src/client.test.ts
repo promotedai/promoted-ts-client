@@ -736,6 +736,58 @@ describe('deliver', () => {
     expect(metricsClient.mock.calls.length).toBe(1);
   });
 
+  it('onlyLog override', async () => {
+    const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
+    const metricsClient: any = jest.fn((request) => {
+      expect(request).toEqual({
+        userInfo: {
+          logUserId: 'logUserId1',
+        },
+        timing: {
+          clientLogTimestamp: 12345678,
+        },
+        request: [
+          {
+            ...newBaseRequest(),
+            requestId: 'uuid0',
+            timing: {
+              clientLogTimestamp: 12345678,
+            },
+            insertion: [
+              toInsertionWithInsertionId(newProduct('3'), 'uuid1'),
+              toInsertionWithInsertionId(newProduct('2'), 'uuid2'),
+              toInsertionWithInsertionId(newProduct('1'), 'uuid3'),
+            ],
+          },
+        ],
+      });
+    });
+
+    const promotedClient = newFakePromotedClient({
+      deliveryClient,
+      metricsClient,
+    });
+
+    const products = [newProduct('3'), newProduct('2'), newProduct('1')];
+    const response = await promotedClient.deliver({
+      onlyLog: true,
+      request: newBaseRequest(),
+      fullInsertion: toInsertions(products),
+    });
+    expect(deliveryClient.mock.calls.length).toBe(0);
+    expect(metricsClient.mock.calls.length).toBe(0);
+
+    expect(response.insertion).toEqual([
+      toInsertionWithInsertionId(newProduct('3'), 'uuid1'),
+      toInsertionWithInsertionId(newProduct('2'), 'uuid2'),
+      toInsertionWithInsertionId(newProduct('1'), 'uuid3'),
+    ]);
+    // Here is where clients will return their response.
+    await response.log();
+    expect(deliveryClient.mock.calls.length).toBe(0);
+    expect(metricsClient.mock.calls.length).toBe(1);
+  });
+
   it('with optional Request fields', async () => {
     const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
     const metricsClient: any = jest.fn((request) => {
@@ -810,6 +862,53 @@ describe('deliver', () => {
     await response.log();
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(1);
+  });
+
+  it('response does not have contentId', async () => {
+    const deliveryClient = jest.fn((request) => {
+      expect(request).toEqual({
+        ...newBaseRequest(),
+        timing: {
+          clientLogTimestamp: 12345678,
+        },
+        insertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+      });
+      return Promise.resolve({
+        insertion: [
+          {
+            insertionId: 'uuid1',
+          },
+          toInsertionWithInsertionId(newProduct('2'), 'uuid2'),
+          toInsertionWithInsertionId(newProduct('3'), 'uuid3'),
+        ],
+      });
+    });
+    const metricsClient = jest.fn(failFunction('All data should be logged in Delivery API'));
+
+    const promotedClient = newFakePromotedClient({
+      deliveryClient,
+      metricsClient,
+    });
+
+    const products = [newProduct('3'), newProduct('2'), newProduct('1')];
+    const response = await promotedClient.deliver({
+      request: newBaseRequest(),
+      fullInsertion: toInsertions(products),
+    });
+    expect(deliveryClient.mock.calls.length).toBe(1);
+    expect(metricsClient.mock.calls.length).toBe(0);
+
+    expect(response.insertion).toEqual([
+      {
+        insertionId: 'uuid1',
+      },
+      toInsertionWithInsertionId(newProduct('2'), 'uuid2'),
+      toInsertionWithInsertionId(newProduct('3'), 'uuid3'),
+    ]);
+    // Here is where clients will return their response.
+    await response.log();
+    expect(deliveryClient.mock.calls.length).toBe(1);
+    expect(metricsClient.mock.calls.length).toBe(0);
   });
 
   describe('timeout error', () => {
@@ -973,6 +1072,19 @@ describe('deliver', () => {
       ).rejects.toEqual(new Error('Request.requestId should not be set'));
     });
 
+    it('Request.insertion', async () => {
+      const promotedClient = newFakePromotedClient({});
+      await expect(
+        promotedClient.deliver({
+          request: {
+            ...newBaseRequest(),
+            insertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+          },
+          fullInsertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+        })
+      ).rejects.toEqual(new Error('Do not set Request.insertion.  Set fullInsertion.'));
+    });
+
     it('Insertion.requestId', async () => {
       const promotedClient = newFakePromotedClient({});
       await expect(
@@ -1005,6 +1117,16 @@ describe('deliver', () => {
           ],
         })
       ).rejects.toEqual(new Error('Insertion.insertionId should not be set'));
+    });
+
+    it('Insertion.contentId', async () => {
+      const promotedClient = newFakePromotedClient({});
+      await expect(
+        promotedClient.deliver({
+          request: newBaseRequest(),
+          fullInsertion: [{}, toInsertion(newProduct('2')), toInsertion(newProduct('1'))],
+        })
+      ).rejects.toEqual(new Error('Insertion.contentId should be set'));
     });
   });
 });

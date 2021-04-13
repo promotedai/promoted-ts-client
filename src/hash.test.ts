@@ -1,5 +1,9 @@
 import { combineHash, hashCode } from './hash';
 
+it('empty', () => {
+  expect(hashCode('')).toEqual(0);
+});
+
 it('simple', () => {
   expect(hashCode('HOLD_OUT')).toEqual(268162990);
   expect(hashCode('HOLD_OUT2')).toEqual(-276881852);

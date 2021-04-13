@@ -7,10 +7,10 @@ module.exports = {
   collectCoverageFrom: ['src/**/*.{js,jsx,ts,tsx}', '!<rootDir>/node_modules/'],
   coverageThreshold: {
     global: {
-      branches: 80,
+      branches: 85,
       functions: 90,
-      lines: 96,
-      statements: 95,
+      lines: 99,
+      statements: 98,
     },
   },
   coverageReporters: ['text'],
