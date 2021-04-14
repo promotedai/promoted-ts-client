@@ -26,7 +26,7 @@ export interface PromotedClient {
   /**
    * Used to only log Requests and Insertions.
    */
-  prepareForLogging(metricsRequest: MetricsRequest): Promise<ClientResponse>;
+  prepareForLogging(metricsRequest: MetricsRequest): ClientResponse;
 }
 
 /**
@@ -221,6 +221,8 @@ export interface MetricsRequest {
    * transform the fullInsertion to Insertions on each of the requests.
    */
   fullInsertion: Insertion[];
+
+  // TODO - add a way to limit the number of log Insertions.
 }
 
 /**
@@ -277,6 +279,16 @@ export const newPromotedClient = (args: PromotedClientArguments) => {
  * Used when clients want to disable all functionality.
  */
 export class NoopPromotedClient implements PromotedClient {
+  public prepareForLogging(metricsRequest: MetricsRequest): ClientResponse {
+    const { request, fullInsertion } = metricsRequest;
+    const { limit } = request;
+    const insertion = limit === undefined ? fullInsertion : fullInsertion.slice(0, limit);
+    return {
+      log: () => Promise.resolve(undefined),
+      insertion,
+    };
+  }
+
   public async deliver(deliveryRequest: DeliveryRequest): Promise<ClientResponse> {
     const { request, fullInsertion } = deliveryRequest;
     const { limit } = request;
@@ -285,10 +297,6 @@ export class NoopPromotedClient implements PromotedClient {
       log: () => Promise.resolve(undefined),
       insertion,
     });
-  }
-
-  public async prepareForLogging(metricsRequest: MetricsRequest): Promise<ClientResponse> {
-    return this.deliver(metricsRequest);
   }
 }
 
@@ -345,7 +353,7 @@ export class PromotedClientImpl implements PromotedClient {
   // Instead of reusing `deliver`, we copy/paste most of the functionality here.
   // On a dev setup, Node.js seems to add 0.25 milliseconds of latency for
   // having an extra layer of async/await.
-  public async prepareForLogging(metricsRequest: MetricsRequest): Promise<ClientResponse> {
+  public prepareForLogging(metricsRequest: MetricsRequest): ClientResponse {
     if (this.performChecks) {
       const error = checkThatLogIdsNotSet(metricsRequest);
       if (error) {
