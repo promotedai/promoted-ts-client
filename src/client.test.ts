@@ -103,6 +103,24 @@ describe('no-op', () => {
       expect(response.insertion).toEqual(toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]));
       await response.log();
     });
+
+    it('limit 1', async () => {
+      const promotedClient = newFakePromotedClient({
+        enabled: false,
+        deliveryClient: jest.fn(failFunction('Delivery should not be called in CONTROL')),
+        metricsClient: jest.fn(failFunction('Metrics should not be called in CONTROL')),
+      });
+      const products = [newProduct('3'), newProduct('2'), newProduct('1')];
+      const response = await promotedClient.deliver({
+        request: {
+          ...newBaseRequest(),
+          limit: 1,
+        },
+        fullInsertion: toInsertions(products),
+      });
+      expect(response.insertion).toEqual(toInsertions([newProduct('3')]));
+      await response.log();
+    });
   });
 
   describe('metrics', () => {
@@ -113,13 +131,31 @@ describe('no-op', () => {
         metricsClient: jest.fn(failFunction('Metrics should not be called')),
       });
       const products = [newProduct('3'), newProduct('2'), newProduct('1')];
-      const response = await promotedClient.prepareForLogging({
+      const response = promotedClient.prepareForLogging({
         request: {
           ...newBaseRequest(),
         },
         fullInsertion: toInsertions(products),
       });
       expect(response.insertion).toEqual(toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]));
+      await response.log();
+    });
+
+    it('limit 1', async () => {
+      const promotedClient = newFakePromotedClient({
+        enabled: false,
+        deliveryClient: jest.fn(failFunction('Delivery should not be called')),
+        metricsClient: jest.fn(failFunction('Metrics should not be called')),
+      });
+      const products = [newProduct('3'), newProduct('2'), newProduct('1')];
+      const response = promotedClient.prepareForLogging({
+        request: {
+          ...newBaseRequest(),
+          limit: 1,
+        },
+        fullInsertion: toInsertions(products),
+      });
+      expect(response.insertion).toEqual(toInsertions([newProduct('3')]));
       await response.log();
     });
   });
@@ -1165,7 +1201,7 @@ describe('metrics', () => {
     });
 
     const products = [newProduct('3'), newProduct('2'), newProduct('1')];
-    const response = await promotedClient.prepareForLogging({
+    const response = promotedClient.prepareForLogging({
       request: newBaseRequest(),
       fullInsertion: toInsertions(products),
     });
@@ -1183,11 +1219,62 @@ describe('metrics', () => {
     expect(metricsClient.mock.calls.length).toBe(1);
   });
 
+  it('limit 1', async () => {
+    const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
+    const metricsClient: any = jest.fn((request) => {
+      expect(request).toEqual({
+        userInfo: {
+          logUserId: 'logUserId1',
+        },
+        timing: {
+          clientLogTimestamp: 12345678,
+        },
+        request: [
+          {
+            ...newBaseRequest(),
+            requestId: 'uuid0',
+            limit: 1,
+            timing: {
+              clientLogTimestamp: 12345678,
+            },
+            insertion: [
+              toInsertionWithInsertionId(newProduct('3'), 'uuid1'),
+              toInsertion(newProduct('2')),
+              toInsertion(newProduct('1')),
+            ],
+          },
+        ],
+      });
+    });
+
+    const promotedClient = newFakePromotedClient({
+      deliveryClient,
+      metricsClient,
+    });
+
+    const products = [newProduct('3'), newProduct('2'), newProduct('1')];
+    const response = promotedClient.prepareForLogging({
+      request: {
+        ...newBaseRequest(),
+        limit: 1,
+      },
+      fullInsertion: toInsertions(products),
+    });
+    expect(deliveryClient.mock.calls.length).toBe(0);
+    expect(metricsClient.mock.calls.length).toBe(0);
+
+    expect(response.insertion).toEqual([toInsertionWithInsertionId(newProduct('3'), 'uuid1')]);
+    // Here is where clients will return their response.
+    await response.log();
+    expect(deliveryClient.mock.calls.length).toBe(0);
+    expect(metricsClient.mock.calls.length).toBe(1);
+  });
+
   // TODO - add test where IDs are passed in.
   describe('check input fields should be undefined', () => {
     it('Request.requestId', async () => {
       const promotedClient = newFakePromotedClient({});
-      await expect(
+      expect(() =>
         promotedClient.prepareForLogging({
           request: {
             ...newBaseRequest(),
@@ -1195,7 +1282,7 @@ describe('metrics', () => {
           },
           fullInsertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
         })
-      ).rejects.toEqual(new Error('Request.requestId should not be set'));
+      ).toThrow(new Error('Request.requestId should not be set'));
     });
   });
 });
