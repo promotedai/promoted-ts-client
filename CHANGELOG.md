@@ -1,3 +1,15 @@
+# [6.0.0](https://github.com/promotedai/promoted-ts-client/compare/v5.6.0...v6.0.0) (2021-04-14)
+
+
+### Features
+
+* change prepareForLogging to be a sync method ([02e2fa0](https://github.com/promotedai/promoted-ts-client/commit/02e2fa0ba69ee3cd3df9d80bcde025491cbc954c))
+
+
+### BREAKING CHANGES
+
+* this changes the external library interface
+
 # [5.6.0](https://github.com/promotedai/promoted-ts-client/compare/v5.5.0...v5.6.0) (2021-04-13)
 
 
