@@ -1,3 +1,10 @@
+## [6.0.1](https://github.com/promotedai/promoted-ts-client/compare/v6.0.0...v6.0.1) (2021-04-22)
+
+
+### Bug Fixes
+
+* simplify the new log function ([1d99374](https://github.com/promotedai/promoted-ts-client/commit/1d99374d2b8ab5e655924a494632b5ffcd0b7bb2))
+
 # [6.0.0](https://github.com/promotedai/promoted-ts-client/compare/v5.6.0...v6.0.0) (2021-04-14)
 
 
