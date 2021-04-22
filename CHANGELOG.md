@@ -1,3 +1,10 @@
+## [6.0.2](https://github.com/promotedai/promoted-ts-client/compare/v6.0.1...v6.0.2) (2021-04-22)
+
+
+### Bug Fixes
+
+* response insertion logging ([526a14d](https://github.com/promotedai/promoted-ts-client/commit/526a14d95c7febe01462284cc07045c730a9c0dd))
+
 ## [6.0.1](https://github.com/promotedai/promoted-ts-client/compare/v6.0.0...v6.0.1) (2021-04-22)
 
 
