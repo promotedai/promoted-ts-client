@@ -366,8 +366,10 @@ export class PromotedClientImpl implements PromotedClient {
     const { fullInsertion, request } = metricsRequest;
     const { limit } = request;
     const insertion = limit === undefined ? fullInsertion : fullInsertion.slice(0, limit);
-    this.addMissingRequestId(request);
-    this.addMissingIdsOnInsertionArray(insertion);
+    if (request !== undefined) {
+      this.addMissingRequestId(request);
+      this.addMissingIdsOnInsertions(request, insertion);
+    }
 
     return {
       log: this.createLogFn(metricsRequest, request, undefined),
@@ -433,9 +435,10 @@ export class PromotedClientImpl implements PromotedClient {
     }
 
     const insertion = responseInsertions === undefined ? [] : responseInsertions;
-    this.addMissingRequestId(requestToLog);
-    this.addMissingIdsOnInsertionArray(insertion);
-
+    if (requestToLog !== undefined) {
+      this.addMissingRequestId(requestToLog);
+      this.addMissingIdsOnInsertions(requestToLog, insertion);
+    }
     return {
       log: this.createLogFn(deliveryRequest, requestToLog, cohortMembershipToLog),
       insertion,
@@ -462,9 +465,11 @@ export class PromotedClientImpl implements PromotedClient {
         if (requestToLog) {
           const copyRequest = {
             ...requestToLog,
-            insertion: deliveryRequest.fullInsertion.map(toCompactMetricsInsertion),
           };
+          // Clear the field in case it is set.
+          delete copyRequest['insertion'];
           logRequest.request = [copyRequest];
+          logRequest.insertion = deliveryRequest.fullInsertion.map(toCompactMetricsInsertion);
         }
         if (cohortMembershipToLog) {
           logRequest.cohortMembership = [cohortMembershipToLog];
@@ -514,18 +519,27 @@ export class PromotedClientImpl implements PromotedClient {
   /**
    * Called after potential Delivery.  Fill in fields
    */
-  addMissingRequestId = (logRequest: Request | undefined) => {
-    if (logRequest) {
-      if (!logRequest.requestId) {
-        logRequest.requestId = this.uuid();
-      }
+  addMissingRequestId = (logRequest: Request) => {
+    if (!logRequest.requestId) {
+      logRequest.requestId = this.uuid();
     }
   };
 
-  addMissingIdsOnInsertionArray = (insertions: Insertion[]) => {
+  addMissingIdsOnInsertions = (request: Request, insertions: Insertion[]) => {
+    // platformId, userInfo and timing are copied onto LogRequest.
+    const { sessionId, viewId, requestId } = request;
     insertions.forEach((insertion) => {
       if (!insertion.insertionId) {
         insertion.insertionId = this.uuid();
+      }
+      if (sessionId) {
+        insertion.sessionId = sessionId;
+      }
+      if (viewId) {
+        insertion.viewId = viewId;
+      }
+      if (requestId) {
+        insertion.requestId = requestId;
       }
     });
   };
