@@ -253,7 +253,7 @@ export interface ClientResponse {
 /**
  * A utilty method for logging and ignoring the response.
  */
-export const log = (clientResponse: ClientResponse) => (): void => {
+export const log = (clientResponse: ClientResponse): void => {
   clientResponse.log().then(noopFn, noopFn);
 };
 
