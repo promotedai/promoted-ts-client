@@ -470,6 +470,7 @@ export class PromotedClientImpl implements PromotedClient {
           delete copyRequest['insertion'];
           logRequest.request = [copyRequest];
           logRequest.insertion = deliveryRequest.fullInsertion.map(toCompactMetricsInsertion);
+          assignPositions(logRequest.insertion);
         }
         if (cohortMembershipToLog) {
           logRequest.cohortMembership = [cohortMembershipToLog];
@@ -564,6 +565,14 @@ export const copyAndRemoveProperties = (insertion: Insertion) => {
   const copy = { ...insertion };
   delete copy['properties'];
   return copy;
+};
+
+const assignPositions = (insertions: Insertion[], startPosition = 0) => {
+  let index = startPosition;
+  for (const insertion of insertions) {
+    insertion.position = index;
+    index++;
+  }
 };
 
 /**
