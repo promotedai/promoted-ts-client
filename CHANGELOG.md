@@ -1,3 +1,10 @@
+# [6.1.0](https://github.com/promotedai/promoted-ts-client/compare/v6.0.2...v6.1.0) (2021-04-28)
+
+
+### Features
+
+* fill in Insertion.position for metrics logging ([5f17045](https://github.com/promotedai/promoted-ts-client/commit/5f17045b2917a1ff14925a017393cfa52b2c7b65))
+
 ## [6.0.2](https://github.com/promotedai/promoted-ts-client/compare/v6.0.1...v6.0.2) (2021-04-22)
 
 
