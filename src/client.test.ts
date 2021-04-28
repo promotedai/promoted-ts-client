@@ -31,6 +31,7 @@ interface InsertionFields {
   requestId?: string;
   viewId?: string;
   sessionId?: string;
+  position?: number;
 }
 
 const toInsertionWithNoExtraFields = (product: Product): Insertion => toInsertion(product);
@@ -237,14 +238,17 @@ describe('deliver', () => {
             toInsertion(newProduct('3'), {
               insertionId: 'uuid1',
               requestId: 'uuid0',
+              position: 0,
             }),
             toInsertion(newProduct('2'), {
               insertionId: 'uuid2',
               requestId: 'uuid0',
+              position: 1,
             }),
             toInsertion(newProduct('1'), {
               insertionId: 'uuid3',
               requestId: 'uuid0',
+              position: 2,
             }),
           ],
           request: [
@@ -469,9 +473,15 @@ describe('deliver', () => {
             },
           ],
           insertion: [
-            toInsertionOnlyContentId(newProduct('3')),
-            toInsertionOnlyContentId(newProduct('2')),
-            toInsertionOnlyContentId(newProduct('1')),
+            toInsertionOnlyContentId(newProduct('3'), {
+              position: 0,
+            }),
+            toInsertionOnlyContentId(newProduct('2'), {
+              position: 1,
+            }),
+            toInsertionOnlyContentId(newProduct('1'), {
+              position: 2,
+            }),
           ],
           request: [
             {
@@ -548,9 +558,15 @@ describe('deliver', () => {
             },
           ],
           insertion: [
-            toInsertionOnlyContentId(newProduct('3')),
-            toInsertionOnlyContentId(newProduct('2')),
-            toInsertionOnlyContentId(newProduct('1')),
+            toInsertionOnlyContentId(newProduct('3'), {
+              position: 0,
+            }),
+            toInsertionOnlyContentId(newProduct('2'), {
+              position: 1,
+            }),
+            toInsertionOnlyContentId(newProduct('1'), {
+              position: 2,
+            }),
           ],
           request: [
             {
@@ -785,6 +801,7 @@ describe('deliver', () => {
           toInsertion(newProduct('3'), {
             insertionId: 'uuid1',
             requestId: 'uuid0',
+            position: 0,
           }),
         ],
         request: [
@@ -846,14 +863,17 @@ describe('deliver', () => {
           toInsertion(newProduct('3'), {
             insertionId: 'uuid1',
             requestId: 'uuid0',
+            position: 0,
           }),
           toInsertion(newProduct('2'), {
             insertionId: 'uuid2',
             requestId: 'uuid0',
+            position: 1,
           }),
           toInsertion(newProduct('1'), {
             insertionId: 'uuid3',
             requestId: 'uuid0',
+            position: 2,
           }),
         ],
         request: [
@@ -930,14 +950,17 @@ describe('deliver', () => {
           toInsertion(newProduct('3'), {
             insertionId: 'uuid1',
             requestId: 'uuid0',
+            position: 0,
           }),
           toInsertion(newProduct('2'), {
             insertionId: 'uuid2',
             requestId: 'uuid0',
+            position: 1,
           }),
           toInsertion(newProduct('1'), {
             insertionId: 'uuid3',
             requestId: 'uuid0',
+            position: 2,
           }),
         ],
         request: [
@@ -1073,14 +1096,17 @@ describe('deliver', () => {
             toInsertion(newProduct('3'), {
               insertionId: 'uuid1',
               requestId: 'uuid0',
+              position: 0,
             }),
             toInsertion(newProduct('2'), {
               insertionId: 'uuid2',
               requestId: 'uuid0',
+              position: 1,
             }),
             toInsertion(newProduct('1'), {
               insertionId: 'uuid3',
               requestId: 'uuid0',
+              position: 2,
             }),
           ],
           request: [
@@ -1309,14 +1335,17 @@ describe('metrics', () => {
           toInsertion(newProduct('3'), {
             insertionId: 'uuid1',
             requestId: 'uuid0',
+            position: 0,
           }),
           toInsertion(newProduct('2'), {
             insertionId: 'uuid2',
             requestId: 'uuid0',
+            position: 1,
           }),
           toInsertion(newProduct('1'), {
             insertionId: 'uuid3',
             requestId: 'uuid0',
+            position: 2,
           }),
         ],
         request: [
@@ -1378,9 +1407,14 @@ describe('metrics', () => {
           toInsertion(newProduct('3'), {
             insertionId: 'uuid1',
             requestId: 'uuid0',
+            position: 0,
           }),
-          toInsertion(newProduct('2')),
-          toInsertion(newProduct('1')),
+          toInsertion(newProduct('2'), {
+            position: 1,
+          }),
+          toInsertion(newProduct('1'), {
+            position: 2,
+          }),
         ],
         request: [
           {
@@ -1439,18 +1473,21 @@ describe('metrics', () => {
             requestId: 'uuid0',
             sessionId: 'uuid10',
             viewId: 'uuid11',
+            position: 0,
           }),
           toInsertion(newProduct('2'), {
             insertionId: 'uuid2',
             requestId: 'uuid0',
             sessionId: 'uuid10',
             viewId: 'uuid11',
+            position: 1,
           }),
           toInsertion(newProduct('1'), {
             insertionId: 'uuid3',
             requestId: 'uuid0',
             sessionId: 'uuid10',
             viewId: 'uuid11',
+            position: 2,
           }),
         ],
         request: [
