@@ -12,14 +12,28 @@ export interface Request {
   sessionId?: string;
   useCase?: UseCaseMap[keyof UseCaseMap] | UseCaseString;
   searchQuery?: string;
-  limit?: number;
+  limit?: number; // deprecated, use Paging instead
   insertion?: Array<Insertion>;
   deliveryConfig?: DeliveryConfig;
   properties?: proto_common_common_pb.Properties;
+  paging?: Paging;
+}
+
+export interface Paging {
+  pagingId?: string;
+  size?: number;
+  cursor?: string;
+  offset?: number;
+}
+
+export interface PagingInfo {
+  pagingId?: string;
+  cursor?: string;
 }
 
 export interface Response {
   insertion?: Array<Insertion>;
+  pagingInfo?: PagingInfo;
 }
 
 export interface BlenderRule {

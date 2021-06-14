@@ -110,7 +110,7 @@ describe('no-op', () => {
       await response.log();
     });
 
-    it('limit 1', async () => {
+    it('page size 1', async () => {
       const promotedClient = newFakePromotedClient({
         enabled: false,
         deliveryClient: jest.fn(failFunction('Delivery should not be called in CONTROL')),
@@ -120,7 +120,9 @@ describe('no-op', () => {
       const response = await promotedClient.deliver({
         request: {
           ...newBaseRequest(),
-          limit: 1,
+          paging: {
+            size: 1,
+          },
         },
         fullInsertion: toInsertions(products),
       });
@@ -147,7 +149,7 @@ describe('no-op', () => {
       await response.log();
     });
 
-    it('limit 1', async () => {
+    it('page size 1', async () => {
       const promotedClient = newFakePromotedClient({
         enabled: false,
         deliveryClient: jest.fn(failFunction('Delivery should not be called')),
@@ -157,10 +159,34 @@ describe('no-op', () => {
       const response = promotedClient.prepareForLogging({
         request: {
           ...newBaseRequest(),
-          limit: 1,
+          paging: {
+            size: 1,
+          },
         },
         fullInsertion: toInsertions(products),
       });
+      expect(response.insertion).toEqual(toInsertions([newProduct('3')]));
+      await response.log();
+    });
+
+    it('non-zero offset', async () => {
+      const promotedClient = newFakePromotedClient({
+        enabled: false,
+        deliveryClient: jest.fn(failFunction('Delivery should not be called')),
+        metricsClient: jest.fn(failFunction('Metrics should not be called')),
+      });
+      const products = [newProduct('3'), newProduct('2'), newProduct('1')];
+      const response = promotedClient.prepareForLogging({
+        request: {
+          ...newBaseRequest(),
+          paging: {
+            size: 1,
+            offset: 1,
+          },
+        },
+        fullInsertion: toInsertions(products),
+      });
+      console.log(response.insertion);
       expect(response.insertion).toEqual(toInsertions([newProduct('3')]));
       await response.log();
     });
@@ -775,7 +801,7 @@ describe('deliver', () => {
     });
   });
 
-  it('limit 1', async () => {
+  it('page size 1', async () => {
     const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
     const metricsClient: any = jest.fn((request) => {
       expect(request).toEqual({
@@ -808,7 +834,9 @@ describe('deliver', () => {
           {
             ...newBaseRequest(),
             requestId: 'uuid0',
-            limit: 1,
+            paging: {
+              size: 1,
+            },
             timing: {
               clientLogTimestamp: 12345678,
             },
@@ -826,7 +854,9 @@ describe('deliver', () => {
     const response = await promotedClient.deliver({
       request: {
         ...newBaseRequest(),
-        limit: 1,
+        paging: {
+          size: 1,
+        },
       },
       fullInsertion: toInsertions(products),
       experiment: {
@@ -1393,7 +1423,7 @@ describe('metrics', () => {
     expect(metricsClient.mock.calls.length).toBe(1);
   });
 
-  it('limit 1', async () => {
+  it('page size 1', async () => {
     const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
     const metricsClient: any = jest.fn((request) => {
       expect(request).toEqual({
@@ -1409,18 +1439,14 @@ describe('metrics', () => {
             requestId: 'uuid0',
             position: 0,
           }),
-          toInsertion(newProduct('2'), {
-            position: 1,
-          }),
-          toInsertion(newProduct('1'), {
-            position: 2,
-          }),
         ],
         request: [
           {
             ...newBaseRequest(),
             requestId: 'uuid0',
-            limit: 1,
+            paging: {
+              size: 1,
+            },
             timing: {
               clientLogTimestamp: 12345678,
             },
@@ -1438,7 +1464,73 @@ describe('metrics', () => {
     const response = promotedClient.prepareForLogging({
       request: {
         ...newBaseRequest(),
-        limit: 1,
+        paging: {
+          size: 1,
+        },
+      },
+      fullInsertion: toInsertions(products),
+    });
+    expect(deliveryClient.mock.calls.length).toBe(0);
+    expect(metricsClient.mock.calls.length).toBe(0);
+
+    expect(response.insertion).toEqual([
+      toInsertion(newProduct('3'), {
+        insertionId: 'uuid1',
+        requestId: 'uuid0',
+      }),
+    ]);
+    // Here is where clients will return their response.
+    await response.log();
+    expect(deliveryClient.mock.calls.length).toBe(0);
+    expect(metricsClient.mock.calls.length).toBe(1);
+  });
+
+  it('non-zero page offset', async () => {
+    const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
+    const metricsClient: any = jest.fn((request) => {
+      expect(request).toEqual({
+        userInfo: {
+          logUserId: 'logUserId1',
+        },
+        timing: {
+          clientLogTimestamp: 12345678,
+        },
+        insertion: [
+          toInsertion(newProduct('3'), {
+            insertionId: 'uuid1',
+            requestId: 'uuid0',
+            position: 100,
+          }),
+        ],
+        request: [
+          {
+            ...newBaseRequest(),
+            requestId: 'uuid0',
+            paging: {
+              size: 1,
+              offset: 100,
+            },
+            timing: {
+              clientLogTimestamp: 12345678,
+            },
+          },
+        ],
+      });
+    });
+
+    const promotedClient = newFakePromotedClient({
+      deliveryClient,
+      metricsClient,
+    });
+
+    const products = [newProduct('3'), newProduct('2'), newProduct('1')];
+    const response = promotedClient.prepareForLogging({
+      request: {
+        ...newBaseRequest(),
+        paging: {
+          size: 1,
+          offset: 100,
+        },
       },
       fullInsertion: toInsertions(products),
     });
