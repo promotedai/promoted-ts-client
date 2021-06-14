@@ -463,12 +463,7 @@ export class PromotedClientImpl implements PromotedClient {
         const toCompactMetricsInsertion = this.getToCompactMetricsInsertion(deliveryRequest);
         const logRequest = newLogRequest(deliveryRequest);
         if (requestToLog) {
-          const copyRequest = {
-            ...requestToLog,
-          };
-          // Clear the field in case it is set.
-          delete copyRequest['insertion'];
-          logRequest.request = [copyRequest];
+          logRequest.request = [this.createLogRequestRequest(requestToLog)];
           logRequest.insertion = deliveryRequest.fullInsertion.map(toCompactMetricsInsertion);
           assignPositions(logRequest.insertion);
         }
@@ -482,6 +477,25 @@ export class PromotedClientImpl implements PromotedClient {
       return Promise.resolve(undefined);
     };
   }
+
+  /**
+   * Creates a slimmed-down copy of the request for inclusion in a LogRequest.
+   * @param requestToLog the request to attach to the log request
+   * @returns a copy of the request suitable to be attached to a LogRequest.
+   */
+  createLogRequestRequest = (requestToLog: Request): Request => {
+    const copyRequest = {
+      ...requestToLog,
+    };
+
+    // Clear the field in case it is set.
+    delete copyRequest['insertion'];
+
+    // Clear the userInfo since we already copied it to the LogRequest.
+    delete copyRequest['userInfo'];
+
+    return copyRequest;
+  };
 
   getOnlyLog = (deliveryRequest: DeliveryRequest): boolean => {
     if (deliveryRequest.onlyLog !== undefined) {

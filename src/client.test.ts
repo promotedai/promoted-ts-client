@@ -50,6 +50,7 @@ const toInsertionOnlyContentId = (product: Product, extraFields: InsertionFields
   contentId: product.id.toString(),
 });
 
+// Creates a new request.
 const newBaseRequest = (): Partial<Request> => ({
   userInfo: {
     logUserId: 'logUserId1',
@@ -57,6 +58,16 @@ const newBaseRequest = (): Partial<Request> => ({
   useCase: 'FEED',
   // TODO - sessionId: .
   // TODO - viewId: .
+  properties: {
+    struct: {
+      query: 'fakequery',
+    },
+  },
+});
+
+// Creates a  new request passed through the LogRequest, for which the client will strip userInfo.
+const newLogRequestRequest = (): Partial<Request> => ({
+  useCase: 'FEED',
   properties: {
     struct: {
       query: 'fakequery',
@@ -253,7 +264,7 @@ describe('deliver', () => {
           ],
           request: [
             {
-              ...newBaseRequest(),
+              ...newLogRequestRequest(),
               requestId: 'uuid0',
               timing: {
                 clientLogTimestamp: 12345678,
@@ -485,7 +496,7 @@ describe('deliver', () => {
           ],
           request: [
             {
-              ...newBaseRequest(),
+              ...newLogRequestRequest(),
               requestId: 'uuid0',
               timing: {
                 clientLogTimestamp: 12345678,
@@ -570,7 +581,7 @@ describe('deliver', () => {
           ],
           request: [
             {
-              ...newBaseRequest(),
+              ...newLogRequestRequest(),
               requestId: 'uuid0',
               timing: {
                 clientLogTimestamp: 12345678,
@@ -806,7 +817,7 @@ describe('deliver', () => {
         ],
         request: [
           {
-            ...newBaseRequest(),
+            ...newLogRequestRequest(),
             requestId: 'uuid0',
             limit: 1,
             timing: {
@@ -878,7 +889,7 @@ describe('deliver', () => {
         ],
         request: [
           {
-            ...newBaseRequest(),
+            ...newLogRequestRequest(),
             requestId: 'uuid0',
             timing: {
               clientLogTimestamp: 12345678,
@@ -965,7 +976,7 @@ describe('deliver', () => {
         ],
         request: [
           {
-            ...newBaseRequest(),
+            ...newLogRequestRequest(),
             platformId: 1,
             requestId: 'uuid0',
             timing: {
@@ -1111,7 +1122,7 @@ describe('deliver', () => {
           ],
           request: [
             {
-              ...newBaseRequest(),
+              ...newLogRequestRequest(),
               requestId: 'uuid0',
               timing: {
                 clientLogTimestamp: 12345678,
@@ -1350,7 +1361,7 @@ describe('metrics', () => {
         ],
         request: [
           {
-            ...newBaseRequest(),
+            ...newLogRequestRequest(),
             requestId: 'uuid0',
             timing: {
               clientLogTimestamp: 12345678,
@@ -1418,7 +1429,7 @@ describe('metrics', () => {
         ],
         request: [
           {
-            ...newBaseRequest(),
+            ...newLogRequestRequest(),
             requestId: 'uuid0',
             limit: 1,
             timing: {
@@ -1492,7 +1503,7 @@ describe('metrics', () => {
         ],
         request: [
           {
-            ...newBaseRequest(),
+            ...newLogRequestRequest(),
             requestId: 'uuid0',
             sessionId: 'uuid10',
             viewId: 'uuid11',
