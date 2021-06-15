@@ -1452,7 +1452,7 @@ describe('metrics', () => {
         ],
         request: [
           {
-            ...newBaseRequest(),
+            ...newLogRequestRequest(),
             requestId: 'uuid0',
             paging: {
               size: 1,
