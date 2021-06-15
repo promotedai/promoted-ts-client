@@ -1,3 +1,10 @@
+# [6.2.0](https://github.com/promotedai/promoted-ts-client/compare/v6.1.0...v6.2.0) (2021-06-15)
+
+
+### Features
+
+* Add paging, deprecate limit ([98beb9a](https://github.com/promotedai/promoted-ts-client/commit/98beb9a14f964dea961c9cc87a13eaabea5fe784))
+
 # [6.1.0](https://github.com/promotedai/promoted-ts-client/compare/v6.0.2...v6.1.0) (2021-04-28)
 
 
