@@ -186,7 +186,6 @@ describe('no-op', () => {
         },
         fullInsertion: toInsertions(products),
       });
-      console.log(response.insertion);
       expect(response.insertion).toEqual(toInsertions([newProduct('3')]));
       await response.log();
     });

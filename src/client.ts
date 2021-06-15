@@ -571,7 +571,7 @@ export const copyAndRemoveProperties = (insertion: Insertion) => {
  * @returns the modified page of insertions
  */
 const applyPaging = (insertions: Insertion[], paging?: Paging): Insertion[] => {
-  let insertionPage: Insertion[] = [];
+  const insertionPage: Insertion[] = [];
   let start = paging?.offset ?? 0;
   let size = paging?.size ?? -1;
   if (size <= 0) {
