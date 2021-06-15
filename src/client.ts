@@ -1,5 +1,5 @@
 import { timeoutWrapper } from './timeout';
-import type { Insertion, Request, Response } from './types/delivery';
+import type { Insertion, Paging, Request, Response } from './types/delivery';
 import type { CohortMembership, LogRequest, LogResponse } from './types/event';
 
 /**
@@ -221,8 +221,6 @@ export interface MetricsRequest {
    * transform the fullInsertion to Insertions on each of the requests.
    */
   fullInsertion: Insertion[];
-
-  // TODO - add a way to limit the number of log Insertions.
 }
 
 /**
@@ -244,8 +242,10 @@ export interface ClientResponse {
   log: () => Promise<void>;
 
   /**
-   * A list of the response Insertions.  This list should be truncated
-   * based on limit.
+   * A list of the response Insertions.  This list may be truncated
+   * based on paging parameters, i.e. if Deliver is called with more
+   * items than any optionally provided Paging.size parameter on the
+   * request, at most page size insertions will be forwarded on.
    */
   insertion: Insertion[];
 }
@@ -281,8 +281,7 @@ export const newPromotedClient = (args: PromotedClientArguments) => {
 export class NoopPromotedClient implements PromotedClient {
   public prepareForLogging(metricsRequest: MetricsRequest): ClientResponse {
     const { request, fullInsertion } = metricsRequest;
-    const { limit } = request;
-    const insertion = limit === undefined ? fullInsertion : fullInsertion.slice(0, limit);
+    const insertion = !request?.paging?.size ? fullInsertion : fullInsertion.slice(0, request.paging.size);
     return {
       log: () => Promise.resolve(undefined),
       insertion,
@@ -291,8 +290,7 @@ export class NoopPromotedClient implements PromotedClient {
 
   public async deliver(deliveryRequest: DeliveryRequest): Promise<ClientResponse> {
     const { request, fullInsertion } = deliveryRequest;
-    const { limit } = request;
-    const insertion = limit === undefined ? fullInsertion : fullInsertion.slice(0, limit);
+    const insertion = !request?.paging?.size ? fullInsertion : fullInsertion.slice(0, request.paging.size);
     return Promise.resolve({
       log: () => Promise.resolve(undefined),
       insertion,
@@ -319,7 +317,6 @@ export class PromotedClientImpl implements PromotedClient {
   private metricsTimeoutWrapper: <T>(promise: Promise<T>, timeoutMillis: number) => Promise<T>;
 
   // TODO - how to handle timeout?
-  // TODO - how to perform limit?
 
   /**
    * @params {DeliveryClientArguments} args The arguments for the logger.
@@ -364,8 +361,7 @@ export class PromotedClientImpl implements PromotedClient {
 
     // If defined, log the Request to Metrics API.
     const { fullInsertion, request } = metricsRequest;
-    const { limit } = request;
-    const insertion = limit === undefined ? fullInsertion : fullInsertion.slice(0, limit);
+    const insertion = !request?.paging?.size ? fullInsertion : fullInsertion.slice(0, request.paging.size);
     if (request !== undefined) {
       this.addMissingRequestId(request);
       this.addMissingIdsOnInsertions(request, insertion);
@@ -429,9 +425,10 @@ export class PromotedClientImpl implements PromotedClient {
     if (!insertionsFromPromoted) {
       // If you update this, update the no-op version too.
       requestToLog = deliveryRequest.request;
-      const { limit } = requestToLog;
       const { fullInsertion } = deliveryRequest;
-      responseInsertions = limit === undefined ? fullInsertion : fullInsertion.slice(0, limit);
+      responseInsertions = !requestToLog?.paging?.size
+        ? fullInsertion
+        : fullInsertion.slice(0, requestToLog.paging.size);
     }
 
     const insertion = responseInsertions === undefined ? [] : responseInsertions;
@@ -469,8 +466,10 @@ export class PromotedClientImpl implements PromotedClient {
           // Clear the field in case it is set.
           delete copyRequest['insertion'];
           logRequest.request = [copyRequest];
-          logRequest.insertion = deliveryRequest.fullInsertion.map(toCompactMetricsInsertion);
-          assignPositions(logRequest.insertion);
+          logRequest.insertion = applyPaging(
+            deliveryRequest.fullInsertion.map(toCompactMetricsInsertion),
+            requestToLog.paging
+          );
         }
         if (cohortMembershipToLog) {
           logRequest.cohortMembership = [cohortMembershipToLog];
@@ -567,12 +566,31 @@ export const copyAndRemoveProperties = (insertion: Insertion) => {
   return copy;
 };
 
-const assignPositions = (insertions: Insertion[], startPosition = 0) => {
-  let index = startPosition;
-  for (const insertion of insertions) {
-    insertion.position = index;
-    index++;
+/**
+ * Sets the correct position field on each assertion based on paging parameters and takes
+ * a page of full insertions (if necessary).
+ * @param insertions the full set of insertions
+ * @param paging paging info, may be nil
+ * @returns the modified page of insertions
+ */
+const applyPaging = (insertions: Insertion[], paging?: Paging): Insertion[] => {
+  const insertionPage: Insertion[] = [];
+  let start = paging?.offset ?? 0;
+  let size = paging?.size ?? -1;
+  if (size <= 0) {
+    size = insertions.length;
   }
+
+  for (const insertion of insertions) {
+    if (insertionPage.length >= size) {
+      break;
+    }
+    insertion.position = start;
+    insertionPage.push(insertion);
+    start++;
+  }
+
+  return insertionPage;
 };
 
 /**

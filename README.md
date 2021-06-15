@@ -110,6 +110,10 @@ There are two ways of doing this with `PromotedClient`:
 1. You can use `deliver` but add a `shouldOptimize: false` property.
 2. You can use `prepareForLogging` method call instead.  The `prepareForLogging` signature is similar to `deliver` and should be integrated the same way.
 
+## Pagination
+
+The `prepareForLogging` call assumes the client has already handled pagination.  It needs a `Request.paging.offset` to be passed in for the number of items deep that the page is.
+
 # Improving this library
 
 ## Tech used
