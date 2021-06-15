@@ -1,3 +1,10 @@
+# [6.3.0](https://github.com/promotedai/promoted-ts-client/compare/v6.2.0...v6.3.0) (2021-06-15)
+
+
+### Features
+
+* Don't keep redundant userInfos on children of LogRequest\rTESTING=unit ([3951df6](https://github.com/promotedai/promoted-ts-client/commit/3951df6094b5e5494dfa91721156523f8e4d801b))
+
 # [6.2.0](https://github.com/promotedai/promoted-ts-client/compare/v6.1.0...v6.2.0) (2021-06-15)
 
 
