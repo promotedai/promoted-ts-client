@@ -12,7 +12,6 @@ export interface Request {
   sessionId?: string;
   useCase?: UseCaseMap[keyof UseCaseMap] | UseCaseString;
   searchQuery?: string;
-  limit?: number; // deprecated, use Paging instead
   insertion?: Array<Insertion>;
   deliveryConfig?: DeliveryConfig;
   properties?: proto_common_common_pb.Properties;

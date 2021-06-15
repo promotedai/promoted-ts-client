@@ -243,7 +243,9 @@ export interface ClientResponse {
 
   /**
    * A list of the response Insertions.  This list may be truncated
-   * based on paging parameters.
+   * based on paging parameters, i.e. if Deliver is called with more
+   * items than any optionally provided Paging.size parameter on the
+   * request, at most page size insertions will be forwarded on.
    */
   insertion: Insertion[];
 }
@@ -279,7 +281,7 @@ export const newPromotedClient = (args: PromotedClientArguments) => {
 export class NoopPromotedClient implements PromotedClient {
   public prepareForLogging(metricsRequest: MetricsRequest): ClientResponse {
     const { request, fullInsertion } = metricsRequest;
-    const insertion = request.paging === undefined ? fullInsertion : fullInsertion.slice(0, request.paging.size);
+    const insertion = !request?.paging?.size ? fullInsertion : fullInsertion.slice(0, request.paging.size);
     return {
       log: () => Promise.resolve(undefined),
       insertion,
@@ -288,7 +290,7 @@ export class NoopPromotedClient implements PromotedClient {
 
   public async deliver(deliveryRequest: DeliveryRequest): Promise<ClientResponse> {
     const { request, fullInsertion } = deliveryRequest;
-    const insertion = request.paging === undefined ? fullInsertion : fullInsertion.slice(0, request.paging.size);
+    const insertion = !request?.paging?.size ? fullInsertion : fullInsertion.slice(0, request.paging.size);
     return Promise.resolve({
       log: () => Promise.resolve(undefined),
       insertion,
@@ -359,7 +361,7 @@ export class PromotedClientImpl implements PromotedClient {
 
     // If defined, log the Request to Metrics API.
     const { fullInsertion, request } = metricsRequest;
-    const insertion = request.paging === undefined ? fullInsertion : fullInsertion.slice(0, request.paging.size);
+    const insertion = !request?.paging?.size ? fullInsertion : fullInsertion.slice(0, request.paging.size);
     if (request !== undefined) {
       this.addMissingRequestId(request);
       this.addMissingIdsOnInsertions(request, insertion);
@@ -424,8 +426,9 @@ export class PromotedClientImpl implements PromotedClient {
       // If you update this, update the no-op version too.
       requestToLog = deliveryRequest.request;
       const { fullInsertion } = deliveryRequest;
-      responseInsertions =
-        requestToLog.paging === undefined ? fullInsertion : fullInsertion.slice(0, requestToLog.paging.size);
+      responseInsertions = !requestToLog?.paging?.size
+        ? fullInsertion
+        : fullInsertion.slice(0, requestToLog.paging.size);
     }
 
     const insertion = responseInsertions === undefined ? [] : responseInsertions;
