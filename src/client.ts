@@ -244,6 +244,11 @@ export interface ClientResponse {
   log: () => Promise<void>;
 
   /**
+   * Exposes the underlying LogRequest.
+   */
+  logRequest?: LogRequest;
+
+  /**
    * A list of the response Insertions.  This list should be truncated
    * based on limit.
    */
@@ -297,6 +302,23 @@ export class NoopPromotedClient implements PromotedClient {
       log: () => Promise.resolve(undefined),
       insertion,
     });
+  }
+}
+
+/**
+ * Default ClientResponse implementation.
+ */
+class ClientResponseImpl implements ClientResponse {
+  log: () => Promise<void>;
+  logRequest?: LogRequest | undefined;
+  insertion: Insertion[];
+
+  /**
+   * Creates a client response.
+   * @param insertion the insertions being made.
+   */
+  constructor(insertion: Insertion[]) {
+    this.insertion = insertion;
   }
 }
 
@@ -371,10 +393,7 @@ export class PromotedClientImpl implements PromotedClient {
       this.addMissingIdsOnInsertions(request, insertion);
     }
 
-    return {
-      log: this.createLogFn(metricsRequest, request, undefined),
-      insertion,
-    };
+    return this.createMetricsClientResponse(metricsRequest, insertion);
   }
 
   /**
@@ -439,11 +458,38 @@ export class PromotedClientImpl implements PromotedClient {
       this.addMissingRequestId(requestToLog);
       this.addMissingIdsOnInsertions(requestToLog, insertion);
     }
-    return {
-      log: this.createLogFn(deliveryRequest, requestToLog, cohortMembershipToLog),
-      insertion,
-    };
+
+    return this.createDeliveryClientResponse(deliveryRequest, insertion, requestToLog, cohortMembershipToLog);
   }
+
+  /**
+   * Factory method for ClientResponses to MetricsRequests.
+   * @param metricsRequest the underlying metrics request.
+   * @param insertion the insertions on the request.
+   * @returns a new ClientResponse.
+   */
+  createMetricsClientResponse = (metricsRequest: MetricsRequest, insertion: Insertion[]): ClientResponse => {
+    const resp = new ClientResponseImpl(insertion);
+    resp.log = this.createLogFn(metricsRequest, resp, metricsRequest.request);
+    return resp;
+  };
+
+  /**
+   * Factory method for ClientResponses to MetricsRequests.
+   * @param metricsRequest the underlying metrics request.
+   * @param insertion the insertions on the request.
+   * @returns a new ClientResponse.
+   */
+  createDeliveryClientResponse = (
+    deliveryRequest: DeliveryRequest,
+    insertion: Insertion[],
+    requestToLog?: Request,
+    cohortMembershipToLog?: CohortMembership
+  ): ClientResponse => {
+    const resp = new ClientResponseImpl(insertion);
+    resp.log = this.createLogFn(deliveryRequest, resp, requestToLog, cohortMembershipToLog);
+    return resp;
+  };
 
   /**
    * Creates a function that can be used after sending the response.
@@ -451,6 +497,7 @@ export class PromotedClientImpl implements PromotedClient {
   // TODO - it's confusing to take both DeliveryRequest and Request.
   createLogFn(
     deliveryRequest: DeliveryRequest,
+    clientResponse: ClientResponse,
     requestToLog?: Request,
     cohortMembershipToLog?: CohortMembership
   ): () => Promise<void> {
@@ -475,6 +522,8 @@ export class PromotedClientImpl implements PromotedClient {
         if (cohortMembershipToLog) {
           logRequest.cohortMembership = [cohortMembershipToLog];
         }
+        debugger;
+        clientResponse.logRequest = logRequest;
         await this.metricsTimeoutWrapper(this.metricsClient(logRequest), this.metricsTimeoutMillis);
       } catch (error) {
         this.handleError(error);

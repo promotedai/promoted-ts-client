@@ -108,6 +108,7 @@ describe('no-op', () => {
       });
       expect(response.insertion).toEqual(toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]));
       await response.log();
+      expect(response.logRequest).toBeUndefined();
     });
 
     it('limit 1', async () => {
@@ -126,6 +127,7 @@ describe('no-op', () => {
       });
       expect(response.insertion).toEqual(toInsertions([newProduct('3')]));
       await response.log();
+      expect(response.logRequest).toBeUndefined();
     });
   });
 
@@ -145,6 +147,7 @@ describe('no-op', () => {
       });
       expect(response.insertion).toEqual(toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]));
       await response.log();
+      expect(response.logRequest).toBeUndefined();
     });
 
     it('limit 1', async () => {
@@ -163,6 +166,7 @@ describe('no-op', () => {
       });
       expect(response.insertion).toEqual(toInsertions([newProduct('3')]));
       await response.log();
+      expect(response.logRequest).toBeUndefined();
     });
   });
 });
@@ -207,6 +211,7 @@ describe('deliver', () => {
     ]);
     // Here is where clients will return their response.
     await response.log();
+    expect(response.logRequest).toBeUndefined();
     expect(deliveryClient.mock.calls.length).toBe(1);
     expect(metricsClient.mock.calls.length).toBe(0);
   });
@@ -296,6 +301,7 @@ describe('deliver', () => {
       ]);
       // Here is where clients will return their response.
       await response.log();
+      expect(response.logRequest).toBeDefined();
       expect(deliveryClient.mock.calls.length).toBe(0);
       expect(metricsClient.mock.calls.length).toBe(1);
     });
@@ -364,6 +370,7 @@ describe('deliver', () => {
       ]);
       // Here is where clients will return their response.
       await response.log();
+      expect(response.logRequest).toBeDefined();
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(1);
     });
@@ -444,6 +451,7 @@ describe('deliver', () => {
       ]);
       // Here is where clients will return their response.
       await response.log();
+      expect(response.logRequest).toBeDefined();
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(1);
     });
@@ -531,6 +539,7 @@ describe('deliver', () => {
       ]);
       // Here is where clients will return their response.
       await response.log();
+      expect(response.logRequest).toBeDefined();
       expect(deliveryClient.mock.calls.length).toBe(0);
       expect(metricsClient.mock.calls.length).toBe(1);
     });
@@ -618,6 +627,7 @@ describe('deliver', () => {
       ]);
       // Here is where clients will return their response.
       await response.log();
+      expect(response.logRequest).toBeDefined();
       expect(deliveryClient.mock.calls.length).toBe(0);
       expect(metricsClient.mock.calls.length).toBe(1);
     });
@@ -693,6 +703,7 @@ describe('deliver', () => {
       ]);
       // Here is where clients will return their response.
       await response.log();
+      expect(response.logRequest).toBeDefined();
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(1);
     });
@@ -770,6 +781,7 @@ describe('deliver', () => {
       ]);
       // Here is where clients will return their response.
       await response.log();
+      expect(response.logRequest).toBeDefined();
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(1);
     });
@@ -845,6 +857,7 @@ describe('deliver', () => {
     ]);
     // Here is where clients will return their response.
     await response.log();
+    expect(response.logRequest).toBeDefined();
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(1);
   });
@@ -918,6 +931,7 @@ describe('deliver', () => {
     ]);
     // Here is where clients will return their response.
     await response.log();
+    expect(response.logRequest).toBeDefined();
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(1);
   });
@@ -1015,6 +1029,7 @@ describe('deliver', () => {
     ]);
     // Here is where clients will return their response.
     await response.log();
+    expect(response.logRequest).toBeDefined();
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(1);
   });
@@ -1062,6 +1077,7 @@ describe('deliver', () => {
     ]);
     // Here is where clients will return their response.
     await response.log();
+    expect(response.logRequest).toBeUndefined();
     expect(deliveryClient.mock.calls.length).toBe(1);
     expect(metricsClient.mock.calls.length).toBe(0);
   });
@@ -1162,6 +1178,7 @@ describe('deliver', () => {
       ]);
       // Here is where clients will return their response.
       await response.log();
+      expect(response.logRequest).toBeDefined();
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(1);
     });
@@ -1242,6 +1259,7 @@ describe('deliver', () => {
       ]);
       // Here is where clients will return their response.
       await response.log();
+      expect(response.logRequest).toBeDefined();
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(1);
     });
@@ -1389,6 +1407,7 @@ describe('metrics', () => {
     ]);
     // Here is where clients will return their response.
     await response.log();
+    expect(response.logRequest).toBeDefined();
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(1);
   });
@@ -1453,6 +1472,7 @@ describe('metrics', () => {
     ]);
     // Here is where clients will return their response.
     await response.log();
+    expect(response.logRequest).toBeDefined();
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(1);
   });
@@ -1543,6 +1563,7 @@ describe('metrics', () => {
     ]);
     // Here is where clients will return their response.
     await response.log();
+    expect(response.logRequest).toBeDefined();
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(1);
   });
