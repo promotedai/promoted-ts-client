@@ -1,4 +1,4 @@
-import { copyAndRemoveProperties, log, newPromotedClient, noopFn, throwOnError } from '.';
+import { copyAndRemoveProperties, DefaultLogRequest, log, newPromotedClient, noopFn, throwOnError } from '.';
 import type { PromotedClientArguments } from '.';
 import type { Insertion, Request } from './types/delivery';
 
@@ -236,6 +236,9 @@ describe('deliver', () => {
     expect(deliveryClient.mock.calls.length).toBe(1);
     expect(metricsClient.mock.calls.length).toBe(0);
 
+    const logRequest = response.createLogRequest();
+    expect(logRequest).toBeDefined();
+
     expect(response.insertion).toEqual([
       toInsertion(newProduct('1'), { insertionId: 'uuid1' }),
       toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
@@ -250,53 +253,54 @@ describe('deliver', () => {
   describe('using cohorts', () => {
     it('arm=CONTROL', async () => {
       const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
+      const expectedLogReq = {
+        userInfo: {
+          logUserId: 'logUserId1',
+        },
+        timing: {
+          clientLogTimestamp: 12345678,
+        },
+        cohortMembership: [
+          {
+            arm: 'CONTROL',
+            cohortId: 'HOLD_OUT',
+            timing: {
+              clientLogTimestamp: 12345678,
+            },
+            userInfo: {
+              logUserId: 'logUserId1',
+            },
+          },
+        ],
+        insertion: [
+          toInsertion(newProduct('3'), {
+            insertionId: 'uuid1',
+            requestId: 'uuid0',
+            position: 0,
+          }),
+          toInsertion(newProduct('2'), {
+            insertionId: 'uuid2',
+            requestId: 'uuid0',
+            position: 1,
+          }),
+          toInsertion(newProduct('1'), {
+            insertionId: 'uuid3',
+            requestId: 'uuid0',
+            position: 2,
+          }),
+        ],
+        request: [
+          {
+            ...newLogRequestRequest(),
+            requestId: 'uuid0',
+            timing: {
+              clientLogTimestamp: 12345678,
+            },
+          },
+        ],
+      };
       const metricsClient: any = jest.fn((request) => {
-        expect(request).toEqual({
-          userInfo: {
-            logUserId: 'logUserId1',
-          },
-          timing: {
-            clientLogTimestamp: 12345678,
-          },
-          cohortMembership: [
-            {
-              arm: 'CONTROL',
-              cohortId: 'HOLD_OUT',
-              timing: {
-                clientLogTimestamp: 12345678,
-              },
-              userInfo: {
-                logUserId: 'logUserId1',
-              },
-            },
-          ],
-          insertion: [
-            toInsertion(newProduct('3'), {
-              insertionId: 'uuid1',
-              requestId: 'uuid0',
-              position: 0,
-            }),
-            toInsertion(newProduct('2'), {
-              insertionId: 'uuid2',
-              requestId: 'uuid0',
-              position: 1,
-            }),
-            toInsertion(newProduct('1'), {
-              insertionId: 'uuid3',
-              requestId: 'uuid0',
-              position: 2,
-            }),
-          ],
-          request: [
-            {
-              ...newLogRequestRequest(),
-              requestId: 'uuid0',
-              timing: {
-                clientLogTimestamp: 12345678,
-              },
-            },
-          ],
-        });
+        expect(request).toEqual(expectedLogReq);
       });
 
       const promotedClient = newFakePromotedClient({
@@ -315,7 +319,10 @@ describe('deliver', () => {
       });
       expect(deliveryClient.mock.calls.length).toBe(0);
       expect(metricsClient.mock.calls.length).toBe(0);
+      debugger;
+      expect(response.createLogRequest()).toEqual(expectedLogReq);
 
+      // TODO: The following fails right now because we assigned position in the createLogRequest calls.
       expect(response.insertion).toEqual([
         toInsertion(newProduct('3'), {
           insertionId: 'uuid1',
@@ -1691,6 +1698,7 @@ describe('log helper method', () => {
         toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
         toInsertion(newProduct('1'), { insertionId: 'uuid3' }),
       ],
+      createLogRequest: () => Promise.resolve(new DefaultLogRequest()),
     });
   });
 

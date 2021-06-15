@@ -242,6 +242,11 @@ export interface ClientResponse {
   log: () => Promise<void>;
 
   /**
+   * Creates a LogRequest suitable for calling the metrics client.
+   */
+  createLogRequest: () => Promise<LogRequest>;
+
+  /**
    * A list of the response Insertions.  This list may be truncated
    * based on paging parameters, i.e. if Deliver is called with more
    * items than any optionally provided Paging.size parameter on the
@@ -276,6 +281,13 @@ export const newPromotedClient = (args: PromotedClientArguments) => {
 };
 
 /**
+ * Default implementation of the LogRequest interface.
+ */
+export class DefaultLogRequest implements LogRequest {
+  insertion: [];
+}
+
+/**
  * Used when clients want to disable all functionality.
  */
 export class NoopPromotedClient implements PromotedClient {
@@ -285,6 +297,7 @@ export class NoopPromotedClient implements PromotedClient {
     return {
       log: () => Promise.resolve(undefined),
       insertion,
+      createLogRequest: () => Promise.resolve(new DefaultLogRequest()),
     };
   }
 
@@ -294,6 +307,7 @@ export class NoopPromotedClient implements PromotedClient {
     return Promise.resolve({
       log: () => Promise.resolve(undefined),
       insertion,
+      createLogRequest: () => Promise.resolve(new DefaultLogRequest()),
     });
   }
 }
@@ -367,9 +381,11 @@ export class PromotedClientImpl implements PromotedClient {
       this.addMissingIdsOnInsertions(request, insertion);
     }
 
+    const logRequestFn = this.createLogRequestFn(metricsRequest, request);
     return {
-      log: this.createLogFn(metricsRequest, request, undefined),
+      log: this.createLogFn(logRequestFn),
       insertion,
+      createLogRequest: logRequestFn,
     };
   }
 
@@ -436,39 +452,66 @@ export class PromotedClientImpl implements PromotedClient {
       this.addMissingRequestId(requestToLog);
       this.addMissingIdsOnInsertions(requestToLog, insertion);
     }
+
+    const logRequestFn = this.createLogRequestFn(deliveryRequest, requestToLog, cohortMembershipToLog);
     return {
-      log: this.createLogFn(deliveryRequest, requestToLog, cohortMembershipToLog),
+      log: this.createLogFn(logRequestFn),
       insertion,
+      createLogRequest: logRequestFn,
+    };
+  }
+
+  /**
+   * On-demand creation of a LogRequest suitable for sending to the metrics client.
+   * @returns a function to create a LogRequest on demand.
+   */
+  createLogRequestFn(
+    deliveryRequest: DeliveryRequest,
+    requestToLog?: Request,
+    cohortMembershipToLog?: CohortMembership
+  ): () => Promise<LogRequest> {
+    return async () => {
+      const logRequest: LogRequest = {};
+      const toCompactMetricsInsertion = this.getToCompactMetricsInsertion(deliveryRequest);
+      if (requestToLog) {
+        logRequest.request = [this.createLogRequestRequestToLog(requestToLog)];
+        logRequest.insertion = this.applyPaging(
+          deliveryRequest.fullInsertion.map(toCompactMetricsInsertion),
+          requestToLog.paging
+        );
+      }
+      if (cohortMembershipToLog) {
+        logRequest.cohortMembership = [cohortMembershipToLog];
+      }
+
+      const {
+        request: { platformId, userInfo, timing },
+      } = deliveryRequest;
+      if (platformId) {
+        logRequest.platformId = platformId;
+      }
+      if (userInfo) {
+        logRequest.userInfo = userInfo;
+      }
+      if (timing) {
+        logRequest.timing = timing;
+      }
+      return logRequest;
     };
   }
 
   /**
    * Creates a function that can be used after sending the response.
    */
-  // TODO - it's confusing to take both DeliveryRequest and Request.
-  createLogFn(
-    deliveryRequest: DeliveryRequest,
-    requestToLog?: Request,
-    cohortMembershipToLog?: CohortMembership
-  ): () => Promise<void> {
-    if (requestToLog === undefined && cohortMembershipToLog === undefined) {
-      // If no log records, short-cut.
-      return () => Promise.resolve(undefined);
-    }
+  createLogFn(logRequestFn: () => Promise<LogRequest>): () => Promise<void> {
     return async () => {
+      const logRequest = await logRequestFn();
+      if (logRequest.request === undefined && logRequest.cohortMembership === undefined) {
+        // If no log records, short-cut.
+        return Promise.resolve(undefined);
+      }
+
       try {
-        const toCompactMetricsInsertion = this.getToCompactMetricsInsertion(deliveryRequest);
-        const logRequest = newLogRequest(deliveryRequest);
-        if (requestToLog) {
-          logRequest.request = [this.createLogRequestRequest(requestToLog)];
-          logRequest.insertion = applyPaging(
-            deliveryRequest.fullInsertion.map(toCompactMetricsInsertion),
-            requestToLog.paging
-          );
-        }
-        if (cohortMembershipToLog) {
-          logRequest.cohortMembership = [cohortMembershipToLog];
-        }
         await this.metricsTimeoutWrapper(this.metricsClient(logRequest), this.metricsTimeoutMillis);
       } catch (error) {
         this.handleError(error);
@@ -478,11 +521,38 @@ export class PromotedClientImpl implements PromotedClient {
   }
 
   /**
+   * Sets the correct position field on each assertion based on paging parameters and takes
+   * a page of full insertions (if necessary).
+   * @param insertions the full set of insertions
+   * @param paging paging info, may be nil
+   * @returns the modified page of insertions
+   */
+  applyPaging = (insertions: Insertion[], paging?: Paging): Insertion[] => {
+    const insertionPage: Insertion[] = [];
+    let start = paging?.offset ?? 0;
+    let size = paging?.size ?? -1;
+    if (size <= 0) {
+      size = insertions.length;
+    }
+
+    for (const insertion of insertions) {
+      if (insertionPage.length >= size) {
+        break;
+      }
+      insertion.position = start;
+      insertionPage.push(insertion);
+      start++;
+    }
+
+    return insertionPage;
+  };
+
+  /**
    * Creates a slimmed-down copy of the request for inclusion in a LogRequest.
    * @param requestToLog the request to attach to the log request
    * @returns a copy of the request suitable to be attached to a LogRequest.
    */
-  createLogRequestRequest = (requestToLog: Request): Request => {
+  createLogRequestRequestToLog = (requestToLog: Request): Request => {
     const copyRequest = {
       ...requestToLog,
     };
@@ -581,33 +651,6 @@ export const copyAndRemoveProperties = (insertion: Insertion) => {
 };
 
 /**
- * Sets the correct position field on each assertion based on paging parameters and takes
- * a page of full insertions (if necessary).
- * @param insertions the full set of insertions
- * @param paging paging info, may be nil
- * @returns the modified page of insertions
- */
-const applyPaging = (insertions: Insertion[], paging?: Paging): Insertion[] => {
-  const insertionPage: Insertion[] = [];
-  let start = paging?.offset ?? 0;
-  let size = paging?.size ?? -1;
-  if (size <= 0) {
-    size = insertions.length;
-  }
-
-  for (const insertion of insertions) {
-    if (insertionPage.length >= size) {
-      break;
-    }
-    insertion.position = start;
-    insertionPage.push(insertion);
-    start++;
-  }
-
-  return insertionPage;
-};
-
-/**
  * Default function for 'shouldApplyTreatment'.
  */
 const defaultShouldApplyTreatment = (cohortMembership: CohortMembership) => {
@@ -631,23 +674,6 @@ const newCohortMembershipToLog = (deliveryRequest: DeliveryRequest): CohortMembe
     cohortMembership.timing = request.timing;
   }
   return cohortMembership;
-};
-
-const newLogRequest = (deliveryRequest: DeliveryRequest): LogRequest => {
-  const {
-    request: { platformId, userInfo, timing },
-  } = deliveryRequest;
-  const logRequest: LogRequest = {};
-  if (platformId) {
-    logRequest.platformId = platformId;
-  }
-  if (userInfo) {
-    logRequest.userInfo = userInfo;
-  }
-  if (timing) {
-    logRequest.timing = timing;
-  }
-  return logRequest;
 };
 
 const checkThatLogIdsNotSet = (deliveryRequest: DeliveryRequest | MetricsRequest): Error | undefined => {
