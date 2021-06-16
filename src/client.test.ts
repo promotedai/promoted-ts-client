@@ -1,6 +1,7 @@
 import { copyAndRemoveProperties, DefaultLogRequest, log, newPromotedClient, noopFn, throwOnError } from '.';
 import type { PromotedClientArguments } from '.';
 import type { Insertion, Request } from './types/delivery';
+import { NoopPromotedClient } from './client';
 
 const fakeUuidGenerator = () => {
   let i = 0;
@@ -319,10 +320,7 @@ describe('deliver', () => {
       });
       expect(deliveryClient.mock.calls.length).toBe(0);
       expect(metricsClient.mock.calls.length).toBe(0);
-      debugger;
-      expect(response.createLogRequest()).toEqual(expectedLogReq);
 
-      // TODO: The following fails right now because we assigned position in the createLogRequest calls.
       expect(response.insertion).toEqual([
         toInsertion(newProduct('3'), {
           insertionId: 'uuid1',
@@ -337,6 +335,9 @@ describe('deliver', () => {
           requestId: 'uuid0',
         }),
       ]);
+
+      expect(response.createLogRequest()).toEqual(expectedLogReq);
+
       // Here is where clients will return their response.
       await response.log();
       expect(deliveryClient.mock.calls.length).toBe(0);
@@ -360,28 +361,30 @@ describe('deliver', () => {
           ],
         });
       });
-      const metricsClient: any = jest.fn((request) => {
-        expect(request).toEqual({
-          userInfo: {
-            logUserId: 'logUserId1',
-          },
-          timing: {
-            clientLogTimestamp: 12345678,
-          },
-          cohortMembership: [
-            {
-              arm: 'TREATMENT',
-              cohortId: 'HOLD_OUT',
-              timing: {
-                clientLogTimestamp: 12345678,
-              },
-              userInfo: {
-                logUserId: 'logUserId1',
-              },
+      const expectedLogReq = {
+        userInfo: {
+          logUserId: 'logUserId1',
+        },
+        timing: {
+          clientLogTimestamp: 12345678,
+        },
+        cohortMembership: [
+          {
+            arm: 'TREATMENT',
+            cohortId: 'HOLD_OUT',
+            timing: {
+              clientLogTimestamp: 12345678,
             },
-          ],
-          // Request is not logged since it's already logged on the server-side.
-        });
+            userInfo: {
+              logUserId: 'logUserId1',
+            },
+          },
+        ],
+        // Request is not logged since it's already logged on the server-side.
+      };
+
+      const metricsClient: any = jest.fn((request) => {
+        expect(request).toEqual(expectedLogReq);
       });
 
       const promotedClient = newFakePromotedClient({
@@ -405,6 +408,9 @@ describe('deliver', () => {
         toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
         toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
       ]);
+
+      expect(response.createLogRequest()).toEqual(expectedLogReq);
+
       // Here is where clients will return their response.
       await response.log();
       expect(deliveryClient.mock.calls.length).toBe(1);
@@ -414,46 +420,47 @@ describe('deliver', () => {
     // If Delivery fails and we silently handle it, we log like everything.
     it('arm=TREATMENT - Delivery failed', async () => {
       const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
+      const expectedLogReq = {
+        userInfo: {
+          logUserId: 'logUserId1',
+        },
+        timing: {
+          clientLogTimestamp: 12345678,
+        },
+        insertion: [
+          toInsertion(newProduct('3'), { insertionId: 'uuid1', requestId: 'uuid0', position: 0 }),
+          toInsertion(newProduct('2'), { insertionId: 'uuid2', requestId: 'uuid0', position: 1 }),
+          toInsertion(newProduct('1'), { insertionId: 'uuid3', requestId: 'uuid0', position: 2 }),
+        ],
+        cohortMembership: [
+          {
+            arm: 'TREATMENT',
+            cohortId: 'HOLD_OUT',
+            timing: {
+              clientLogTimestamp: 12345678,
+            },
+            userInfo: {
+              logUserId: 'logUserId1',
+            },
+          },
+        ],
+        request: [
+          {
+            ...newLogRequestRequest(),
+            timing: {
+              clientLogTimestamp: 12345678,
+            },
+            requestId: 'uuid0',
+          },
+        ],
+      };
       const metricsClient: any = jest.fn((request) => {
-        expect(request).toEqual({
-          userInfo: {
-            logUserId: 'logUserId1',
-          },
-          timing: {
-            clientLogTimestamp: 12345678,
-          },
-          cohortMembership: [
-            {
-              arm: 'TREATMENT',
-              cohortId: 'HOLD_OUT',
-              timing: {
-                clientLogTimestamp: 12345678,
-              },
-              userInfo: {
-                logUserId: 'logUserId1',
-              },
-            },
-          ],
-          request: [
-            {
-              ...newLogRequestRequest(),
-              timing: {
-                clientLogTimestamp: 12345678,
-              },
-              requestId: 'uuid0',
-              insertion: [
-                toInsertion(newProduct('3'), { insertionId: 'uuid1' }),
-                toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
-                toInsertion(newProduct('1'), { insertionId: 'uuid3' }),
-              ],
-            },
-          ],
-        });
+        expect(request).toEqual(expectedLogReq);
       });
 
       const promotedClient = newFakePromotedClient({
         handleError: () => {
-          // noop.
+          // silently handle error in deliver.
         },
         deliveryClient,
         metricsClient,
@@ -485,8 +492,12 @@ describe('deliver', () => {
           requestId: 'uuid0',
         }),
       ]);
+
+      expect(response.createLogRequest()).toEqual(expectedLogReq);
+
       // Here is where clients will return their response.
       await response.log();
+
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(1);
     });
@@ -495,47 +506,48 @@ describe('deliver', () => {
   describe('toCompact', () => {
     it('toCompactMetricsInsertion arm=CONTROL', async () => {
       const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
+      const expectedLogReq = {
+        userInfo: {
+          logUserId: 'logUserId1',
+        },
+        timing: {
+          clientLogTimestamp: 12345678,
+        },
+        cohortMembership: [
+          {
+            arm: 'CONTROL',
+            cohortId: 'HOLD_OUT',
+            timing: {
+              clientLogTimestamp: 12345678,
+            },
+            userInfo: {
+              logUserId: 'logUserId1',
+            },
+          },
+        ],
+        insertion: [
+          toInsertionOnlyContentId(newProduct('3'), {
+            position: 0,
+          }),
+          toInsertionOnlyContentId(newProduct('2'), {
+            position: 1,
+          }),
+          toInsertionOnlyContentId(newProduct('1'), {
+            position: 2,
+          }),
+        ],
+        request: [
+          {
+            ...newLogRequestRequest(),
+            requestId: 'uuid0',
+            timing: {
+              clientLogTimestamp: 12345678,
+            },
+          },
+        ],
+      };
       const metricsClient: any = jest.fn((request) => {
-        expect(request).toEqual({
-          userInfo: {
-            logUserId: 'logUserId1',
-          },
-          timing: {
-            clientLogTimestamp: 12345678,
-          },
-          cohortMembership: [
-            {
-              arm: 'CONTROL',
-              cohortId: 'HOLD_OUT',
-              timing: {
-                clientLogTimestamp: 12345678,
-              },
-              userInfo: {
-                logUserId: 'logUserId1',
-              },
-            },
-          ],
-          insertion: [
-            toInsertionOnlyContentId(newProduct('3'), {
-              position: 0,
-            }),
-            toInsertionOnlyContentId(newProduct('2'), {
-              position: 1,
-            }),
-            toInsertionOnlyContentId(newProduct('1'), {
-              position: 2,
-            }),
-          ],
-          request: [
-            {
-              ...newLogRequestRequest(),
-              requestId: 'uuid0',
-              timing: {
-                clientLogTimestamp: 12345678,
-              },
-            },
-          ],
-        });
+        expect(request).toEqual(expectedLogReq);
       });
 
       const promotedClient = newFakePromotedClient({
@@ -572,6 +584,9 @@ describe('deliver', () => {
           requestId: 'uuid0',
         }),
       ]);
+
+      expect(response.createLogRequest()).toEqual(expectedLogReq);
+
       // Here is where clients will return their response.
       await response.log();
       expect(deliveryClient.mock.calls.length).toBe(0);
@@ -580,47 +595,48 @@ describe('deliver', () => {
 
     it('toCompactMetricsInsertion arm=CONTROL defaultRequestValues', async () => {
       const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
+      const expectedLogReq = {
+        userInfo: {
+          logUserId: 'logUserId1',
+        },
+        timing: {
+          clientLogTimestamp: 12345678,
+        },
+        cohortMembership: [
+          {
+            arm: 'CONTROL',
+            cohortId: 'HOLD_OUT',
+            timing: {
+              clientLogTimestamp: 12345678,
+            },
+            userInfo: {
+              logUserId: 'logUserId1',
+            },
+          },
+        ],
+        insertion: [
+          toInsertionOnlyContentId(newProduct('3'), {
+            position: 0,
+          }),
+          toInsertionOnlyContentId(newProduct('2'), {
+            position: 1,
+          }),
+          toInsertionOnlyContentId(newProduct('1'), {
+            position: 2,
+          }),
+        ],
+        request: [
+          {
+            ...newLogRequestRequest(),
+            requestId: 'uuid0',
+            timing: {
+              clientLogTimestamp: 12345678,
+            },
+          },
+        ],
+      };
       const metricsClient: any = jest.fn((request) => {
-        expect(request).toEqual({
-          userInfo: {
-            logUserId: 'logUserId1',
-          },
-          timing: {
-            clientLogTimestamp: 12345678,
-          },
-          cohortMembership: [
-            {
-              arm: 'CONTROL',
-              cohortId: 'HOLD_OUT',
-              timing: {
-                clientLogTimestamp: 12345678,
-              },
-              userInfo: {
-                logUserId: 'logUserId1',
-              },
-            },
-          ],
-          insertion: [
-            toInsertionOnlyContentId(newProduct('3'), {
-              position: 0,
-            }),
-            toInsertionOnlyContentId(newProduct('2'), {
-              position: 1,
-            }),
-            toInsertionOnlyContentId(newProduct('1'), {
-              position: 2,
-            }),
-          ],
-          request: [
-            {
-              ...newLogRequestRequest(),
-              requestId: 'uuid0',
-              timing: {
-                clientLogTimestamp: 12345678,
-              },
-            },
-          ],
-        });
+        expect(request).toEqual(expectedLogReq);
       });
 
       const promotedClient = newFakePromotedClient({
@@ -659,6 +675,9 @@ describe('deliver', () => {
           requestId: 'uuid0',
         }),
       ]);
+
+      expect(response.createLogRequest()).toEqual(expectedLogReq);
+
       // Here is where clients will return their response.
       await response.log();
       expect(deliveryClient.mock.calls.length).toBe(0);
@@ -686,28 +705,29 @@ describe('deliver', () => {
           ],
         });
       });
-      const metricsClient: any = jest.fn((request) => {
-        expect(request).toEqual({
-          userInfo: {
-            logUserId: 'logUserId1',
-          },
-          timing: {
-            clientLogTimestamp: 12345678,
-          },
-          cohortMembership: [
-            {
-              arm: 'TREATMENT',
-              cohortId: 'HOLD_OUT',
-              timing: {
-                clientLogTimestamp: 12345678,
-              },
-              userInfo: {
-                logUserId: 'logUserId1',
-              },
+      const expectedLogReq = {
+        userInfo: {
+          logUserId: 'logUserId1',
+        },
+        timing: {
+          clientLogTimestamp: 12345678,
+        },
+        cohortMembership: [
+          {
+            arm: 'TREATMENT',
+            cohortId: 'HOLD_OUT',
+            timing: {
+              clientLogTimestamp: 12345678,
             },
-          ],
-          // Request is not logged since it's already logged on the server-side.
-        });
+            userInfo: {
+              logUserId: 'logUserId1',
+            },
+          },
+        ],
+        // Request is not logged since it's already logged on the server-side.
+      };
+      const metricsClient: any = jest.fn((request) => {
+        expect(request).toEqual(expectedLogReq);
       });
 
       const promotedClient = newFakePromotedClient({
@@ -734,8 +754,12 @@ describe('deliver', () => {
         toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
         toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
       ]);
+
       // Here is where clients will return their response.
       await response.log();
+
+      expect(response.createLogRequest()).toEqual(expectedLogReq);
+
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(1);
     });
@@ -761,28 +785,29 @@ describe('deliver', () => {
           ],
         });
       });
-      const metricsClient: any = jest.fn((request) => {
-        expect(request).toEqual({
-          userInfo: {
-            logUserId: 'logUserId1',
-          },
-          timing: {
-            clientLogTimestamp: 12345678,
-          },
-          cohortMembership: [
-            {
-              arm: 'TREATMENT',
-              cohortId: 'HOLD_OUT',
-              timing: {
-                clientLogTimestamp: 12345678,
-              },
-              userInfo: {
-                logUserId: 'logUserId1',
-              },
+      const expectedLogReq = {
+        userInfo: {
+          logUserId: 'logUserId1',
+        },
+        timing: {
+          clientLogTimestamp: 12345678,
+        },
+        cohortMembership: [
+          {
+            arm: 'TREATMENT',
+            cohortId: 'HOLD_OUT',
+            timing: {
+              clientLogTimestamp: 12345678,
             },
-          ],
-          // Request is not logged since it's already logged on the server-side.
-        });
+            userInfo: {
+              logUserId: 'logUserId1',
+            },
+          },
+        ],
+        // Request is not logged since it's already logged on the server-side.
+      };
+      const metricsClient: any = jest.fn((request) => {
+        expect(request).toEqual(expectedLogReq);
       });
 
       const promotedClient = newFakePromotedClient({
@@ -811,6 +836,9 @@ describe('deliver', () => {
         toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
         toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
       ]);
+
+      expect(response.createLogRequest()).toEqual(expectedLogReq);
+
       // Here is where clients will return their response.
       await response.log();
       expect(deliveryClient.mock.calls.length).toBe(1);
@@ -820,46 +848,47 @@ describe('deliver', () => {
 
   it('page size 1', async () => {
     const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
+    const expectedLogReq = {
+      userInfo: {
+        logUserId: 'logUserId1',
+      },
+      timing: {
+        clientLogTimestamp: 12345678,
+      },
+      cohortMembership: [
+        {
+          arm: 'CONTROL',
+          cohortId: 'HOLD_OUT',
+          timing: {
+            clientLogTimestamp: 12345678,
+          },
+          userInfo: {
+            logUserId: 'logUserId1',
+          },
+        },
+      ],
+      insertion: [
+        toInsertion(newProduct('3'), {
+          insertionId: 'uuid1',
+          requestId: 'uuid0',
+          position: 0,
+        }),
+      ],
+      request: [
+        {
+          ...newLogRequestRequest(),
+          requestId: 'uuid0',
+          paging: {
+            size: 1,
+          },
+          timing: {
+            clientLogTimestamp: 12345678,
+          },
+        },
+      ],
+    };
     const metricsClient: any = jest.fn((request) => {
-      expect(request).toEqual({
-        userInfo: {
-          logUserId: 'logUserId1',
-        },
-        timing: {
-          clientLogTimestamp: 12345678,
-        },
-        cohortMembership: [
-          {
-            arm: 'CONTROL',
-            cohortId: 'HOLD_OUT',
-            timing: {
-              clientLogTimestamp: 12345678,
-            },
-            userInfo: {
-              logUserId: 'logUserId1',
-            },
-          },
-        ],
-        insertion: [
-          toInsertion(newProduct('3'), {
-            insertionId: 'uuid1',
-            requestId: 'uuid0',
-            position: 0,
-          }),
-        ],
-        request: [
-          {
-            ...newLogRequestRequest(),
-            requestId: 'uuid0',
-            paging: {
-              size: 1,
-            },
-            timing: {
-              clientLogTimestamp: 12345678,
-            },
-          },
-        ],
-      });
+      expect(request).toEqual(expectedLogReq);
     });
 
     const promotedClient = newFakePromotedClient({
@@ -890,6 +919,9 @@ describe('deliver', () => {
         requestId: 'uuid0',
       }),
     ]);
+
+    expect(response.createLogRequest()).toEqual(expectedLogReq);
+
     // Here is where clients will return their response.
     await response.log();
     expect(deliveryClient.mock.calls.length).toBe(0);
@@ -898,41 +930,42 @@ describe('deliver', () => {
 
   it('onlyLog override', async () => {
     const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
-    const metricsClient: any = jest.fn((request) => {
-      expect(request).toEqual({
-        userInfo: {
-          logUserId: 'logUserId1',
-        },
-        timing: {
-          clientLogTimestamp: 12345678,
-        },
-        insertion: [
-          toInsertion(newProduct('3'), {
-            insertionId: 'uuid1',
-            requestId: 'uuid0',
-            position: 0,
-          }),
-          toInsertion(newProduct('2'), {
-            insertionId: 'uuid2',
-            requestId: 'uuid0',
-            position: 1,
-          }),
-          toInsertion(newProduct('1'), {
-            insertionId: 'uuid3',
-            requestId: 'uuid0',
-            position: 2,
-          }),
-        ],
-        request: [
-          {
-            ...newLogRequestRequest(),
-            requestId: 'uuid0',
-            timing: {
-              clientLogTimestamp: 12345678,
-            },
+    const expectedLogReq = {
+      userInfo: {
+        logUserId: 'logUserId1',
+      },
+      timing: {
+        clientLogTimestamp: 12345678,
+      },
+      insertion: [
+        toInsertion(newProduct('3'), {
+          insertionId: 'uuid1',
+          requestId: 'uuid0',
+          position: 0,
+        }),
+        toInsertion(newProduct('2'), {
+          insertionId: 'uuid2',
+          requestId: 'uuid0',
+          position: 1,
+        }),
+        toInsertion(newProduct('1'), {
+          insertionId: 'uuid3',
+          requestId: 'uuid0',
+          position: 2,
+        }),
+      ],
+      request: [
+        {
+          ...newLogRequestRequest(),
+          requestId: 'uuid0',
+          timing: {
+            clientLogTimestamp: 12345678,
           },
-        ],
-      });
+        },
+      ],
+    };
+    const metricsClient: any = jest.fn((request) => {
+      expect(request).toEqual(expectedLogReq);
     });
 
     const promotedClient = newFakePromotedClient({
@@ -963,6 +996,9 @@ describe('deliver', () => {
         requestId: 'uuid0',
       }),
     ]);
+
+    expect(response.createLogRequest()).toEqual(expectedLogReq);
+
     // Here is where clients will return their response.
     await response.log();
     expect(deliveryClient.mock.calls.length).toBe(0);
@@ -971,56 +1007,57 @@ describe('deliver', () => {
 
   it('with optional Request fields', async () => {
     const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
+    const expectedLogReq = {
+      platformId: 1,
+      userInfo: {
+        logUserId: 'logUserId1',
+      },
+      timing: {
+        clientLogTimestamp: 87654321,
+      },
+      cohortMembership: [
+        {
+          platformId: 1,
+          arm: 'CONTROL',
+          cohortId: 'HOLD_OUT',
+          timing: {
+            clientLogTimestamp: 87654321,
+          },
+          userInfo: {
+            logUserId: 'logUserId1',
+          },
+        },
+      ],
+      insertion: [
+        toInsertion(newProduct('3'), {
+          insertionId: 'uuid1',
+          requestId: 'uuid0',
+          position: 0,
+        }),
+        toInsertion(newProduct('2'), {
+          insertionId: 'uuid2',
+          requestId: 'uuid0',
+          position: 1,
+        }),
+        toInsertion(newProduct('1'), {
+          insertionId: 'uuid3',
+          requestId: 'uuid0',
+          position: 2,
+        }),
+      ],
+      request: [
+        {
+          ...newLogRequestRequest(),
+          platformId: 1,
+          requestId: 'uuid0',
+          timing: {
+            clientLogTimestamp: 87654321,
+          },
+        },
+      ],
+    };
     const metricsClient: any = jest.fn((request) => {
-      expect(request).toEqual({
-        platformId: 1,
-        userInfo: {
-          logUserId: 'logUserId1',
-        },
-        timing: {
-          clientLogTimestamp: 87654321,
-        },
-        cohortMembership: [
-          {
-            platformId: 1,
-            arm: 'CONTROL',
-            cohortId: 'HOLD_OUT',
-            timing: {
-              clientLogTimestamp: 87654321,
-            },
-            userInfo: {
-              logUserId: 'logUserId1',
-            },
-          },
-        ],
-        insertion: [
-          toInsertion(newProduct('3'), {
-            insertionId: 'uuid1',
-            requestId: 'uuid0',
-            position: 0,
-          }),
-          toInsertion(newProduct('2'), {
-            insertionId: 'uuid2',
-            requestId: 'uuid0',
-            position: 1,
-          }),
-          toInsertion(newProduct('1'), {
-            insertionId: 'uuid3',
-            requestId: 'uuid0',
-            position: 2,
-          }),
-        ],
-        request: [
-          {
-            ...newLogRequestRequest(),
-            platformId: 1,
-            requestId: 'uuid0',
-            timing: {
-              clientLogTimestamp: 87654321,
-            },
-          },
-        ],
-      });
+      expect(request).toEqual(expectedLogReq);
     });
 
     const promotedClient = newFakePromotedClient({
@@ -1060,6 +1097,9 @@ describe('deliver', () => {
         requestId: 'uuid0',
       }),
     ]);
+
+    expect(response.createLogRequest()).toEqual(expectedLogReq);
+
     // Here is where clients will return their response.
     await response.log();
     expect(deliveryClient.mock.calls.length).toBe(0);
@@ -1119,53 +1159,54 @@ describe('deliver', () => {
     // API call.
     it('delivery timeout', async () => {
       const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
+      const expectedLogReq = {
+        userInfo: {
+          logUserId: 'logUserId1',
+        },
+        timing: {
+          clientLogTimestamp: 12345678,
+        },
+        cohortMembership: [
+          {
+            arm: 'TREATMENT',
+            cohortId: 'HOLD_OUT',
+            timing: {
+              clientLogTimestamp: 12345678,
+            },
+            userInfo: {
+              logUserId: 'logUserId1',
+            },
+          },
+        ],
+        insertion: [
+          toInsertion(newProduct('3'), {
+            insertionId: 'uuid1',
+            requestId: 'uuid0',
+            position: 0,
+          }),
+          toInsertion(newProduct('2'), {
+            insertionId: 'uuid2',
+            requestId: 'uuid0',
+            position: 1,
+          }),
+          toInsertion(newProduct('1'), {
+            insertionId: 'uuid3',
+            requestId: 'uuid0',
+            position: 2,
+          }),
+        ],
+        request: [
+          {
+            ...newLogRequestRequest(),
+            requestId: 'uuid0',
+            timing: {
+              clientLogTimestamp: 12345678,
+            },
+          },
+        ],
+      };
       const metricsClient: any = jest.fn((request) => {
-        expect(request).toEqual({
-          userInfo: {
-            logUserId: 'logUserId1',
-          },
-          timing: {
-            clientLogTimestamp: 12345678,
-          },
-          cohortMembership: [
-            {
-              arm: 'TREATMENT',
-              cohortId: 'HOLD_OUT',
-              timing: {
-                clientLogTimestamp: 12345678,
-              },
-              userInfo: {
-                logUserId: 'logUserId1',
-              },
-            },
-          ],
-          insertion: [
-            toInsertion(newProduct('3'), {
-              insertionId: 'uuid1',
-              requestId: 'uuid0',
-              position: 0,
-            }),
-            toInsertion(newProduct('2'), {
-              insertionId: 'uuid2',
-              requestId: 'uuid0',
-              position: 1,
-            }),
-            toInsertion(newProduct('1'), {
-              insertionId: 'uuid3',
-              requestId: 'uuid0',
-              position: 2,
-            }),
-          ],
-          request: [
-            {
-              ...newLogRequestRequest(),
-              requestId: 'uuid0',
-              timing: {
-                clientLogTimestamp: 12345678,
-              },
-            },
-          ],
-        });
+        expect(request).toEqual(expectedLogReq);
       });
 
       let numErrors = 0;
@@ -1207,6 +1248,9 @@ describe('deliver', () => {
           requestId: 'uuid0',
         }),
       ]);
+
+      expect(response.createLogRequest()).toEqual(expectedLogReq);
+
       // Here is where clients will return their response.
       await response.log();
       expect(deliveryClient.mock.calls.length).toBe(1);
@@ -1233,28 +1277,30 @@ describe('deliver', () => {
           ],
         });
       });
-      const metricsClient: any = jest.fn((request) => {
-        expect(request).toEqual({
-          userInfo: {
-            logUserId: 'logUserId1',
-          },
-          timing: {
-            clientLogTimestamp: 12345678,
-          },
-          cohortMembership: [
-            {
-              arm: 'TREATMENT',
-              cohortId: 'HOLD_OUT',
-              timing: {
-                clientLogTimestamp: 12345678,
-              },
-              userInfo: {
-                logUserId: 'logUserId1',
-              },
+
+      const expectedLogReq = {
+        userInfo: {
+          logUserId: 'logUserId1',
+        },
+        timing: {
+          clientLogTimestamp: 12345678,
+        },
+        cohortMembership: [
+          {
+            arm: 'TREATMENT',
+            cohortId: 'HOLD_OUT',
+            timing: {
+              clientLogTimestamp: 12345678,
             },
-          ],
-          // Request is not logged since it's already logged on the server-side.
-        });
+            userInfo: {
+              logUserId: 'logUserId1',
+            },
+          },
+        ],
+        // Request is not logged since it's already logged on the server-side.
+      };
+      const metricsClient: any = jest.fn((request) => {
+        expect(request).toEqual(expectedLogReq);
       });
 
       let numErrors = 0;
@@ -1287,6 +1333,9 @@ describe('deliver', () => {
         toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
         toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
       ]);
+
+      expect(response.createLogRequest()).toEqual(expectedLogReq);
+
       // Here is where clients will return their response.
       await response.log();
       expect(deliveryClient.mock.calls.length).toBe(1);
@@ -1370,41 +1419,42 @@ describe('deliver', () => {
 describe('metrics', () => {
   it('good case', async () => {
     const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
-    const metricsClient: any = jest.fn((request) => {
-      expect(request).toEqual({
-        userInfo: {
-          logUserId: 'logUserId1',
-        },
-        timing: {
-          clientLogTimestamp: 12345678,
-        },
-        insertion: [
-          toInsertion(newProduct('3'), {
-            insertionId: 'uuid1',
-            requestId: 'uuid0',
-            position: 0,
-          }),
-          toInsertion(newProduct('2'), {
-            insertionId: 'uuid2',
-            requestId: 'uuid0',
-            position: 1,
-          }),
-          toInsertion(newProduct('1'), {
-            insertionId: 'uuid3',
-            requestId: 'uuid0',
-            position: 2,
-          }),
-        ],
-        request: [
-          {
-            ...newLogRequestRequest(),
-            requestId: 'uuid0',
-            timing: {
-              clientLogTimestamp: 12345678,
-            },
+    const expectedLogReq = {
+      userInfo: {
+        logUserId: 'logUserId1',
+      },
+      timing: {
+        clientLogTimestamp: 12345678,
+      },
+      insertion: [
+        toInsertion(newProduct('3'), {
+          insertionId: 'uuid1',
+          requestId: 'uuid0',
+          position: 0,
+        }),
+        toInsertion(newProduct('2'), {
+          insertionId: 'uuid2',
+          requestId: 'uuid0',
+          position: 1,
+        }),
+        toInsertion(newProduct('1'), {
+          insertionId: 'uuid3',
+          requestId: 'uuid0',
+          position: 2,
+        }),
+      ],
+      request: [
+        {
+          ...newLogRequestRequest(),
+          requestId: 'uuid0',
+          timing: {
+            clientLogTimestamp: 12345678,
           },
-        ],
-      });
+        },
+      ],
+    };
+    const metricsClient: any = jest.fn((request) => {
+      expect(request).toEqual(expectedLogReq);
     });
 
     const promotedClient = newFakePromotedClient({
@@ -1434,6 +1484,9 @@ describe('metrics', () => {
         requestId: 'uuid0',
       }),
     ]);
+
+    expect(response.createLogRequest()).toEqual(expectedLogReq);
+
     // Here is where clients will return their response.
     await response.log();
     expect(deliveryClient.mock.calls.length).toBe(0);
@@ -1442,34 +1495,35 @@ describe('metrics', () => {
 
   it('page size 1', async () => {
     const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
-    const metricsClient: any = jest.fn((request) => {
-      expect(request).toEqual({
-        userInfo: {
-          logUserId: 'logUserId1',
-        },
-        timing: {
-          clientLogTimestamp: 12345678,
-        },
-        insertion: [
-          toInsertion(newProduct('3'), {
-            insertionId: 'uuid1',
-            requestId: 'uuid0',
-            position: 0,
-          }),
-        ],
-        request: [
-          {
-            ...newLogRequestRequest(),
-            requestId: 'uuid0',
-            paging: {
-              size: 1,
-            },
-            timing: {
-              clientLogTimestamp: 12345678,
-            },
+    const expectedLogReq = {
+      userInfo: {
+        logUserId: 'logUserId1',
+      },
+      timing: {
+        clientLogTimestamp: 12345678,
+      },
+      insertion: [
+        toInsertion(newProduct('3'), {
+          insertionId: 'uuid1',
+          requestId: 'uuid0',
+          position: 0,
+        }),
+      ],
+      request: [
+        {
+          ...newLogRequestRequest(),
+          requestId: 'uuid0',
+          paging: {
+            size: 1,
           },
-        ],
-      });
+          timing: {
+            clientLogTimestamp: 12345678,
+          },
+        },
+      ],
+    };
+    const metricsClient: any = jest.fn((request) => {
+      expect(request).toEqual(expectedLogReq);
     });
 
     const promotedClient = newFakePromotedClient({
@@ -1496,6 +1550,9 @@ describe('metrics', () => {
         requestId: 'uuid0',
       }),
     ]);
+
+    expect(response.createLogRequest()).toEqual(expectedLogReq);
+
     // Here is where clients will return their response.
     await response.log();
     expect(deliveryClient.mock.calls.length).toBe(0);
@@ -1504,35 +1561,36 @@ describe('metrics', () => {
 
   it('non-zero page offset', async () => {
     const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
-    const metricsClient: any = jest.fn((request) => {
-      expect(request).toEqual({
-        userInfo: {
-          logUserId: 'logUserId1',
-        },
-        timing: {
-          clientLogTimestamp: 12345678,
-        },
-        insertion: [
-          toInsertion(newProduct('3'), {
-            insertionId: 'uuid1',
-            requestId: 'uuid0',
-            position: 100,
-          }),
-        ],
-        request: [
-          {
-            ...newLogRequestRequest(),
-            requestId: 'uuid0',
-            paging: {
-              size: 1,
-              offset: 100,
-            },
-            timing: {
-              clientLogTimestamp: 12345678,
-            },
+    const expectedLogReq = {
+      userInfo: {
+        logUserId: 'logUserId1',
+      },
+      timing: {
+        clientLogTimestamp: 12345678,
+      },
+      insertion: [
+        toInsertion(newProduct('3'), {
+          insertionId: 'uuid1',
+          requestId: 'uuid0',
+          position: 100,
+        }),
+      ],
+      request: [
+        {
+          ...newLogRequestRequest(),
+          requestId: 'uuid0',
+          paging: {
+            size: 1,
+            offset: 100,
           },
-        ],
-      });
+          timing: {
+            clientLogTimestamp: 12345678,
+          },
+        },
+      ],
+    };
+    const metricsClient: any = jest.fn((request) => {
+      expect(request).toEqual(expectedLogReq);
     });
 
     const promotedClient = newFakePromotedClient({
@@ -1560,6 +1618,9 @@ describe('metrics', () => {
         requestId: 'uuid0',
       }),
     ]);
+
+    expect(response.createLogRequest()).toEqual(expectedLogReq);
+
     // Here is where clients will return their response.
     await response.log();
     expect(deliveryClient.mock.calls.length).toBe(0);
@@ -1568,49 +1629,50 @@ describe('metrics', () => {
 
   it('extra fields', async () => {
     const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
-    const metricsClient: any = jest.fn((request) => {
-      expect(request).toEqual({
-        userInfo: {
-          logUserId: 'logUserId1',
-        },
-        timing: {
-          clientLogTimestamp: 12345678,
-        },
-        insertion: [
-          toInsertion(newProduct('3'), {
-            insertionId: 'uuid1',
-            requestId: 'uuid0',
-            sessionId: 'uuid10',
-            viewId: 'uuid11',
-            position: 0,
-          }),
-          toInsertion(newProduct('2'), {
-            insertionId: 'uuid2',
-            requestId: 'uuid0',
-            sessionId: 'uuid10',
-            viewId: 'uuid11',
-            position: 1,
-          }),
-          toInsertion(newProduct('1'), {
-            insertionId: 'uuid3',
-            requestId: 'uuid0',
-            sessionId: 'uuid10',
-            viewId: 'uuid11',
-            position: 2,
-          }),
-        ],
-        request: [
-          {
-            ...newLogRequestRequest(),
-            requestId: 'uuid0',
-            sessionId: 'uuid10',
-            viewId: 'uuid11',
-            timing: {
-              clientLogTimestamp: 12345678,
-            },
+    const expectedLogReq = {
+      userInfo: {
+        logUserId: 'logUserId1',
+      },
+      timing: {
+        clientLogTimestamp: 12345678,
+      },
+      insertion: [
+        toInsertion(newProduct('3'), {
+          insertionId: 'uuid1',
+          requestId: 'uuid0',
+          sessionId: 'uuid10',
+          viewId: 'uuid11',
+          position: 0,
+        }),
+        toInsertion(newProduct('2'), {
+          insertionId: 'uuid2',
+          requestId: 'uuid0',
+          sessionId: 'uuid10',
+          viewId: 'uuid11',
+          position: 1,
+        }),
+        toInsertion(newProduct('1'), {
+          insertionId: 'uuid3',
+          requestId: 'uuid0',
+          sessionId: 'uuid10',
+          viewId: 'uuid11',
+          position: 2,
+        }),
+      ],
+      request: [
+        {
+          ...newLogRequestRequest(),
+          requestId: 'uuid0',
+          sessionId: 'uuid10',
+          viewId: 'uuid11',
+          timing: {
+            clientLogTimestamp: 12345678,
           },
-        ],
-      });
+        },
+      ],
+    };
+    const metricsClient: any = jest.fn((request) => {
+      expect(request).toEqual(expectedLogReq);
     });
 
     const promotedClient = newFakePromotedClient({
@@ -1650,6 +1712,9 @@ describe('metrics', () => {
         viewId: 'uuid11',
       }),
     ]);
+
+    expect(response.createLogRequest()).toEqual(expectedLogReq);
+
     // Here is where clients will return their response.
     await response.log();
     expect(deliveryClient.mock.calls.length).toBe(0);
@@ -1698,12 +1763,36 @@ describe('log helper method', () => {
         toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
         toInsertion(newProduct('1'), { insertionId: 'uuid3' }),
       ],
-      createLogRequest: () => Promise.resolve(new DefaultLogRequest()),
+      createLogRequest: () => new DefaultLogRequest(),
     });
   });
 
   it('noopFn helper', async () => {
     // To increase code coverage.
     noopFn();
+  });
+
+  // Tests for the no-op client to ensure code coverage.
+  describe('noop promoted client', () => {
+    it('creates test responses', async () => {
+      const client = new NoopPromotedClient();
+      const resp = client.deliver({
+        request: {
+          ...newBaseRequest(),
+        },
+        fullInsertion: [],
+      });
+      const logReq = (await resp).createLogRequest();
+      expect(logReq).not.toBeNull();
+
+      const resp2 = client.prepareForLogging({
+        request: {
+          ...newBaseRequest(),
+        },
+        fullInsertion: [],
+      });
+      const logReq2 = (await resp2).createLogRequest();
+      expect(logReq2).not.toBeNull();
+    });
   });
 });

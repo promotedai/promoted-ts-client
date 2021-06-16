@@ -9,6 +9,7 @@
     "build:clean": "rimraf dist",
     "build:lib": "rollup -c",
     "updatelink": "npm run build && cd dist && npm link",
+    "clear_jest": "jest --clearCache",
     "unlink": "cd dist && npm unlink",
     "lint": "eslint './{src,app}/**/*.{ts,tsx}'",
     "test": "jest --coverage",

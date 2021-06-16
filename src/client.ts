@@ -244,7 +244,7 @@ export interface ClientResponse {
   /**
    * Creates a LogRequest suitable for calling the metrics client.
    */
-  createLogRequest: () => Promise<LogRequest>;
+  createLogRequest: () => LogRequest;
 
   /**
    * A list of the response Insertions.  This list may be truncated
@@ -281,7 +281,7 @@ export const newPromotedClient = (args: PromotedClientArguments) => {
 };
 
 /**
- * Default implementation of the LogRequest interface.
+ * Default implementation of the LogRequest interface, currently only used for testing.
  */
 export class DefaultLogRequest implements LogRequest {
   insertion: [];
@@ -297,7 +297,7 @@ export class NoopPromotedClient implements PromotedClient {
     return {
       log: () => Promise.resolve(undefined),
       insertion,
-      createLogRequest: () => Promise.resolve(new DefaultLogRequest()),
+      createLogRequest: () => new DefaultLogRequest(),
     };
   }
 
@@ -307,7 +307,7 @@ export class NoopPromotedClient implements PromotedClient {
     return Promise.resolve({
       log: () => Promise.resolve(undefined),
       insertion,
-      createLogRequest: () => Promise.resolve(new DefaultLogRequest()),
+      createLogRequest: () => new DefaultLogRequest(),
     });
   }
 }
@@ -469,8 +469,8 @@ export class PromotedClientImpl implements PromotedClient {
     deliveryRequest: DeliveryRequest,
     requestToLog?: Request,
     cohortMembershipToLog?: CohortMembership
-  ): () => Promise<LogRequest> {
-    return async () => {
+  ): () => LogRequest {
+    return () => {
       const logRequest: LogRequest = {};
       const toCompactMetricsInsertion = this.getToCompactMetricsInsertion(deliveryRequest);
       if (requestToLog) {
@@ -503,7 +503,7 @@ export class PromotedClientImpl implements PromotedClient {
   /**
    * Creates a function that can be used after sending the response.
    */
-  createLogFn(logRequestFn: () => Promise<LogRequest>): () => Promise<void> {
+  createLogFn(logRequestFn: () => LogRequest): () => Promise<void> {
     return async () => {
       const logRequest = await logRequestFn();
       if (logRequest.request === undefined && logRequest.cohortMembership === undefined) {
