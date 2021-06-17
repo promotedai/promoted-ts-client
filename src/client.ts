@@ -244,7 +244,7 @@ export interface ClientResponse {
   /**
    * Creates a LogRequest suitable for calling the metrics client.
    */
-  createLogRequest: () => LogRequest;
+  createLogRequest: () => LogRequest | undefined;
 
   /**
    * A list of the response Insertions.  This list may be truncated
@@ -281,13 +281,6 @@ export const newPromotedClient = (args: PromotedClientArguments) => {
 };
 
 /**
- * Default implementation of the LogRequest interface, currently only used for testing.
- */
-export class DefaultLogRequest implements LogRequest {
-  insertion: [];
-}
-
-/**
  * Used when clients want to disable all functionality.
  */
 export class NoopPromotedClient implements PromotedClient {
@@ -297,7 +290,7 @@ export class NoopPromotedClient implements PromotedClient {
     return {
       log: () => Promise.resolve(undefined),
       insertion,
-      createLogRequest: () => new DefaultLogRequest(),
+      createLogRequest: () => undefined,
     };
   }
 
@@ -307,7 +300,7 @@ export class NoopPromotedClient implements PromotedClient {
     return Promise.resolve({
       log: () => Promise.resolve(undefined),
       insertion,
-      createLogRequest: () => new DefaultLogRequest(),
+      createLogRequest: () => undefined,
     });
   }
 }
@@ -469,8 +462,12 @@ export class PromotedClientImpl implements PromotedClient {
     deliveryRequest: DeliveryRequest,
     requestToLog?: Request,
     cohortMembershipToLog?: CohortMembership
-  ): () => LogRequest {
+  ): () => LogRequest | undefined {
     return () => {
+      if (requestToLog === undefined && cohortMembershipToLog === undefined) {
+        return undefined;
+      }
+
       const logRequest: LogRequest = {};
       const toCompactMetricsInsertion = this.getToCompactMetricsInsertion(deliveryRequest);
       if (requestToLog) {
@@ -503,10 +500,10 @@ export class PromotedClientImpl implements PromotedClient {
   /**
    * Creates a function that can be used after sending the response.
    */
-  createLogFn(logRequestFn: () => LogRequest): () => Promise<void> {
+  createLogFn(logRequestFn: () => LogRequest | undefined): () => Promise<void> {
     return async () => {
-      const logRequest = await logRequestFn();
-      if (logRequest.request === undefined && logRequest.cohortMembership === undefined) {
+      const logRequest = logRequestFn();
+      if (logRequest === undefined) {
         // If no log records, short-cut.
         return Promise.resolve(undefined);
       }

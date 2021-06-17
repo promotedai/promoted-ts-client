@@ -1,7 +1,6 @@
-import { copyAndRemoveProperties, DefaultLogRequest, log, newPromotedClient, noopFn, throwOnError } from '.';
+import { copyAndRemoveProperties, log, newPromotedClient, noopFn, NoopPromotedClient, throwOnError } from '.';
 import type { PromotedClientArguments } from '.';
 import type { Insertion, Request } from './types/delivery';
-import { NoopPromotedClient } from './client';
 
 const fakeUuidGenerator = () => {
   let i = 0;
@@ -236,9 +235,6 @@ describe('deliver', () => {
     });
     expect(deliveryClient.mock.calls.length).toBe(1);
     expect(metricsClient.mock.calls.length).toBe(0);
-
-    const logRequest = response.createLogRequest();
-    expect(logRequest).toBeDefined();
 
     expect(response.insertion).toEqual([
       toInsertion(newProduct('1'), { insertionId: 'uuid1' }),
@@ -1763,7 +1759,7 @@ describe('log helper method', () => {
         toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
         toInsertion(newProduct('1'), { insertionId: 'uuid3' }),
       ],
-      createLogRequest: () => new DefaultLogRequest(),
+      createLogRequest: () => undefined,
     });
   });
 
@@ -1771,28 +1767,28 @@ describe('log helper method', () => {
     // To increase code coverage.
     noopFn();
   });
+});
 
-  // Tests for the no-op client to ensure code coverage.
-  describe('noop promoted client', () => {
-    it('creates test responses', async () => {
-      const client = new NoopPromotedClient();
-      const resp = client.deliver({
-        request: {
-          ...newBaseRequest(),
-        },
-        fullInsertion: [],
-      });
-      const logReq = (await resp).createLogRequest();
-      expect(logReq).not.toBeNull();
-
-      const resp2 = client.prepareForLogging({
-        request: {
-          ...newBaseRequest(),
-        },
-        fullInsertion: [],
-      });
-      const logReq2 = (await resp2).createLogRequest();
-      expect(logReq2).not.toBeNull();
+// Tests for the no-op client to ensure code coverage.
+describe('noop promoted client', () => {
+  it('creates test responses', async () => {
+    const client = new NoopPromotedClient();
+    const resp = client.deliver({
+      request: {
+        ...newBaseRequest(),
+      },
+      fullInsertion: [],
     });
+    const logReq = (await resp).createLogRequest();
+    expect(logReq).toBeUndefined();
+
+    const resp2 = client.prepareForLogging({
+      request: {
+        ...newBaseRequest(),
+      },
+      fullInsertion: [],
+    });
+    const logReq2 = (await resp2).createLogRequest();
+    expect(logReq2).toBeUndefined();
   });
 });
