@@ -1,3 +1,10 @@
+# [6.4.0](https://github.com/promotedai/promoted-ts-client/compare/v6.3.0...v6.4.0) (2021-06-17)
+
+
+### Features
+
+* createLogRequest function\rTESTING=unit ([#25](https://github.com/promotedai/promoted-ts-client/issues/25)) ([19627ce](https://github.com/promotedai/promoted-ts-client/commit/19627ce17080b42e3ce31fd42cc48dbbb7d7b377))
+
 # [6.3.0](https://github.com/promotedai/promoted-ts-client/compare/v6.2.0...v6.3.0) (2021-06-15)
 
 
