@@ -16,6 +16,7 @@ export interface Request {
   deliveryConfig?: DeliveryConfig;
   properties?: proto_common_common_pb.Properties;
   paging?: Paging;
+  clientInfo?: proto_common_common_pb.ClientInfo;
 }
 
 export interface Paging {
