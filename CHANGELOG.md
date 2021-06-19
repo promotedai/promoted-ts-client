@@ -1,3 +1,10 @@
+# [6.5.0](https://github.com/promotedai/promoted-ts-client/compare/v6.4.0...v6.5.0) (2021-06-19)
+
+
+### Features
+
+* First cut at shadow traffic support\rTESTING=unit ([#26](https://github.com/promotedai/promoted-ts-client/issues/26)) ([f7edd16](https://github.com/promotedai/promoted-ts-client/commit/f7edd1604933f8ba43853c53d82e9ce912522479))
+
 # [6.4.0](https://github.com/promotedai/promoted-ts-client/compare/v6.3.0...v6.4.0) (2021-06-17)
 
 
