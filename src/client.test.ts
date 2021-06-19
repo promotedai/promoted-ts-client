@@ -2,7 +2,6 @@ import { copyAndRemoveProperties, log, newPromotedClient, noopFn, NoopPromotedCl
 import type { PromotedClientArguments } from '.';
 import type { Insertion, Request } from './types/delivery';
 import { TrafficType_PRODUCTION, TrafficType_SHADOW } from './client';
-import { TrafficType } from './types/common';
 
 const fakeUuidGenerator = () => {
   let i = 0;
@@ -1758,7 +1757,7 @@ describe('shadow requests', () => {
   async function runShadowRequestSamplingTest(
     samplingReturn: boolean,
     shouldCallDelivery: boolean,
-    trafficType?: TrafficType
+    shadowTrafficDeliveryPercent: number
   ) {
     let deliveryClient: any = jest.fn(failFunction('Delivery should not be called when shadow is not selected'));
     if (shouldCallDelivery) {
@@ -1769,7 +1768,7 @@ describe('shadow requests', () => {
         },
         insertion: toInsertions([newProduct('3')]),
         clientInfo: {
-          trafficType: trafficType,
+          trafficType: TrafficType_SHADOW,
         },
       };
       deliveryClient = jest.fn((request) => {
@@ -1799,7 +1798,7 @@ describe('shadow requests', () => {
             clientLogTimestamp: 12345678,
           },
           clientInfo: {
-            trafficType: trafficType,
+            trafficType: TrafficType_PRODUCTION,
           },
         },
       ],
@@ -1818,7 +1817,7 @@ describe('shadow requests', () => {
     const promotedClient = newFakePromotedClient({
       deliveryClient,
       metricsClient,
-      shadowTrafficDeliveryPercent: 0.5,
+      shadowTrafficDeliveryPercent: shadowTrafficDeliveryPercent,
       sampler: sampler,
     });
 
@@ -1827,7 +1826,7 @@ describe('shadow requests', () => {
       request: {
         ...newBaseRequest(),
         clientInfo: {
-          trafficType: trafficType,
+          trafficType: TrafficType_PRODUCTION,
         },
       },
       fullInsertion: toInsertions(products),
@@ -1852,19 +1851,15 @@ describe('shadow requests', () => {
   }
 
   it('makes a shadow request', async () => {
-    await runShadowRequestSamplingTest(true, true, TrafficType_SHADOW);
+    await runShadowRequestSamplingTest(true, true, 0.5);
   });
 
-  it('does not make a shadow request - sampling', async () => {
-    await runShadowRequestSamplingTest(false, false, TrafficType_SHADOW);
+  it('does not make a shadow request - not sampled in', async () => {
+    await runShadowRequestSamplingTest(false, false, 0.5);
   });
 
-  it('does not make a shadow request - traffic type wrong', async () => {
-    await runShadowRequestSamplingTest(false, false, TrafficType_PRODUCTION);
-  });
-
-  it('does not make a shadow request - traffic type not provided', async () => {
-    await runShadowRequestSamplingTest(false, false);
+  it('does not make a shadow request - sampling not turned on', async () => {
+    await runShadowRequestSamplingTest(true, false, 0);
   });
 });
 

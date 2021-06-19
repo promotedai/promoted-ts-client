@@ -397,15 +397,9 @@ export class PromotedClientImpl implements PromotedClient {
     this.preDeliveryFillInFields(metricsRequest);
 
     // Send shadow traffic if necessary.
-    if (this.shouldSendAsShadowTraffic(metricsRequest)) {
+    if (this.shouldSendAsShadowTraffic()) {
       // Fire and forget.
-      const singleRequest = {
-        ...metricsRequest.request,
-        // TODO: This will potentially bash the insertions for the later metrics API call, unless we were to
-        // first deep-copy them.
-        insertion: metricsRequest.fullInsertion.map(this.defaultRequestValues.toCompactDeliveryInsertion),
-      };
-      this.deliveryClient(singleRequest);
+      this.deliverShadowTraffic(metricsRequest);
     }
 
     // If defined, log the Request to Metrics API.
@@ -422,6 +416,30 @@ export class PromotedClientImpl implements PromotedClient {
       insertion,
       createLogRequest: logRequestFn,
     };
+  }
+
+  /**
+   * Applies logic to determine whether or not this request should be forwarded
+   * to Delivery API as shadow traffic.
+   * @returns true if we should forward, false otherwise.
+   */
+  private shouldSendAsShadowTraffic() {
+    if (!this.shadowTrafficDeliveryPercent) {
+      return false;
+    }
+
+    return this.sampler.sampleRandom(this.shadowTrafficDeliveryPercent);
+  }
+
+  private deliverShadowTraffic(metricsRequest: MetricsRequest) {
+    const singleRequest: Request = {
+      ...metricsRequest.request,
+      insertion: metricsRequest.fullInsertion, // CONSIDER: Whether to copy and/or compact this at some point.
+      clientInfo: {
+        trafficType: TrafficType_SHADOW,
+      },
+    };
+    this.deliveryClient(singleRequest);
   }
 
   /**
@@ -494,22 +512,6 @@ export class PromotedClientImpl implements PromotedClient {
       insertion,
       createLogRequest: logRequestFn,
     };
-  }
-
-  /**
-   * Applies logic to determine whether or not this request should be forwarded
-   * to Delivery API as shadow traffic.
-   * @param metricsRequest the request to check.
-   * @returns true if we should forward, false otherwise.
-   */
-  shouldSendAsShadowTraffic(metricsRequest: MetricsRequest) {
-    const trafficType = metricsRequest.request.clientInfo?.trafficType ?? TrafficType_UNKNOWN_TRAFFIC_TYPE;
-
-    if (trafficType !== TrafficType_SHADOW) {
-      return false;
-    }
-
-    return this.sampler.sampleRandom(this.shadowTrafficDeliveryPercent);
   }
 
   /**
