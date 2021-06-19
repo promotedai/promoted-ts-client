@@ -24,6 +24,10 @@ export const TrafficType_PRODUCTION = 1;
 export const TrafficType_REPLAY = 2;
 export const TrafficType_SHADOW = 4;
 
+export const ClientType_UNKNOWN_REQUEST_CLIENT = 0;
+export const ClientType_PLATFORM_SERVER = 1;
+export const ClientType_PLATFORM_CLIENT = 2;
+
 /**
  * The main interface for our Promoted Client.
  */
@@ -436,6 +440,7 @@ export class PromotedClientImpl implements PromotedClient {
       ...metricsRequest.request,
       insertion: metricsRequest.fullInsertion, // CONSIDER: Whether to copy and/or compact this at some point.
       clientInfo: {
+        ...metricsRequest.request.clientInfo,
         trafficType: TrafficType_SHADOW,
       },
     };

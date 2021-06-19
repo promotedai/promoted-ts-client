@@ -1,7 +1,7 @@
 import { copyAndRemoveProperties, log, newPromotedClient, noopFn, NoopPromotedClient, throwOnError } from '.';
 import type { PromotedClientArguments } from '.';
 import type { Insertion, Request } from './types/delivery';
-import { TrafficType_PRODUCTION, TrafficType_SHADOW } from './client';
+import { ClientType_PLATFORM_SERVER, TrafficType_PRODUCTION, TrafficType_SHADOW } from './client';
 
 const fakeUuidGenerator = () => {
   let i = 0;
@@ -1769,6 +1769,7 @@ describe('shadow requests', () => {
         insertion: toInsertions([newProduct('3')]),
         clientInfo: {
           trafficType: TrafficType_SHADOW,
+          clientType: ClientType_PLATFORM_SERVER,
         },
       };
       deliveryClient = jest.fn((request) => {
@@ -1799,6 +1800,7 @@ describe('shadow requests', () => {
           },
           clientInfo: {
             trafficType: TrafficType_PRODUCTION,
+            clientType: ClientType_PLATFORM_SERVER,
           },
         },
       ],
@@ -1827,6 +1829,7 @@ describe('shadow requests', () => {
         ...newBaseRequest(),
         clientInfo: {
           trafficType: TrafficType_PRODUCTION,
+          clientType: ClientType_PLATFORM_SERVER,
         },
       },
       fullInsertion: toInsertions(products),

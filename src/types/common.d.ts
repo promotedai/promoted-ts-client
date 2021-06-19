@@ -18,7 +18,9 @@ export interface Properties {
 }
 
 export type TrafficType = 0 | 1 | 2 | 4;
+export type ClientType = 0 | 1 | 2;
 
 export interface ClientInfo {
   trafficType?: TrafficType;
+  clientType?: ClientType;
 }
