@@ -12,7 +12,7 @@ export interface Sampler {
 export class SamplerImpl implements Sampler {
   /**
    * Simple random sampling that selects below the given threshold.
-   * @param threshold the sampling percentage in the range [0, 1).
+   * @param threshold the sampling percentage in the range [0, 1].
    * @returns true if we should sample in, false if we should sample out.
    */
   sampleRandom(threshold: number): boolean {
