@@ -2,7 +2,7 @@ export * from './client';
 export * from './experiment';
 
 // Updated manually.
-export type { Properties, Timing, UserInfo } from './types/common';
+export type { ClientInfo, Properties, Timing, TrafficType, UserInfo } from './types/common';
 export type {
   BlenderRule,
   BlenderRuleType,

@@ -1,6 +1,6 @@
 module.exports = {
   preset: 'ts-jest',
-  moduleFileExtensions: ['ts', 'tsx', 'js'],
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'd.ts'],
   transformIgnorePatterns: ['/node_modules/'],
   moduleNameMapper: {},
   setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],

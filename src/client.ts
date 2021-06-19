@@ -1,3 +1,4 @@
+import { Sampler, SamplerImpl } from './sampler';
 import { timeoutWrapper } from './timeout';
 import type { Insertion, Paging, Request, Response } from './types/delivery';
 import type { CohortMembership, LogRequest, LogResponse } from './types/event';
@@ -12,6 +13,20 @@ import type { CohortMembership, LogRequest, LogResponse } from './types/event';
 
 const DEFAULT_DELIVERY_TIMEOUT_MILLIS = 250;
 const DEFAULT_METRICS_TIMEOUT_MILLIS = 3000;
+
+/**
+ * Traffic types
+ * TODO: Ideally these should come from common.d.ts but that needs a more
+ * sophisticated proto translation than what we have now.
+ */
+export const TrafficType_UNKNOWN_TRAFFIC_TYPE = 0;
+export const TrafficType_PRODUCTION = 1;
+export const TrafficType_REPLAY = 2;
+export const TrafficType_SHADOW = 4;
+
+export const ClientType_UNKNOWN_REQUEST_CLIENT = 0;
+export const ClientType_PLATFORM_SERVER = 1;
+export const ClientType_PLATFORM_CLIENT = 2;
 
 /**
  * The main interface for our Promoted Client.
@@ -54,6 +69,13 @@ export interface PromotedClientArguments {
    * Performs extra dev checks.  Safer but slower.  Defaults to true.
    */
   performChecks?: boolean;
+
+  /**
+   * Percentage (in the range 0.0-1.0) of logging traffic to forward to
+   * the Delivery API for use as shadow traffic. 0.0 does no forwarding,
+   * and 1.0 forwards every request.
+   */
+  shadowTrafficDeliveryPercent?: number;
 
   /**
    * Default values to use on DeliveryRequests.
@@ -99,6 +121,11 @@ export interface PromotedClientArguments {
    * For testing.  Allows for easy mocking of the clock.
    */
   nowMillis?: () => number;
+
+  /**
+   * Exposed for testing, easy mocking of request sampling.
+   */
+  sampler?: Sampler;
 
   /**
    * For testing. Used by unit tests to swap out timeout functionality.
@@ -243,6 +270,7 @@ export interface ClientResponse {
 
   /**
    * Creates a LogRequest suitable for calling the metrics client.
+   * Undefined means we do not need any follow up logging
    */
   createLogRequest: () => LogRequest | undefined;
 
@@ -312,12 +340,15 @@ export class PromotedClientImpl implements PromotedClient {
   private deliveryClient: ApiClient<Request, Response>;
   private metricsClient: ApiClient<LogRequest, LogResponse>;
   private performChecks: boolean;
+  private shadowTrafficDeliveryPercent: number;
   private defaultRequestValues: RequiredBaseRequest;
   private handleError: ErrorHandler;
   private uuid: () => string;
   private deliveryTimeoutMillis: number;
   private metricsTimeoutMillis: number;
   private shouldApplyTreatment: (cohortMembership: CohortMembership | undefined) => boolean;
+  private sampler: Sampler;
+
   // For testing.
   private nowMillis: () => number;
   private deliveryTimeoutWrapper: <T>(promise: Promise<T>, timeoutMillis: number) => Promise<T>;
@@ -331,7 +362,14 @@ export class PromotedClientImpl implements PromotedClient {
   public constructor(args: PromotedClientArguments) {
     this.deliveryClient = args.deliveryClient;
     this.metricsClient = args.metricsClient;
-    this.performChecks = args.performChecks === undefined ? true : args.performChecks;
+    this.performChecks = args.performChecks ?? true;
+
+    this.shadowTrafficDeliveryPercent = args.shadowTrafficDeliveryPercent ?? 0;
+    if (this.shadowTrafficDeliveryPercent < 0 || this.shadowTrafficDeliveryPercent > 1) {
+      throw new RangeError('shadowTrafficDeliveryPercent must be between 0 and 1');
+    }
+
+    this.sampler = args.sampler ?? new SamplerImpl();
     const { defaultRequestValues: { onlyLog, toCompactDeliveryInsertion, toCompactMetricsInsertion } = {} } = args;
     this.defaultRequestValues = {
       onlyLog: onlyLog === undefined ? false : onlyLog,
@@ -342,16 +380,12 @@ export class PromotedClientImpl implements PromotedClient {
     };
     this.handleError = args.handleError;
     this.uuid = args.uuid;
-    this.deliveryTimeoutMillis =
-      args.deliveryTimeoutMillis === undefined ? DEFAULT_DELIVERY_TIMEOUT_MILLIS : args.deliveryTimeoutMillis;
-    this.metricsTimeoutMillis =
-      args.metricsTimeoutMillis === undefined ? DEFAULT_METRICS_TIMEOUT_MILLIS : args.metricsTimeoutMillis;
-    this.nowMillis = args.nowMillis === undefined ? () => Date.now() : args.nowMillis;
-    this.shouldApplyTreatment =
-      args.shouldApplyTreatment === undefined ? defaultShouldApplyTreatment : args.shouldApplyTreatment;
-    this.deliveryTimeoutWrapper =
-      args.deliveryTimeoutWrapper === undefined ? timeoutWrapper : args.deliveryTimeoutWrapper;
-    this.metricsTimeoutWrapper = args.metricsTimeoutWrapper === undefined ? timeoutWrapper : args.metricsTimeoutWrapper;
+    this.deliveryTimeoutMillis = args.deliveryTimeoutMillis ?? DEFAULT_DELIVERY_TIMEOUT_MILLIS;
+    this.metricsTimeoutMillis = args.metricsTimeoutMillis ?? DEFAULT_METRICS_TIMEOUT_MILLIS;
+    this.nowMillis = args.nowMillis ?? (() => Date.now());
+    this.shouldApplyTreatment = args.shouldApplyTreatment ?? defaultShouldApplyTreatment;
+    this.deliveryTimeoutWrapper = args.deliveryTimeoutWrapper ?? timeoutWrapper;
+    this.metricsTimeoutWrapper = args.metricsTimeoutWrapper ?? timeoutWrapper;
   }
 
   // Instead of reusing `deliver`, we copy/paste most of the functionality here.
@@ -365,6 +399,12 @@ export class PromotedClientImpl implements PromotedClient {
       }
     }
     this.preDeliveryFillInFields(metricsRequest);
+
+    // Send shadow traffic if necessary.
+    if (this.shouldSendAsShadowTraffic()) {
+      // Fire and forget.
+      this.deliverShadowTraffic(metricsRequest);
+    }
 
     // If defined, log the Request to Metrics API.
     const { fullInsertion, request } = metricsRequest;
@@ -380,6 +420,31 @@ export class PromotedClientImpl implements PromotedClient {
       insertion,
       createLogRequest: logRequestFn,
     };
+  }
+
+  /**
+   * Applies logic to determine whether or not this request should be forwarded
+   * to Delivery API as shadow traffic.
+   * @returns true if we should forward, false otherwise.
+   */
+  private shouldSendAsShadowTraffic() {
+    if (!this.shadowTrafficDeliveryPercent) {
+      return false;
+    }
+
+    return this.sampler.sampleRandom(this.shadowTrafficDeliveryPercent);
+  }
+
+  private deliverShadowTraffic(metricsRequest: MetricsRequest) {
+    const singleRequest: Request = {
+      ...metricsRequest.request,
+      insertion: metricsRequest.fullInsertion, // CONSIDER: Whether to copy and/or compact this at some point.
+      clientInfo: {
+        ...metricsRequest.request.clientInfo,
+        trafficType: TrafficType_SHADOW,
+      },
+    };
+    this.deliveryClient(singleRequest);
   }
 
   /**
