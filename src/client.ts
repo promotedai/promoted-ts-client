@@ -1,5 +1,12 @@
+import { ApiClient } from './api-client';
+import { RequiredBaseRequest } from './base-request';
+import { PromotedClientArguments } from './client-args';
+import { ClientResponse } from './client-response';
+import { DeliveryRequest } from './delivery-request';
+import { MetricsRequest } from './metrics-request';
 import { Sampler, SamplerImpl } from './sampler';
 import { timeoutWrapper } from './timeout';
+import type { ErrorHandler } from './error-handler';
 import type { Insertion, Paging, Request, Response } from './types/delivery';
 import type { CohortMembership, LogRequest, LogResponse } from './types/event';
 
@@ -42,245 +49,6 @@ export interface PromotedClient {
    * Used to only log Requests and Insertions.
    */
   prepareForLogging(metricsRequest: MetricsRequest): ClientResponse;
-}
-
-/**
- * Arguments for the client so values can be overriden
- */
-export interface PromotedClientArguments {
-  /**
-   * A way to turn off logging.  Defaults to true.
-   */
-  enabled?: boolean;
-
-  /**
-   * The client used to call Delivery API.  No default so we can reduce network
-   * dependencies on the core library.
-   */
-  deliveryClient: ApiClient<Request, Response>;
-
-  /**
-   * The client used to call Metrics API.  No default so we can reduce network
-   * dependencies on the core library.
-   */
-  metricsClient: ApiClient<LogRequest, LogResponse>;
-
-  /**
-   * Performs extra dev checks.  Safer but slower.  Defaults to true.
-   */
-  performChecks?: boolean;
-
-  /**
-   * Percentage (in the range 0.0-1.0) of logging traffic to forward to
-   * the Delivery API for use as shadow traffic. 0.0 does no forwarding,
-   * and 1.0 forwards every request.
-   */
-  shadowTrafficDeliveryPercent?: number;
-
-  /**
-   * Default values to use on DeliveryRequests.
-   */
-  defaultRequestValues?: BaseRequest;
-
-  /**
-   * Handles errors.
-   * Exposed to give clients flexibility into how errors are handled.
-   * E.g. in dev, throw an error.  In prod, silently log and monitor.
-   *
-   * Example NextJS code:
-   * ```
-   * const throwError =
-   *   process?.env?.NODE_ENV !== 'production' ||
-   *   (typeof location !== "undefined" && location?.hostname === "localhost");
-   * ...
-   * handleError: throwError ? (err) => {
-   *   throw error;
-   * } : (err) => console.error(err);
-   * ```
-   */
-  handleError: ErrorHandler;
-
-  /**
-   * Required as a dependency so clients can load reduce dependency on multiple
-   * uuid libraries.
-   */
-  uuid: () => string;
-
-  /* Defaults to 250ms */
-  deliveryTimeoutMillis?: number;
-
-  /* Defaults to 3000ms */
-  metricsTimeoutMillis?: number;
-
-  /**
-   * Allows for customizing when the treatment gets applied.
-   */
-  shouldApplyTreatment?: (cohortMembership: CohortMembership | undefined) => boolean;
-
-  /**
-   * For testing.  Allows for easy mocking of the clock.
-   */
-  nowMillis?: () => number;
-
-  /**
-   * Exposed for testing, easy mocking of request sampling.
-   */
-  sampler?: Sampler;
-
-  /**
-   * For testing. Used by unit tests to swap out timeout functionality.
-   */
-  deliveryTimeoutWrapper?: <T>(promise: Promise<T>, timeoutMillis: number) => Promise<T>;
-
-  /**
-   * For testing. Used by unit tests to swap out timeout functionality.
-   */
-  metricsTimeoutWrapper?: <T>(promise: Promise<T>, timeoutMillis: number) => Promise<T>;
-}
-
-/**
- * Simple function interface for making API calls.
- */
-export interface ApiClient<Req, Res> {
-  (request: Req): Promise<Res>;
-}
-
-export interface ErrorHandler {
-  (err: Error): void;
-}
-
-export interface InsertionMapFn {
-  (insertion: Insertion): Insertion;
-}
-
-/**
- * Used to set default values on BaseRequests in the Client's constructor.
- */
-export interface RequiredBaseRequest {
-  /**
-   * A way to customize when `deliver` should not run an experiment and just log
-   * (CONTROL) vs run through the experiment deliver code path.
-   * Defaults to false.
-   */
-  onlyLog: boolean;
-
-  /** A function to shrink the Insertions on Delivery API. */
-  toCompactDeliveryInsertion: InsertionMapFn;
-  toCompactMetricsInsertion: InsertionMapFn;
-}
-
-/**
- * Common interface so we can set request values in PromotedClient's constructor.
- */
-export interface BaseRequest {
-  /**
-   * A way to customize when `deliver` should not run an experiment and just log
-   * (CONTROL) vs run through the experiment deliver code path.
-   * Defaults to false.
-   */
-  onlyLog?: boolean;
-
-  /** Removes unnecessary fields on Insertions for Delivery API. */
-  toCompactDeliveryInsertion?: InsertionMapFn;
-
-  /** Removes unnecessary fields on Insertions for Metrics API. */
-  toCompactMetricsInsertion?: InsertionMapFn;
-}
-
-/**
- * Represents a single call for retrieving and ranking content.
- */
-export interface DeliveryRequest {
-  /** Removes unnecessary fields on Insertions for Delivery API. */
-  toCompactDeliveryInsertion?: InsertionMapFn;
-
-  /** Removes unnecessary fields on Insertions for Metrics API. */
-  toCompactMetricsInsertion?: InsertionMapFn;
-
-  /**
-   * The Request for content.
-   */
-  request: Request;
-
-  /**
-   * Insertions with all metadata.  The `toCompact` functions are used to
-   * transform the fullInsertion to Insertions on each of the requests.
-   */
-  fullInsertion: Insertion[];
-
-  /**
-   * A way to customize when `deliver` should not run an experiment and just log
-   * (CONTROL) vs run through the experiment deliver code path.
-   * Defaults to false.
-   */
-  onlyLog?: boolean;
-
-  /**
-   * Used to run a client-side experiment.  Activation happens if other
-   * overrides do not disable it (`enabled=false` or `onlyLog=true`).
-   *
-   * If undefined, no experiment is run.  By default, Delivery API is called.
-   * Can be called if `onlyLog` is set to true.
-   *
-   * If set, this is runs `deliver` as a client-side experiment.  The CONTROL
-   * arm does not call Delivery API.  It only logs.  The TREATMENT arm uses
-   * Delivery API to change Insertions.
-   *
-   * This CohortMembership is also logged to Metrics.
-   */
-  experiment?: CohortMembership;
-}
-
-/**
- * Represents a single call for logging content.
- */
-export interface MetricsRequest {
-  /** A function to shrink the Insertions on Metrics API. */
-  toCompactMetricsInsertion?: InsertionMapFn;
-
-  /**
-   * The Request for content.
-   */
-  request: Request;
-
-  /**
-   * Insertions with all metadata.  The `toCompact` functions are used to
-   * transform the fullInsertion to Insertions on each of the requests.
-   */
-  fullInsertion: Insertion[];
-}
-
-/**
- * A shared response for Metrics or Delivery API.  Makes it easy to swap
- * out either method.
- *
- * Has two main uses:
- * 1) return a modified list of Insertions.
- * 2) clients must call the log method after they send their content back
- * to the client.  They call either `ClientResponse.log` or the `log` helper
- * method (which hides the Promise).
- */
-export interface ClientResponse {
-  /**
-   * Sends the log records to Metrics API.
-   * Clients need to call this one of the log methods, preferrably after they
-   * send the response to their UI/apps.
-   */
-  log: () => Promise<void>;
-
-  /**
-   * Creates a LogRequest suitable for calling the metrics client.
-   * Undefined means we do not need any follow up logging
-   */
-  createLogRequest: () => LogRequest | undefined;
-
-  /**
-   * A list of the response Insertions.  This list may be truncated
-   * based on paging parameters, i.e. if Deliver is called with more
-   * items than any optionally provided Paging.size parameter on the
-   * request, at most page size insertions will be forwarded on.
-   */
-  insertion: Insertion[];
 }
 
 /**
@@ -423,31 +191,6 @@ export class PromotedClientImpl implements PromotedClient {
   }
 
   /**
-   * Applies logic to determine whether or not this request should be forwarded
-   * to Delivery API as shadow traffic.
-   * @returns true if we should forward, false otherwise.
-   */
-  private shouldSendAsShadowTraffic() {
-    if (!this.shadowTrafficDeliveryPercent) {
-      return false;
-    }
-
-    return this.sampler.sampleRandom(this.shadowTrafficDeliveryPercent);
-  }
-
-  private deliverShadowTraffic(metricsRequest: MetricsRequest) {
-    const singleRequest: Request = {
-      ...metricsRequest.request,
-      insertion: metricsRequest.fullInsertion, // CONSIDER: Whether to copy and/or compact this at some point.
-      clientInfo: {
-        ...metricsRequest.request.clientInfo,
-        trafficType: TrafficType_SHADOW,
-      },
-    };
-    this.deliveryClient(singleRequest);
-  }
-
-  /**
    * Used to optimize a list of content.  This function modifies deliveryRequest.
    */
   public async deliver(deliveryRequest: DeliveryRequest): Promise<ClientResponse> {
@@ -458,7 +201,7 @@ export class PromotedClientImpl implements PromotedClient {
       }
     }
     this.preDeliveryFillInFields(deliveryRequest);
-    const onlyLog = this.getOnlyLog(deliveryRequest);
+    const onlyLog = deliveryRequest.onlyLog ?? this.defaultRequestValues.onlyLog;
 
     // TODO - if response only passes back IDs that are passed in, then we can
     // return just IDs back.
@@ -475,7 +218,8 @@ export class PromotedClientImpl implements PromotedClient {
       try {
         cohortMembershipToLog = newCohortMembershipToLog(deliveryRequest);
         if (this.shouldApplyTreatment(cohortMembershipToLog)) {
-          const toCompactDeliveryInsertion = this.getToCompactDeliveryInsertion(deliveryRequest);
+          const toCompactDeliveryInsertion =
+            deliveryRequest.toCompactDeliveryInsertion ?? this.defaultRequestValues.toCompactDeliveryInsertion;
           const singleRequest = {
             ...deliveryRequest.request,
             insertion: deliveryRequest.fullInsertion.map(toCompactDeliveryInsertion),
@@ -520,10 +264,30 @@ export class PromotedClientImpl implements PromotedClient {
   }
 
   /**
+   * Applies logic to determine whether or not this request should be forwarded
+   * to Delivery API as shadow traffic.
+   * @returns true if we should forward, false otherwise.
+   */
+  private shouldSendAsShadowTraffic = () =>
+    this.shadowTrafficDeliveryPercent && this.sampler.sampleRandom(this.shadowTrafficDeliveryPercent);
+
+  private deliverShadowTraffic(metricsRequest: MetricsRequest) {
+    const singleRequest: Request = {
+      ...metricsRequest.request,
+      insertion: metricsRequest.fullInsertion, // CONSIDER: Whether to copy and/or compact this at some point.
+      clientInfo: {
+        ...metricsRequest.request.clientInfo,
+        trafficType: TrafficType_SHADOW,
+      },
+    };
+    this.deliveryClient(singleRequest);
+  }
+
+  /**
    * On-demand creation of a LogRequest suitable for sending to the metrics client.
    * @returns a function to create a LogRequest on demand.
    */
-  createLogRequestFn(
+  private createLogRequestFn(
     deliveryRequest: DeliveryRequest,
     requestToLog?: Request,
     cohortMembershipToLog?: CohortMembership
@@ -534,7 +298,8 @@ export class PromotedClientImpl implements PromotedClient {
       }
 
       const logRequest: LogRequest = {};
-      const toCompactMetricsInsertion = this.getToCompactMetricsInsertion(deliveryRequest);
+      const toCompactMetricsInsertion =
+        deliveryRequest.toCompactMetricsInsertion ?? this.defaultRequestValues.toCompactMetricsInsertion;
       if (requestToLog) {
         logRequest.request = [this.createLogRequestRequestToLog(requestToLog)];
         logRequest.insertion = this.applyPaging(
@@ -565,7 +330,7 @@ export class PromotedClientImpl implements PromotedClient {
   /**
    * Creates a function that can be used after sending the response.
    */
-  createLogFn(logRequestFn: () => LogRequest | undefined): () => Promise<void> {
+  private createLogFn(logRequestFn: () => LogRequest | undefined): () => Promise<void> {
     return async () => {
       const logRequest = logRequestFn();
       if (logRequest === undefined) {
@@ -589,7 +354,7 @@ export class PromotedClientImpl implements PromotedClient {
    * @param paging paging info, may be nil
    * @returns the modified page of insertions
    */
-  applyPaging = (insertions: Insertion[], paging?: Paging): Insertion[] => {
+  private applyPaging = (insertions: Insertion[], paging?: Paging): Insertion[] => {
     const insertionPage: Insertion[] = [];
     let start = paging?.offset ?? 0;
     let size = paging?.size ?? -1;
@@ -614,7 +379,7 @@ export class PromotedClientImpl implements PromotedClient {
    * @param requestToLog the request to attach to the log request
    * @returns a copy of the request suitable to be attached to a LogRequest.
    */
-  createLogRequestRequestToLog = (requestToLog: Request): Request => {
+  private createLogRequestRequestToLog = (requestToLog: Request): Request => {
     const copyRequest = {
       ...requestToLog,
     };
@@ -628,28 +393,7 @@ export class PromotedClientImpl implements PromotedClient {
     return copyRequest;
   };
 
-  getOnlyLog = (deliveryRequest: DeliveryRequest): boolean => {
-    if (deliveryRequest.onlyLog !== undefined) {
-      return deliveryRequest.onlyLog;
-    }
-    return this.defaultRequestValues.onlyLog;
-  };
-
-  getToCompactDeliveryInsertion = (deliveryRequest: DeliveryRequest): InsertionMapFn => {
-    if (deliveryRequest.toCompactDeliveryInsertion !== undefined) {
-      return deliveryRequest.toCompactDeliveryInsertion;
-    }
-    return this.defaultRequestValues.toCompactDeliveryInsertion;
-  };
-
-  getToCompactMetricsInsertion = (deliveryRequest: DeliveryRequest): InsertionMapFn => {
-    if (deliveryRequest.toCompactMetricsInsertion !== undefined) {
-      return deliveryRequest.toCompactMetricsInsertion;
-    }
-    return this.defaultRequestValues.toCompactMetricsInsertion;
-  };
-
-  preDeliveryFillInFields = (deliveryRequest: DeliveryRequest | MetricsRequest) => {
+  private preDeliveryFillInFields = (deliveryRequest: DeliveryRequest | MetricsRequest) => {
     const { request } = deliveryRequest;
     let { timing } = request;
     if (!timing) {
@@ -665,13 +409,13 @@ export class PromotedClientImpl implements PromotedClient {
   /**
    * Called after potential Delivery.  Fill in fields
    */
-  addMissingRequestId = (logRequest: Request) => {
+  private addMissingRequestId = (logRequest: Request) => {
     if (!logRequest.requestId) {
       logRequest.requestId = this.uuid();
     }
   };
 
-  addMissingIdsOnInsertions = (request: Request, insertions: Insertion[]) => {
+  private addMissingIdsOnInsertions = (request: Request, insertions: Insertion[]) => {
     // platformId, userInfo and timing are copied onto LogRequest.
     const { sessionId, viewId, requestId } = request;
     insertions.forEach((insertion) => {
@@ -690,18 +434,6 @@ export class PromotedClientImpl implements PromotedClient {
     });
   };
 }
-
-/**
- * Simple ErrorHandler that throws the error.
- */
-export const throwOnError: ErrorHandler = (err) => {
-  throw err;
-};
-
-/**
- * Simple ErrorHandler that logs to console.err.
- */
-export const logOnError: ErrorHandler = (err) => console.error(err);
 
 /**
  * A common toCompact helper function implementation.

@@ -4,7 +4,6 @@ import typescript from 'rollup-plugin-typescript2';
 import del from 'rollup-plugin-delete';
 import generatePackageJson from 'rollup-plugin-generate-package-json';
 import pkg from './package.json';
-import { resolve } from 'path';
 
 const extensions = ['.js', '.jsx', '.ts', '.tsx'];
 
