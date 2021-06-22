@@ -35,7 +35,6 @@ export interface DeliveryRequest {
    * overrides do not disable it (`enabled=false` or `onlyLog=true`).
    *
    * If undefined, no experiment is run.  By default, Delivery API is called.
-   * Can be called if `onlyLog` is set to true.
    *
    * If set, this is runs `deliver` as a client-side experiment.  The CONTROL
    * arm does not call Delivery API.  It only logs.  The TREATMENT arm uses
