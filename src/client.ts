@@ -498,7 +498,7 @@ const checkThatLogIdsNotSet = (deliveryRequest: DeliveryRequest | MetricsRequest
  * the response.
  */
 const fillInDetails = (responseInsertions: Insertion[], fullInsertion: Insertion[]): Insertion[] => {
-  const contentIdToInputInsertion = fullInsertion.reduce((map: { [contnetId: string]: Insertion }, insertion) => {
+  const contentIdToInputInsertion = fullInsertion.reduce((map: { [contentId: string]: Insertion }, insertion) => {
     if (insertion.contentId !== undefined) {
       map[insertion.contentId] = insertion;
     }
