@@ -3,7 +3,7 @@ import { RequiredBaseRequest } from './base-request';
 import { PromotedClientArguments } from './client-args';
 import { ClientResponse } from './client-response';
 import { DeliveryRequest } from './delivery-request';
-import { MetricsRequest } from './metrics-request';
+import { InsertionPageType, MetricsRequest } from './metrics-request';
 import { Sampler, SamplerImpl } from './sampler';
 import { timeoutWrapper } from './timeout';
 import type { ErrorHandler } from './error-handler';
@@ -164,6 +164,10 @@ export class PromotedClientImpl implements PromotedClient {
       const error = checkThatLogIdsNotSet(metricsRequest);
       if (error) {
         this.handleError(error);
+      }
+
+      if (this.shadowTrafficDeliveryPercent > 0 && metricsRequest.insertionPageType != InsertionPageType.Unpaged) {
+        this.handleError(new Error('Insertions must be unpaged when shadow traffic is on'));
       }
     }
     this.preDeliveryFillInFields(metricsRequest);

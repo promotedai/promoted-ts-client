@@ -2,6 +2,7 @@ import { copyAndRemoveProperties, log, newPromotedClient, noopFn, NoopPromotedCl
 import type { Insertion, Request } from './types/delivery';
 import { ClientType_PLATFORM_SERVER, TrafficType_PRODUCTION, TrafficType_SHADOW } from './client';
 import { PromotedClientArguments } from './client-args';
+import { InsertionPageType } from './metrics-request';
 
 const fakeUuidGenerator = () => {
   let i = 0;
@@ -1833,6 +1834,7 @@ describe('shadow requests', () => {
         },
       },
       fullInsertion: toInsertions(products),
+      insertionPageType: InsertionPageType.Unpaged,
     });
     const deliveryCallCount = shouldCallDelivery ? 1 : 0;
     expect(deliveryClient.mock.calls.length).toBe(deliveryCallCount); // here lies the shadow request
