@@ -1855,6 +1855,31 @@ describe('shadow requests', () => {
     expect(metricsClient.mock.calls.length).toBe(1);
   }
 
+  function runPagingTypeErrorTest(insertionPagingType?: InsertionPageType) {
+    const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in the error case'));
+    const metricsClient: any = jest.fn(failFunction('Metrics should not be called in the error case'));
+
+    const promotedClient = newFakePromotedClient({
+      deliveryClient,
+      metricsClient,
+      shadowTrafficDeliveryPercent: 0.5,
+      handleError: throwOnError,
+    });
+
+    const products = [newProduct('3')];
+    promotedClient.prepareForLogging({
+      request: {
+        ...newBaseRequest(),
+        clientInfo: {
+          trafficType: TrafficType_PRODUCTION,
+          clientType: ClientType_PLATFORM_SERVER,
+        },
+      },
+      fullInsertion: toInsertions(products),
+      insertionPageType: insertionPagingType,
+    });
+  }
+
   it('makes a shadow request', async () => {
     await runShadowRequestSamplingTest(true, true, 0.5);
   });
@@ -1865,6 +1890,16 @@ describe('shadow requests', () => {
 
   it('does not make a shadow request - sampling not turned on', async () => {
     await runShadowRequestSamplingTest(true, false, 0);
+  });
+
+  it('throws an error with the wrong paging type', async () => {
+    expect(() => runPagingTypeErrorTest(InsertionPageType.PrePaged)).toThrow(
+      'Insertions must be unpaged when shadow traffic is on'
+    );
+  });
+
+  it('throws an error with no paging type', async () => {
+    expect(() => runPagingTypeErrorTest()).toThrow('Insertions must be unpaged when shadow traffic is on');
   });
 });
 
