@@ -1,7 +1,7 @@
 import { copyAndRemoveProperties, log, newPromotedClient, noopFn, NoopPromotedClient, throwOnError } from '.';
-import type { PromotedClientArguments } from '.';
 import type { Insertion, Request } from './types/delivery';
 import { ClientType_PLATFORM_SERVER, TrafficType_PRODUCTION, TrafficType_SHADOW } from './client';
+import { PromotedClientArguments } from './client-args';
 
 const fakeUuidGenerator = () => {
   let i = 0;
@@ -1211,7 +1211,7 @@ describe('deliver', () => {
         deliveryClient,
         metricsClient,
         deliveryTimeoutWrapper: () => Promise.reject(new Error('timeout')),
-        handleError: (error) => {
+        handleError: (error: Error) => {
           // Skip the first error.
           if (numErrors > 0) {
             throw error;
@@ -1305,7 +1305,7 @@ describe('deliver', () => {
         deliveryClient,
         metricsClient,
         metricsTimeoutWrapper: () => Promise.reject(new Error('timeout')),
-        handleError: (error) => {
+        handleError: (error: Error) => {
           // Skip the first error.
           if (numErrors > 0) {
             throw error;
