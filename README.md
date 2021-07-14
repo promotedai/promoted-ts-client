@@ -16,12 +16,7 @@ PromotedClient avoids having direct dependencies so customer's have more options
 
 promotedClient.js
 
-<<<<<<< HEAD
-
-````
-=======
 ```typescript
->>>>>>> 070a9f58a716d04c5d50741d0566ed7fe871e6e8
 import { logOnError, newPromotedClient, throwOnError } from 'promoted-ts-client';
 import { v5 as uuid } from 'uuid';
 import axios from 'axios';
@@ -59,7 +54,7 @@ export const promotedClient = newPromotedClient({
   deliveryTimeoutMillis,
   metricsTimeoutMillis,
 });
-````
+```
 
 ## Calling our Delivery API
 
