@@ -50,6 +50,11 @@ export interface PromotedClient {
    * Used to only log Requests and Insertions.
    */
   prepareForLogging(metricsRequest: MetricsRequest): ClientResponse;
+
+  /**
+   * Indicates whether this is client is performing actions or not.
+   */
+  enabled: boolean;
 }
 
 /**
@@ -99,6 +104,12 @@ export class NoopPromotedClient implements PromotedClient {
       insertion,
       createLogRequest: () => undefined,
     });
+  }
+
+  // Returns whether or not the client is taking actions at this time.
+  public get enabled() {
+    // The no-op client is never enabled.
+    return false;
   }
 }
 
@@ -155,6 +166,12 @@ export class PromotedClientImpl implements PromotedClient {
     this.shouldApplyTreatment = args.shouldApplyTreatment ?? defaultShouldApplyTreatment;
     this.deliveryTimeoutWrapper = args.deliveryTimeoutWrapper ?? timeoutWrapper;
     this.metricsTimeoutWrapper = args.metricsTimeoutWrapper ?? timeoutWrapper;
+  }
+
+  // Returns whether or not the client is taking actions at this time.
+  public get enabled() {
+    // The "live" client is always enabled.
+    return true;
   }
 
   // Instead of reusing `deliver`, we copy/paste most of the functionality here.
@@ -523,7 +540,7 @@ const checkThatLogIdsNotSet = (deliveryRequest: DeliveryRequest | MetricsRequest
  * the response.
  */
 const fillInDetails = (responseInsertions: Insertion[], fullInsertion: Insertion[]): Insertion[] => {
-  const contentIdToInputInsertion = fullInsertion.reduce((map: { [contnetId: string]: Insertion }, insertion) => {
+  const contentIdToInputInsertion = fullInsertion.reduce((map: { [contentId: string]: Insertion }, insertion) => {
     if (insertion.contentId !== undefined) {
       map[insertion.contentId] = insertion;
     }

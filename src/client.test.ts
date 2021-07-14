@@ -106,6 +106,28 @@ const failFunction = (errorMessage: string) => () => {
   throw errorMessage;
 };
 
+describe('factory enabled', () => {
+  it('creates a non-enabled client', () => {
+    const promotedClient = newFakePromotedClient({
+      enabled: false,
+      deliveryClient: jest.fn(failFunction('Delivery should not be called')),
+      metricsClient: jest.fn(failFunction('Metrics should not be called')),
+    });
+    expect(promotedClient.enabled).toBeFalsy();
+    expect(promotedClient.constructor.name).toEqual('NoopPromotedClient');
+  });
+
+  it('creates an enabled client', () => {
+    const promotedClient = newFakePromotedClient({
+      enabled: true,
+      deliveryClient: jest.fn(failFunction('Delivery should not be called')),
+      metricsClient: jest.fn(failFunction('Metrics should not be called')),
+    });
+    expect(promotedClient.enabled).toBeTruthy();
+    expect(promotedClient.constructor.name).toEqual('PromotedClientImpl');
+  });
+});
+
 describe('no-op', () => {
   describe('deliver', () => {
     it('good case', async () => {
