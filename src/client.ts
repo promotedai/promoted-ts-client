@@ -3,7 +3,8 @@ import { RequiredBaseRequest } from './base-request';
 import { PromotedClientArguments } from './client-args';
 import { ClientResponse } from './client-response';
 import { DeliveryRequest } from './delivery-request';
-import { InsertionPageType, MetricsRequest } from './metrics-request';
+import { InsertionPageType } from './insertion-page-type';
+import { MetricsRequest } from './metrics-request';
 import { Sampler, SamplerImpl } from './sampler';
 import { timeoutWrapper } from './timeout';
 import type { ErrorHandler } from './error-handler';
@@ -203,7 +204,17 @@ export class PromotedClientImpl implements PromotedClient {
       if (error) {
         this.handleError(error);
       }
+
+      // It's ok to not specify insertionPageType because for delivery we assume it is
+      // "unpaged"...but if you set it, it had best not be "prepaged".
+      if (deliveryRequest.insertionPageType === InsertionPageType.PrePaged) {
+        this.handleError(new Error('Delivery expects unpaged insertions'));
+      }
     }
+
+    // Delivery requests should always use unpaged insertions.
+    deliveryRequest.insertionPageType = InsertionPageType.Unpaged;
+
     this.preDeliveryFillInFields(deliveryRequest);
     const onlyLog = deliveryRequest.onlyLog ?? this.defaultRequestValues.onlyLog;
 
@@ -308,7 +319,8 @@ export class PromotedClientImpl implements PromotedClient {
         logRequest.request = [this.createLogRequestRequestToLog(requestToLog)];
         logRequest.insertion = this.applyPaging(
           deliveryRequest.fullInsertion.map(toCompactMetricsInsertion),
-          requestToLog.paging
+          requestToLog.paging,
+          deliveryRequest.insertionPageType
         );
       }
       if (cohortMembershipToLog) {
@@ -358,9 +370,18 @@ export class PromotedClientImpl implements PromotedClient {
    * @param paging paging info, may be nil
    * @returns the modified page of insertions
    */
-  private applyPaging = (insertions: Insertion[], paging?: Paging): Insertion[] => {
+  private applyPaging = (
+    insertions: Insertion[],
+    paging?: Paging,
+    insertionPageType?: InsertionPageType
+  ): Insertion[] => {
     const insertionPage: Insertion[] = [];
     let start = paging?.offset ?? 0;
+    if (insertionPageType === InsertionPageType.PrePaged) {
+      // When insertions are pre-paged, we ignore any provided offset.
+      start = 0;
+    }
+
     let size = paging?.size ?? -1;
     if (size <= 0) {
       size = insertions.length;

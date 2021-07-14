@@ -1,8 +1,9 @@
 # promoted-ts-client
 
-A Typescript Client to contact Promoted APIs.  This is primarily intended to be used when logging `Request`s and `Insertion`s on a Node.js server.
+A Typescript Client to contact Promoted APIs. This is primarily intended to be used when logging `Request`s and `Insertion`s on a Node.js server.
 
 Client logging libraries:
+
 - [promoted-ts-client](https://github.com/promotedai/promoted-ts-client) - for logging `Request`s and `Insertion`s from your server.
 - [promoted-snowplow-logger](https://github.com/promotedai/promoted-snowplow-logger) - for logging events from a browser.
 - [ios-metrics-sdk](https://github.com/promotedai/ios-metrics-sdk) - for iOS logging.
@@ -14,6 +15,7 @@ We recommend creating a PromotedClient in a separate file so it can be reused.
 PromotedClient avoids having direct dependencies so customer's have more options for customization and can keep dependencies smaller.
 
 promotedClient.js
+
 ```
 import { logOnError, newPromotedClient, throwOnError } from 'promoted-ts-client';
 import { v5 as uuid } from 'uuid';
@@ -57,6 +59,7 @@ export const promotedClient = newPromotedClient({
 ## Calling our Delivery API
 
 Let's say the previous code looks like this:
+
 ```
 static async getProducts(req: any, res: Response) {
   const products = ...; // Logic to get products from DB, apply filtering, etc.
@@ -65,6 +68,7 @@ static async getProducts(req: any, res: Response) {
 ```
 
 We would modify to something like this:
+
 ```
 static async getProducts(req: any, res: Response) {
   const products = ...;
@@ -98,27 +102,37 @@ static async getProducts(req: any, res: Response) {
 
 There are other optional options.
 
-| Argument | Type | Default Value | Description |
-| --- | --- | --- | --- |
-| `onlyLog` | `boolean` | `false` | Can be used to conditionally disable deliver per request |
+| Argument                     | Type                     | Default Value        | Description                                                    |
+| ---------------------------- | ------------------------ | -------------------- | -------------------------------------------------------------- |
+| `onlyLog`                    | `boolean`                | `false`              | Can be used to conditionally disable deliver per request       |
 | `toCompactDeliveryInsertion` | `Insertion => Insertion` | Returns the argument | Can be used to strip out fields being passed into Delivery API |
-| `toCompactMetricsInsertion` | `Insertion => Insertion` | Returns the argument | Can be used to strip out fields being passed into Metrics API |
+| `toCompactMetricsInsertion`  | `Insertion => Insertion` | Returns the argument | Can be used to strip out fields being passed into Metrics API  |
 
 ## Logging only
 
 There are two ways of doing this with `PromotedClient`:
+
 1. You can use `deliver` but add a `shouldOptimize: false` property.
-2. You can use `prepareForLogging` method call instead.  The `prepareForLogging` signature is similar to `deliver` and should be integrated the same way.
+2. You can use `prepareForLogging` method call instead. The `prepareForLogging` signature is similar to `deliver` and should be integrated the same way.
 
 ## Pagination
 
-The `prepareForLogging` call assumes the client has already handled pagination.  It needs a `Request.paging.offset` to be passed in for the number of items deep that the page is.
+- When calling `deliver`, we expect that you will pass an unpaged (complete) list of insertions, and the SDK assumes this to be the case.
+
+- When calling `prepareForLogging` with shadow traffic turned on, we also expect an unpaged list of insertions, since in this case we are simulating delivery.
+
+- When calling `prepareForLogging` otherwise, you may choose to pass "pre-paged" or "unpaged" insertions based on the `insertionPageType` field on the `MetricsRequest`.
+  - When `insertionPageType` is "unpaged", the `Request.paging.offset` and `Request.paging.size` parameters are used to log a "window" of insertions, and the `position` of the insertions will be offset accordingly.
+  - When `insertionPageType` is "pre-paged", the SDK assumes the client is handling paging, and the position offset is assumed to be 0.
+
+The `prepareForLogging` call assumes the client has already handled pagination. It needs a `Request.paging.offset` to be passed in for the number of items deep that the page is.
 
 # Improving this library
 
 ## Tech used
 
 Uses
+
 - [TypeScript](https://www.typescriptlang.org/) support
 - [React](https://reactjs.org/) support
 - [ESLint](https://eslint.org/) (with [React](https://reactjs.org/) and [Prettier](https://prettier.io/))
@@ -150,10 +164,11 @@ When you want to undo, run `npm run unlink` in this directory and `npm unlink pr
 
 ## Deploy
 
-We use a GitHub action that runs semantic-release to determine how to update versions.  Just do a normal code review and this should work.  Depending on the message prefixes (e.g. `feat: `, `fix: `, `clean: `, `docs: `), it'll update the version appropriately.
+We use a GitHub action that runs semantic-release to determine how to update versions. Just do a normal code review and this should work. Depending on the message prefixes (e.g. `feat: `, `fix: `, `clean: `, `docs: `), it'll update the version appropriately.
 
 # Resources
 
 The base of this repository is a combination of the following repos:
+
 - https://github.com/DenysVuika/react-lib
 - https://github.com/Alexandrshy/como-north and https://dev.to/alexandrshy/creating-a-template-repository-in-github-1d05

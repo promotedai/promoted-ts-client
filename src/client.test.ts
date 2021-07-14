@@ -2,7 +2,9 @@ import { copyAndRemoveProperties, log, newPromotedClient, noopFn, NoopPromotedCl
 import type { Insertion, Request } from './types/delivery';
 import { ClientType_PLATFORM_SERVER, TrafficType_PRODUCTION, TrafficType_SHADOW } from './client';
 import { PromotedClientArguments } from './client-args';
-import { InsertionPageType } from './metrics-request';
+import { InsertionPageType } from './insertion-page-type';
+import { DeliveryRequest } from './delivery-request';
+import { MetricsRequest } from './metrics-request';
 
 const fakeUuidGenerator = () => {
   let i = 0;
@@ -206,6 +208,60 @@ describe('no-op', () => {
 });
 
 describe('deliver', () => {
+  it('allows you to set unpaged', async () => {
+    const deliveryClient = jest.fn(() => {
+      return Promise.resolve({});
+    });
+    const metricsClient = jest.fn(failFunction('All data should be logged in Delivery API'));
+    let gotError = false;
+
+    const promotedClient = newFakePromotedClient({
+      deliveryClient,
+      metricsClient,
+      handleError: () => {
+        gotError = true;
+      },
+    });
+
+    const products = [newProduct('3'), newProduct('2'), newProduct('1')];
+    const deliveryReq: DeliveryRequest = {
+      request: newBaseRequest(),
+      insertionPageType: InsertionPageType.Unpaged,
+      fullInsertion: toInsertions(products),
+    };
+
+    await promotedClient.deliver(deliveryReq);
+    expect(deliveryClient.mock.calls.length).toBe(1);
+    expect(gotError).toBeFalsy();
+  });
+
+  it('errors if you say prepaged', async () => {
+    const deliveryClient = jest.fn(() => {
+      return Promise.resolve({});
+    });
+    const metricsClient = jest.fn(failFunction('All data should be logged in Delivery API'));
+    let gotError = false;
+
+    const promotedClient = newFakePromotedClient({
+      deliveryClient,
+      metricsClient,
+      handleError: () => {
+        gotError = true;
+      },
+    });
+
+    const products = [newProduct('3'), newProduct('2'), newProduct('1')];
+    const deliveryReq: DeliveryRequest = {
+      request: newBaseRequest(),
+      insertionPageType: InsertionPageType.PrePaged,
+      fullInsertion: toInsertions(products),
+    };
+
+    await promotedClient.deliver(deliveryReq);
+    expect(deliveryClient.mock.calls.length).toBe(1); // note our precondition checks don't actually throw
+    expect(gotError).toBeTruthy();
+  });
+
   it('simple good case', async () => {
     const deliveryClient = jest.fn((request) => {
       expect(request).toEqual({
@@ -1573,6 +1629,69 @@ describe('metrics', () => {
     await response.log();
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(1);
+  });
+
+  it('ignores offset for prepaged insertions', async () => {
+    const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
+    const expectedLogReq = {
+      userInfo: {
+        logUserId: 'logUserId1',
+      },
+      timing: {
+        clientLogTimestamp: 12345678,
+      },
+      insertion: [
+        toInsertion(newProduct('3'), {
+          insertionId: 'uuid1',
+          requestId: 'uuid0',
+          position: 0, // this is the key difference with the unpaged test
+        }),
+      ],
+      request: [
+        {
+          ...newLogRequestRequest(),
+          requestId: 'uuid0',
+          paging: {
+            size: 1,
+            offset: 100,
+          },
+          timing: {
+            clientLogTimestamp: 12345678,
+          },
+        },
+      ],
+    };
+    const metricsClient: any = jest.fn((request) => {
+      expect(request).toEqual(expectedLogReq);
+    });
+
+    const promotedClient = newFakePromotedClient({
+      deliveryClient,
+      metricsClient,
+    });
+
+    const products = [newProduct('3'), newProduct('2'), newProduct('1')];
+    const metricsRequest: MetricsRequest = {
+      request: {
+        ...newBaseRequest(),
+        paging: {
+          size: 1,
+          offset: 100,
+        },
+      },
+      fullInsertion: toInsertions(products),
+      insertionPageType: InsertionPageType.PrePaged,
+    };
+
+    const response = promotedClient.prepareForLogging(metricsRequest);
+    expect(response.insertion).toEqual([
+      toInsertion(newProduct('3'), {
+        insertionId: 'uuid1',
+        requestId: 'uuid0',
+      }),
+    ]);
+
+    expect(response.createLogRequest()).toEqual(expectedLogReq);
   });
 
   it('non-zero page offset', async () => {

@@ -1,4 +1,5 @@
 import { InsertionMapFn } from './base-request';
+import { InsertionPageType } from './insertion-page-type';
 import { Insertion, Request } from './types/delivery';
 import { CohortMembership } from './types/event';
 
@@ -43,4 +44,11 @@ export interface DeliveryRequest {
    * This CohortMembership is also logged to Metrics.
    */
   experiment?: CohortMembership;
+
+  /**
+   * Indicates the page type of the full insertion list on this request.
+   * For a DeliveryRequest, you should always pass "unpaged" full insertions, and
+   * the SDK makes this assumption on your behalf.
+   */
+  insertionPageType?: InsertionPageType;
 }
