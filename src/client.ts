@@ -8,8 +8,9 @@ import { MetricsRequest } from './metrics-request';
 import { Sampler, SamplerImpl } from './sampler';
 import { timeoutWrapper } from './timeout';
 import type { ErrorHandler } from './error-handler';
-import type { Insertion, Paging, Request, Response } from './types/delivery';
+import type { Insertion, Request, Response } from './types/delivery';
 import type { CohortMembership, LogRequest, LogResponse } from './types/event';
+import { Pager } from './pager';
 
 /**
  * Design-wise
@@ -88,7 +89,7 @@ export const newPromotedClient = (args: PromotedClientArguments) => {
 export class NoopPromotedClient implements PromotedClient {
   public prepareForLogging(metricsRequest: MetricsRequest): ClientResponse {
     const { request, fullInsertion } = metricsRequest;
-    const insertion = !request?.paging?.size ? fullInsertion : fullInsertion.slice(0, request.paging.size);
+    const insertion = new Pager().applyPaging(fullInsertion, false, request?.paging, metricsRequest.insertionPageType);
     return {
       log: () => Promise.resolve(undefined),
       insertion,
@@ -98,7 +99,7 @@ export class NoopPromotedClient implements PromotedClient {
 
   public async deliver(deliveryRequest: DeliveryRequest): Promise<ClientResponse> {
     const { request, fullInsertion } = deliveryRequest;
-    const insertion = !request?.paging?.size ? fullInsertion : fullInsertion.slice(0, request.paging.size);
+    const insertion = new Pager().applyPaging(fullInsertion, true, request?.paging, deliveryRequest.insertionPageType);
     return Promise.resolve({
       log: () => Promise.resolve(undefined),
       insertion,
@@ -198,7 +199,7 @@ export class PromotedClientImpl implements PromotedClient {
 
     // If defined, log the Request to Metrics API.
     const { fullInsertion, request } = metricsRequest;
-    const insertion = !request?.paging?.size ? fullInsertion : fullInsertion.slice(0, request.paging.size);
+    const insertion = new Pager().applyPaging(fullInsertion, false, request?.paging, metricsRequest.insertionPageType);
     if (request !== undefined) {
       this.addMissingRequestId(request);
       this.addMissingIdsOnInsertions(request, insertion);
@@ -222,8 +223,7 @@ export class PromotedClientImpl implements PromotedClient {
         this.handleError(error);
       }
 
-      // It's ok to not specify insertionPageType because for delivery we assume it is
-      // "unpaged"...but if you set it, it had best not be "prepaged".
+      // Delivery requires unpaged insertions.
       if (deliveryRequest.insertionPageType === InsertionPageType.PrePaged) {
         this.handleError(new Error('Delivery expects unpaged insertions'));
       }
@@ -273,12 +273,18 @@ export class PromotedClientImpl implements PromotedClient {
     // If defined, log the Request to Metrics API.
     let requestToLog: Request | undefined = undefined;
     if (!insertionsFromPromoted) {
+      // Insertions from Promoted are paged on the API side.
+      // If we did not call the API for any reason, apply the expected
+      // paging to the full insertions here.
       // If you update this, update the no-op version too.
       requestToLog = deliveryRequest.request;
       const { fullInsertion } = deliveryRequest;
-      responseInsertions = !requestToLog?.paging?.size
-        ? fullInsertion
-        : fullInsertion.slice(0, requestToLog.paging.size);
+      responseInsertions = new Pager().applyPaging(
+        fullInsertion,
+        true,
+        requestToLog?.paging,
+        deliveryRequest.insertionPageType
+      );
     }
 
     const insertion = responseInsertions === undefined ? [] : responseInsertions;
@@ -287,6 +293,7 @@ export class PromotedClientImpl implements PromotedClient {
       this.addMissingIdsOnInsertions(requestToLog, insertion);
     }
 
+    // pass responseInsertions to l
     const logRequestFn = this.createLogRequestFn(deliveryRequest, requestToLog, cohortMembershipToLog);
     return {
       log: this.createLogFn(logRequestFn),
@@ -334,9 +341,10 @@ export class PromotedClientImpl implements PromotedClient {
         deliveryRequest.toCompactMetricsInsertion ?? this.defaultRequestValues.toCompactMetricsInsertion;
       if (requestToLog) {
         logRequest.request = [this.createLogRequestRequestToLog(requestToLog)];
-        logRequest.insertion = this.applyPaging(
+        logRequest.insertion = new Pager().applyPaging(
           deliveryRequest.fullInsertion.map(toCompactMetricsInsertion),
-          requestToLog.paging,
+          false,
+          requestToLog?.paging,
           deliveryRequest.insertionPageType
         );
       }
@@ -379,42 +387,6 @@ export class PromotedClientImpl implements PromotedClient {
       return Promise.resolve(undefined);
     };
   }
-
-  /**
-   * Sets the correct position field on each assertion based on paging parameters and takes
-   * a page of full insertions (if necessary).
-   * @param insertions the full set of insertions
-   * @param paging paging info, may be nil
-   * @returns the modified page of insertions
-   */
-  private applyPaging = (
-    insertions: Insertion[],
-    paging?: Paging,
-    insertionPageType?: InsertionPageType
-  ): Insertion[] => {
-    const insertionPage: Insertion[] = [];
-    let start = paging?.offset ?? 0;
-    if (insertionPageType === InsertionPageType.PrePaged) {
-      // When insertions are pre-paged, we ignore any provided offset.
-      start = 0;
-    }
-
-    let size = paging?.size ?? -1;
-    if (size <= 0) {
-      size = insertions.length;
-    }
-
-    for (const insertion of insertions) {
-      if (insertionPage.length >= size) {
-        break;
-      }
-      insertion.position = start;
-      insertionPage.push(insertion);
-      start++;
-    }
-
-    return insertionPage;
-  };
 
   /**
    * Creates a slimmed-down copy of the request for inclusion in a LogRequest.

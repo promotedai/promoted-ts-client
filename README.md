@@ -117,13 +117,18 @@ There are two ways of doing this with `PromotedClient`:
 
 ## Pagination
 
-- When calling `deliver`, we expect that you will pass an unpaged (complete) list of insertions, and the SDK assumes this to be the case.
+- When calling `deliver`, we expect that you will pass an unpaged (complete) list of insertions, and the SDK assumes this to be the case. To help you catch this scenario, the SDK will call handleError in the pre-paged case if performChecks is turned on.
 
 - When calling `prepareForLogging` with shadow traffic turned on, we also expect an unpaged list of insertions, since in this case we are simulating delivery.
 
 - When calling `prepareForLogging` otherwise, you may choose to pass "pre-paged" or "unpaged" insertions based on the `insertionPageType` field on the `MetricsRequest`.
-  - When `insertionPageType` is "unpaged", the `Request.paging.offset` and `Request.paging.size` parameters are used to log a "window" of insertions, and the `position` of the insertions will be offset accordingly.
-  - When `insertionPageType` is "pre-paged", the SDK assumes the client is handling paging, and the position offset is assumed to be 0.
+  - When `insertionPageType` is "unpaged", the `Request.paging.offset` and `Request.paging.size` parameters are used to log a "window" of insertions.
+  - When `insertionPageType` is "pre-paged", the SDK will not handle pagination of the insertions that are part of the resulting lot request.
+
+### Position
+
+- Do not set the insertion `position` field in client code. The SDK and Delivery API will set it when `deliver` is called.
+- When logging only via `prepareForLogging`, the `position` field is not set by the SDK on the log request insertions.
 
 The `prepareForLogging` call assumes the client has already handled pagination. It needs a `Request.paging.offset` to be passed in for the number of items deep that the page is.
 
