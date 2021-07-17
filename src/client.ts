@@ -87,9 +87,15 @@ export const newPromotedClient = (args: PromotedClientArguments) => {
  * Used when clients want to disable all functionality.
  */
 export class NoopPromotedClient implements PromotedClient {
+  private pager: Pager;
+
+  constructor() {
+    this.pager = new Pager();
+  }
+
   public prepareForLogging(metricsRequest: MetricsRequest): ClientResponse {
     const { request, fullInsertion } = metricsRequest;
-    const insertion = new Pager().applyPaging(fullInsertion, false, request?.paging, metricsRequest.insertionPageType);
+    const insertion = this.pager.applyPaging(fullInsertion, false, request?.paging, metricsRequest.insertionPageType);
     return {
       log: () => Promise.resolve(undefined),
       insertion,
@@ -99,7 +105,7 @@ export class NoopPromotedClient implements PromotedClient {
 
   public async deliver(deliveryRequest: DeliveryRequest): Promise<ClientResponse> {
     const { request, fullInsertion } = deliveryRequest;
-    const insertion = new Pager().applyPaging(fullInsertion, true, request?.paging, deliveryRequest.insertionPageType);
+    const insertion = this.pager.applyPaging(fullInsertion, true, request?.paging, deliveryRequest.insertionPageType);
     return Promise.resolve({
       log: () => Promise.resolve(undefined),
       insertion,
@@ -129,6 +135,7 @@ export class PromotedClientImpl implements PromotedClient {
   private metricsTimeoutMillis: number;
   private shouldApplyTreatment: (cohortMembership: CohortMembership | undefined) => boolean;
   private sampler: Sampler;
+  private pager: Pager;
 
   // For testing.
   private nowMillis: () => number;
@@ -141,6 +148,7 @@ export class PromotedClientImpl implements PromotedClient {
    * @params {DeliveryClientArguments} args The arguments for the logger.
    */
   public constructor(args: PromotedClientArguments) {
+    this.pager = new Pager();
     this.deliveryClient = args.deliveryClient;
     this.metricsClient = args.metricsClient;
     this.performChecks = args.performChecks ?? true;
@@ -199,7 +207,7 @@ export class PromotedClientImpl implements PromotedClient {
 
     // If defined, log the Request to Metrics API.
     const { fullInsertion, request } = metricsRequest;
-    const insertion = new Pager().applyPaging(fullInsertion, false, request?.paging, metricsRequest.insertionPageType);
+    const insertion = this.pager.applyPaging(fullInsertion, false, request?.paging, metricsRequest.insertionPageType);
     if (request !== undefined) {
       this.addMissingRequestId(request);
       this.addMissingIdsOnInsertions(request, insertion);
@@ -279,7 +287,7 @@ export class PromotedClientImpl implements PromotedClient {
       // If you update this, update the no-op version too.
       requestToLog = deliveryRequest.request;
       const { fullInsertion } = deliveryRequest;
-      responseInsertions = new Pager().applyPaging(
+      responseInsertions = this.pager.applyPaging(
         fullInsertion,
         true,
         requestToLog?.paging,
@@ -293,7 +301,6 @@ export class PromotedClientImpl implements PromotedClient {
       this.addMissingIdsOnInsertions(requestToLog, insertion);
     }
 
-    // pass responseInsertions to l
     const logRequestFn = this.createLogRequestFn(deliveryRequest, requestToLog, cohortMembershipToLog);
     return {
       log: this.createLogFn(logRequestFn),
@@ -341,7 +348,7 @@ export class PromotedClientImpl implements PromotedClient {
         deliveryRequest.toCompactMetricsInsertion ?? this.defaultRequestValues.toCompactMetricsInsertion;
       if (requestToLog) {
         logRequest.request = [this.createLogRequestRequestToLog(requestToLog)];
-        logRequest.insertion = new Pager().applyPaging(
+        logRequest.insertion = this.pager.applyPaging(
           deliveryRequest.fullInsertion.map(toCompactMetricsInsertion),
           false,
           requestToLog?.paging,
