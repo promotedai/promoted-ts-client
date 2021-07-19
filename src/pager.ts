@@ -8,14 +8,14 @@ export class Pager {
    * @param insertions the full set of insertions
    * @param assignPosition whether or not to assign a position to the insertions, which deliver requests do and log requests may not.
    * @param paging paging info, may be nil
-   * @param insertionPageType the type of paging the client wants, defaults to "unpaged"
+   * @param insertionPageType the type of paging the client wants
    * @returns the modified page of insertions
    */
   applyPaging = (
     insertions: Insertion[],
     assignPosition: boolean,
-    paging?: Paging,
-    insertionPageType?: InsertionPageType
+    insertionPageType?: InsertionPageType,
+    paging?: Paging
   ): Insertion[] => {
     let offset = paging?.offset ?? 0;
     let index = offset;

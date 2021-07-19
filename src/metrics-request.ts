@@ -23,5 +23,5 @@ export interface MetricsRequest {
   /**
    * Indicates the page type of the full insertion list on this request.
    */
-  insertionPageType?: InsertionPageType;
+  insertionPageType: InsertionPageType;
 }

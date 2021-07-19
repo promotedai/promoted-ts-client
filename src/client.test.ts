@@ -142,6 +142,7 @@ describe('no-op', () => {
           ...newBaseRequest(),
         },
         fullInsertion: toInsertions(products),
+        insertionPageType: InsertionPageType.Unpaged,
       });
 
       const expectedRespInsertions = [
@@ -168,6 +169,7 @@ describe('no-op', () => {
           },
         },
         fullInsertion: toInsertions(products),
+        insertionPageType: InsertionPageType.Unpaged,
       });
 
       const expectedRespInsertions = [toInsertion(newProduct('3'), { position: 0 })];
@@ -190,6 +192,7 @@ describe('no-op', () => {
           ...newBaseRequest(),
         },
         fullInsertion: toInsertions(products),
+        insertionPageType: InsertionPageType.Unpaged,
       });
       expect(response.insertion).toEqual(toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]));
       await response.log();
@@ -210,6 +213,7 @@ describe('no-op', () => {
           },
         },
         fullInsertion: toInsertions(products),
+        insertionPageType: InsertionPageType.Unpaged,
       });
       expect(response.insertion).toEqual(toInsertions([newProduct('3')]));
       await response.log();
@@ -231,6 +235,7 @@ describe('no-op', () => {
           },
         },
         fullInsertion: toInsertions(products),
+        insertionPageType: InsertionPageType.Unpaged,
       });
 
       // Paging parameters advance to the second insertion.
@@ -323,6 +328,7 @@ describe('deliver', () => {
     const response = await promotedClient.deliver({
       request: newBaseRequest(),
       fullInsertion: toInsertions(products),
+      insertionPageType: InsertionPageType.Unpaged,
     });
     expect(deliveryClient.mock.calls.length).toBe(1);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -404,6 +410,7 @@ describe('deliver', () => {
           cohortId: 'HOLD_OUT',
           arm: 'CONTROL',
         },
+        insertionPageType: InsertionPageType.Unpaged,
       });
       expect(deliveryClient.mock.calls.length).toBe(0);
       expect(metricsClient.mock.calls.length).toBe(0);
@@ -490,6 +497,7 @@ describe('deliver', () => {
           cohortId: 'HOLD_OUT',
           arm: 'TREATMENT',
         },
+        insertionPageType: InsertionPageType.Unpaged,
       });
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(0);
@@ -565,6 +573,7 @@ describe('deliver', () => {
           cohortId: 'HOLD_OUT',
           arm: 'TREATMENT',
         },
+        insertionPageType: InsertionPageType.Unpaged,
       });
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(0);
@@ -656,6 +665,7 @@ describe('deliver', () => {
           cohortId: 'HOLD_OUT',
           arm: 'CONTROL',
         },
+        insertionPageType: InsertionPageType.Unpaged,
       });
       expect(deliveryClient.mock.calls.length).toBe(0);
       expect(metricsClient.mock.calls.length).toBe(0);
@@ -746,6 +756,7 @@ describe('deliver', () => {
           cohortId: 'HOLD_OUT',
           arm: 'CONTROL',
         },
+        insertionPageType: InsertionPageType.Unpaged,
       });
       expect(deliveryClient.mock.calls.length).toBe(0);
       expect(metricsClient.mock.calls.length).toBe(0);
@@ -838,6 +849,7 @@ describe('deliver', () => {
           cohortId: 'HOLD_OUT',
           arm: 'TREATMENT',
         },
+        insertionPageType: InsertionPageType.Unpaged,
       });
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(0);
@@ -920,6 +932,7 @@ describe('deliver', () => {
           cohortId: 'HOLD_OUT',
           arm: 'TREATMENT',
         },
+        insertionPageType: InsertionPageType.Unpaged,
       });
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(0);
@@ -1002,6 +1015,7 @@ describe('deliver', () => {
         cohortId: 'HOLD_OUT',
         arm: 'CONTROL',
       },
+      insertionPageType: InsertionPageType.Unpaged,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -1073,6 +1087,7 @@ describe('deliver', () => {
       onlyLog: true,
       request: newBaseRequest(),
       fullInsertion: toInsertions(products),
+      insertionPageType: InsertionPageType.Unpaged,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -1178,6 +1193,7 @@ describe('deliver', () => {
         cohortId: 'HOLD_OUT',
         arm: 'CONTROL',
       },
+      insertionPageType: InsertionPageType.Unpaged,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -1239,6 +1255,7 @@ describe('deliver', () => {
     const response = await promotedClient.deliver({
       request: newBaseRequest(),
       fullInsertion: toInsertions(products),
+      insertionPageType: InsertionPageType.Unpaged,
     });
     expect(deliveryClient.mock.calls.length).toBe(1);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -1333,6 +1350,7 @@ describe('deliver', () => {
           cohortId: 'HOLD_OUT',
           arm: 'TREATMENT',
         },
+        insertionPageType: InsertionPageType.Unpaged,
       });
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(0);
@@ -1431,6 +1449,7 @@ describe('deliver', () => {
           cohortId: 'HOLD_OUT',
           arm: 'TREATMENT',
         },
+        insertionPageType: InsertionPageType.Unpaged,
       });
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(0);
@@ -1460,6 +1479,7 @@ describe('deliver', () => {
             requestId: 'uuid0',
           },
           fullInsertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+          insertionPageType: InsertionPageType.Unpaged,
         })
       ).rejects.toEqual(new Error('Request.requestId should not be set'));
     });
@@ -1473,6 +1493,7 @@ describe('deliver', () => {
             insertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
           },
           fullInsertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+          insertionPageType: InsertionPageType.Unpaged,
         })
       ).rejects.toEqual(new Error('Do not set Request.insertion.  Set fullInsertion.'));
     });
@@ -1490,6 +1511,7 @@ describe('deliver', () => {
             toInsertion(newProduct('2')),
             toInsertion(newProduct('1')),
           ],
+          insertionPageType: InsertionPageType.Unpaged,
         })
       ).rejects.toEqual(new Error('Insertion.requestId should not be set'));
     });
@@ -1507,6 +1529,7 @@ describe('deliver', () => {
             toInsertion(newProduct('2')),
             toInsertion(newProduct('1')),
           ],
+          insertionPageType: InsertionPageType.Unpaged,
         })
       ).rejects.toEqual(new Error('Insertion.insertionId should not be set'));
     });
@@ -1517,6 +1540,7 @@ describe('deliver', () => {
         promotedClient.deliver({
           request: newBaseRequest(),
           fullInsertion: [{}, toInsertion(newProduct('2')), toInsertion(newProduct('1'))],
+          insertionPageType: InsertionPageType.Unpaged,
         })
       ).rejects.toEqual(new Error('Insertion.contentId should be set'));
     });
@@ -1589,6 +1613,7 @@ describe('metrics', () => {
     const response = promotedClient.prepareForLogging({
       request: newBaseRequest(),
       fullInsertion: toInsertions(products),
+      insertionPageType: InsertionPageType.Unpaged,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -1662,6 +1687,7 @@ describe('metrics', () => {
         },
       },
       fullInsertion: toInsertions(products),
+      insertionPageType: InsertionPageType.Unpaged,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -1793,6 +1819,7 @@ describe('metrics', () => {
         },
       },
       fullInsertion: toInsertions(products),
+      insertionPageType: InsertionPageType.Unpaged,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -1870,6 +1897,7 @@ describe('metrics', () => {
         viewId: 'uuid11',
       },
       fullInsertion: toInsertions(products),
+      insertionPageType: InsertionPageType.Unpaged,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -1914,6 +1942,7 @@ describe('metrics', () => {
             requestId: 'uuid0',
           },
           fullInsertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+          insertionPageType: InsertionPageType.Unpaged,
         })
       ).toThrow(new Error('Request.requestId should not be set'));
     });
@@ -2022,7 +2051,7 @@ describe('shadow requests', () => {
     expect(metricsClient.mock.calls.length).toBe(1);
   }
 
-  function runPagingTypeErrorTest(insertionPagingType?: InsertionPageType) {
+  function runPagingTypeErrorTest(insertionPagingType: InsertionPageType) {
     const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in the error case'));
     const metricsClient: any = jest.fn(failFunction('Metrics should not be called in the error case'));
 
@@ -2063,10 +2092,6 @@ describe('shadow requests', () => {
     expect(() => runPagingTypeErrorTest(InsertionPageType.PrePaged)).toThrow(
       'Insertions must be unpaged when shadow traffic is on'
     );
-  });
-
-  it('throws an error with no paging type', async () => {
-    expect(() => runPagingTypeErrorTest()).toThrow('Insertions must be unpaged when shadow traffic is on');
   });
 });
 
@@ -2114,6 +2139,7 @@ describe('noop promoted client', () => {
         ...newBaseRequest(),
       },
       fullInsertion: [],
+      insertionPageType: InsertionPageType.Unpaged,
     });
     const logReq = (await resp).createLogRequest();
     expect(logReq).toBeUndefined();
@@ -2123,6 +2149,7 @@ describe('noop promoted client', () => {
         ...newBaseRequest(),
       },
       fullInsertion: [],
+      insertionPageType: InsertionPageType.Unpaged,
     });
     const logReq2 = (await resp2).createLogRequest();
     expect(logReq2).toBeUndefined();

@@ -50,5 +50,5 @@ export interface DeliveryRequest {
    * For a DeliveryRequest, you should always pass "unpaged" full insertions, and
    * the SDK makes this assumption on your behalf.
    */
-  insertionPageType?: InsertionPageType;
+  insertionPageType: InsertionPageType;
 }
