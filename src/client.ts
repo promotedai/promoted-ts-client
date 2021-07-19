@@ -95,7 +95,7 @@ export class NoopPromotedClient implements PromotedClient {
 
   public prepareForLogging(metricsRequest: MetricsRequest): ClientResponse {
     const { request, fullInsertion } = metricsRequest;
-    const insertion = this.pager.applyPaging(fullInsertion, false, metricsRequest.insertionPageType, request?.paging);
+    const insertion = this.pager.applyPaging(fullInsertion, metricsRequest.insertionPageType, request?.paging);
     return {
       log: () => Promise.resolve(undefined),
       insertion,
@@ -104,7 +104,7 @@ export class NoopPromotedClient implements PromotedClient {
 
   public async deliver(deliveryRequest: DeliveryRequest): Promise<ClientResponse> {
     const { request, fullInsertion } = deliveryRequest;
-    const insertion = this.pager.applyPaging(fullInsertion, true, deliveryRequest.insertionPageType, request?.paging);
+    const insertion = this.pager.applyPaging(fullInsertion, deliveryRequest.insertionPageType, request?.paging);
     return Promise.resolve({
       log: () => Promise.resolve(undefined),
       insertion,
@@ -205,16 +205,16 @@ export class PromotedClientImpl implements PromotedClient {
 
     // If defined, log the Request to Metrics API.
     const { fullInsertion, request } = metricsRequest;
-    const insertion = this.pager.applyPaging(fullInsertion, false, metricsRequest.insertionPageType, request?.paging);
+    const responseInsertions = this.pager.applyPaging(fullInsertion, metricsRequest.insertionPageType, request?.paging);
     if (request !== undefined) {
       this.addMissingRequestId(request);
-      this.addMissingIdsOnInsertions(request, insertion);
+      this.addMissingIdsOnInsertions(request, responseInsertions);
     }
 
-    const logRequest = this.createLogRequest(metricsRequest, request);
+    const logRequest = this.createLogRequest(metricsRequest, responseInsertions, request);
     return {
       log: this.createLogFn(logRequest),
-      insertion,
+      insertion: responseInsertions,
       logRequest,
     };
   }
@@ -244,7 +244,7 @@ export class PromotedClientImpl implements PromotedClient {
     // TODO - if response only passes back IDs that are passed in, then we can
     // return just IDs back.
 
-    // We default to returning the input insertions.
+    // We default to returning the input insertions with all the original details (i.e. properties).
     let responseInsertions: Insertion[] | undefined = undefined;
     // If defined, log the CohortMembership to Metrics API.
     let cohortMembershipToLog: CohortMembership | undefined = undefined;
@@ -287,22 +287,21 @@ export class PromotedClientImpl implements PromotedClient {
       const { fullInsertion } = deliveryRequest;
       responseInsertions = this.pager.applyPaging(
         fullInsertion,
-        true,
         deliveryRequest.insertionPageType,
         requestToLog?.paging
       );
     }
 
-    const insertion = responseInsertions === undefined ? [] : responseInsertions;
+    responseInsertions = responseInsertions || [];
     if (requestToLog !== undefined) {
       this.addMissingRequestId(requestToLog);
-      this.addMissingIdsOnInsertions(requestToLog, insertion);
+      this.addMissingIdsOnInsertions(requestToLog, responseInsertions);
     }
 
-    const logRequest = this.createLogRequest(deliveryRequest, requestToLog, cohortMembershipToLog);
+    const logRequest = this.createLogRequest(deliveryRequest, responseInsertions, requestToLog, cohortMembershipToLog);
     return {
       log: this.createLogFn(logRequest),
-      insertion,
+      insertion: responseInsertions,
       logRequest,
     };
   }
@@ -333,6 +332,7 @@ export class PromotedClientImpl implements PromotedClient {
    */
   private createLogRequest(
     deliveryRequest: DeliveryRequest,
+    responseInsertions: Insertion[],
     requestToLog?: Request,
     cohortMembershipToLog?: CohortMembership
   ): LogRequest | undefined {
@@ -345,12 +345,7 @@ export class PromotedClientImpl implements PromotedClient {
       deliveryRequest.toCompactMetricsInsertion ?? this.defaultRequestValues.toCompactMetricsInsertion;
     if (requestToLog) {
       logRequest.request = [this.createLogRequestRequestToLog(requestToLog)];
-      logRequest.insertion = this.pager.applyPaging(
-        deliveryRequest.fullInsertion.map(toCompactMetricsInsertion),
-        false,
-        deliveryRequest.insertionPageType,
-        requestToLog?.paging
-      );
+      logRequest.insertion = responseInsertions.map(toCompactMetricsInsertion);
     }
     if (cohortMembershipToLog) {
       logRequest.cohortMembership = [cohortMembershipToLog];

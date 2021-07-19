@@ -6,21 +6,21 @@ export class Pager {
    * Sets the position field on each assertion based on paging parameters and takes
    * a page of full insertions (if necessary).
    * @param insertions the full set of insertions
-   * @param assignPosition whether or not to assign a position to the insertions, which deliver requests do and log requests may not.
-   * @param paging paging info, may be nil
    * @param insertionPageType the type of paging the client wants
+   * @param paging paging info, may be nil
    * @returns the modified page of insertions
    */
-  applyPaging = (
-    insertions: Insertion[],
-    assignPosition: boolean,
-    insertionPageType?: InsertionPageType,
-    paging?: Paging
-  ): Insertion[] => {
+  applyPaging = (insertions: Insertion[], insertionPageType: InsertionPageType, paging?: Paging): Insertion[] => {
     let offset = paging?.offset ?? 0;
+    if (offset <= 0) {
+      offset = 0;
+    }
+
     let index = offset;
     if (insertionPageType === InsertionPageType.PrePaged) {
-      // When insertions are pre-paged, we ignore any provided offset.
+      // When insertions are pre-paged, we don't use offset to
+      // window into the provided assertions, although we do use it
+      // when assigning positions.
       index = 0;
     }
 
@@ -31,7 +31,7 @@ export class Pager {
     const insertionPage: Insertion[] = [];
     while (index < insertions.length && insertionPage.length < size) {
       const insertion = insertions[index];
-      if (assignPosition) {
+      if (insertion.position === undefined) {
         insertion.position = offset;
       }
       insertionPage.push(insertion);

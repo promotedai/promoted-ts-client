@@ -29,6 +29,12 @@ const newProduct = (id: string): Product => ({
 
 const toInsertions = (products: Product[]): Insertion[] => products.map(toInsertionWithNoExtraFields);
 
+// Response insertions should always have position assigned.
+const toResponseInsertions = (products: Product[]): Insertion[] =>
+  products.map((product, idx) => {
+    return toInsertion(product, { position: idx });
+  });
+
 // An interface for setting optional fields.
 interface InsertionFields {
   insertionId?: string;
@@ -194,7 +200,7 @@ describe('no-op', () => {
         fullInsertion: toInsertions(products),
         insertionPageType: InsertionPageType.Unpaged,
       });
-      expect(response.insertion).toEqual(toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]));
+      expect(response.insertion).toEqual(toResponseInsertions([newProduct('3'), newProduct('2'), newProduct('1')]));
       await response.log();
     });
 
@@ -215,7 +221,7 @@ describe('no-op', () => {
         fullInsertion: toInsertions(products),
         insertionPageType: InsertionPageType.Unpaged,
       });
-      expect(response.insertion).toEqual(toInsertions([newProduct('3')]));
+      expect(response.insertion).toEqual(toResponseInsertions([newProduct('3')]));
       await response.log();
     });
 
@@ -239,7 +245,9 @@ describe('no-op', () => {
       });
 
       // Paging parameters advance to the second insertion.
-      expect(response.insertion).toEqual(toInsertions([newProduct('2')]));
+      const expectedInsertions = toResponseInsertions([newProduct('2')]);
+      expectedInsertions[0].position = 1; // the offset
+      expect(response.insertion).toEqual(expectedInsertions);
       await response.log();
     });
   });
@@ -1580,14 +1588,17 @@ describe('metrics', () => {
         toInsertion(newProduct('3'), {
           insertionId: 'uuid1',
           requestId: 'uuid0',
+          position: 0,
         }),
         toInsertion(newProduct('2'), {
           insertionId: 'uuid2',
           requestId: 'uuid0',
+          position: 1,
         }),
         toInsertion(newProduct('1'), {
           insertionId: 'uuid3',
           requestId: 'uuid0',
+          position: 2,
         }),
       ],
       request: [
@@ -1622,14 +1633,17 @@ describe('metrics', () => {
       toInsertion(newProduct('3'), {
         insertionId: 'uuid1',
         requestId: 'uuid0',
+        position: 0,
       }),
       toInsertion(newProduct('2'), {
         insertionId: 'uuid2',
         requestId: 'uuid0',
+        position: 1,
       }),
       toInsertion(newProduct('1'), {
         insertionId: 'uuid3',
         requestId: 'uuid0',
+        position: 2,
       }),
     ]);
 
@@ -1654,6 +1668,7 @@ describe('metrics', () => {
         toInsertion(newProduct('3'), {
           insertionId: 'uuid1',
           requestId: 'uuid0',
+          position: 0,
         }),
       ],
       request: [
@@ -1696,6 +1711,7 @@ describe('metrics', () => {
       toInsertion(newProduct('3'), {
         insertionId: 'uuid1',
         requestId: 'uuid0',
+        position: 0,
       }),
     ]);
 
@@ -1707,7 +1723,7 @@ describe('metrics', () => {
     expect(metricsClient.mock.calls.length).toBe(1);
   });
 
-  it('ignores offset for prepaged insertions', async () => {
+  it('offsets position starting at the first insertion for prepaged insertions', async () => {
     const deliveryClient: any = jest.fn(failFunction('Delivery should not be called when logging only'));
     // Logging only doesn't set position.
     const expectedLogReq = {
@@ -1721,6 +1737,7 @@ describe('metrics', () => {
         toInsertion(newProduct('3'), {
           insertionId: 'uuid1',
           requestId: 'uuid0',
+          position: 100,
         }),
       ],
       request: [
@@ -1764,6 +1781,7 @@ describe('metrics', () => {
       toInsertion(newProduct('3'), {
         insertionId: 'uuid1',
         requestId: 'uuid0',
+        position: 100, // the offset
       }),
     ]);
 
@@ -1784,6 +1802,7 @@ describe('metrics', () => {
         toInsertion(newProduct('2'), {
           insertionId: 'uuid1',
           requestId: 'uuid0',
+          position: 1, // the offset
         }),
       ],
       request: [
@@ -1828,6 +1847,7 @@ describe('metrics', () => {
       toInsertion(newProduct('2'), {
         insertionId: 'uuid1',
         requestId: 'uuid0',
+        position: 1, // the offset
       }),
     ]);
 
@@ -1854,18 +1874,21 @@ describe('metrics', () => {
           requestId: 'uuid0',
           sessionId: 'uuid10',
           viewId: 'uuid11',
+          position: 0,
         }),
         toInsertion(newProduct('2'), {
           insertionId: 'uuid2',
           requestId: 'uuid0',
           sessionId: 'uuid10',
           viewId: 'uuid11',
+          position: 1,
         }),
         toInsertion(newProduct('1'), {
           insertionId: 'uuid3',
           requestId: 'uuid0',
           sessionId: 'uuid10',
           viewId: 'uuid11',
+          position: 2,
         }),
       ],
       request: [
@@ -1908,18 +1931,21 @@ describe('metrics', () => {
         requestId: 'uuid0',
         sessionId: 'uuid10',
         viewId: 'uuid11',
+        position: 0,
       }),
       toInsertion(newProduct('2'), {
         insertionId: 'uuid2',
         requestId: 'uuid0',
         sessionId: 'uuid10',
         viewId: 'uuid11',
+        position: 1,
       }),
       toInsertion(newProduct('1'), {
         insertionId: 'uuid3',
         requestId: 'uuid0',
         sessionId: 'uuid10',
         viewId: 'uuid11',
+        position: 2,
       }),
     ]);
 
@@ -1973,8 +1999,6 @@ describe('shadow requests', () => {
       });
     }
 
-    // Log request with shadow traffic doesn't include position regardless of sampling result,
-    // since as far as the client is concerned, we did not call deliver.
     const expectedLogReq = {
       userInfo: {
         logUserId: 'logUserId1',
@@ -1986,6 +2010,7 @@ describe('shadow requests', () => {
         toInsertion(newProduct('3'), {
           insertionId: 'uuid1',
           requestId: 'uuid0',
+          position: 0,
         }),
       ],
       request: [
@@ -2040,6 +2065,7 @@ describe('shadow requests', () => {
       toInsertion(newProduct('3'), {
         insertionId: 'uuid1',
         requestId: 'uuid0',
+        position: 0,
       }),
     ]);
 
