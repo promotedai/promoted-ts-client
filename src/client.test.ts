@@ -434,7 +434,7 @@ describe('deliver', () => {
         }),
       ]);
 
-      expect(response.createLogRequest()).toEqual(expectedLogReq);
+      expect(response.logRequest).toEqual(expectedLogReq);
 
       // Here is where clients will return their response.
       await response.log();
@@ -508,7 +508,7 @@ describe('deliver', () => {
         toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
       ]);
 
-      expect(response.createLogRequest()).toEqual(expectedLogReq);
+      expect(response.logRequest).toEqual(expectedLogReq);
 
       // Here is where clients will return their response.
       await response.log();
@@ -597,7 +597,7 @@ describe('deliver', () => {
         }),
       ]);
 
-      expect(response.createLogRequest()).toEqual(expectedLogReq);
+      expect(response.logRequest).toEqual(expectedLogReq);
 
       // Here is where clients will return their response.
       await response.log();
@@ -689,7 +689,7 @@ describe('deliver', () => {
         }),
       ]);
 
-      expect(response.createLogRequest()).toEqual(expectedLogReq);
+      expect(response.logRequest).toEqual(expectedLogReq);
 
       // Here is where clients will return their response.
       await response.log();
@@ -780,7 +780,7 @@ describe('deliver', () => {
         }),
       ]);
 
-      expect(response.createLogRequest()).toEqual(expectedLogReq);
+      expect(response.logRequest).toEqual(expectedLogReq);
 
       // Here is where clients will return their response.
       await response.log();
@@ -863,7 +863,7 @@ describe('deliver', () => {
       // Here is where clients will return their response.
       await response.log();
 
-      expect(response.createLogRequest()).toEqual(expectedLogReq);
+      expect(response.logRequest).toEqual(expectedLogReq);
 
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(1);
@@ -943,7 +943,7 @@ describe('deliver', () => {
         toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
       ]);
 
-      expect(response.createLogRequest()).toEqual(expectedLogReq);
+      expect(response.logRequest).toEqual(expectedLogReq);
 
       // Here is where clients will return their response.
       await response.log();
@@ -1029,7 +1029,7 @@ describe('deliver', () => {
       }),
     ]);
 
-    expect(response.createLogRequest()).toEqual(expectedLogReq);
+    expect(response.logRequest).toEqual(expectedLogReq);
 
     // Here is where clients will return their response.
     await response.log();
@@ -1111,7 +1111,7 @@ describe('deliver', () => {
       }),
     ]);
 
-    expect(response.createLogRequest()).toEqual(expectedLogReq);
+    expect(response.logRequest).toEqual(expectedLogReq);
 
     // Here is where clients will return their response.
     await response.log();
@@ -1217,7 +1217,7 @@ describe('deliver', () => {
       }),
     ]);
 
-    expect(response.createLogRequest()).toEqual(expectedLogReq);
+    expect(response.logRequest).toEqual(expectedLogReq);
 
     // Here is where clients will return their response.
     await response.log();
@@ -1374,7 +1374,7 @@ describe('deliver', () => {
         }),
       ]);
 
-      expect(response.createLogRequest()).toEqual(expectedLogReq);
+      expect(response.logRequest).toEqual(expectedLogReq);
 
       // Here is where clients will return their response.
       await response.log();
@@ -1460,7 +1460,7 @@ describe('deliver', () => {
         toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
       ]);
 
-      expect(response.createLogRequest()).toEqual(expectedLogReq);
+      expect(response.logRequest).toEqual(expectedLogReq);
 
       // Here is where clients will return their response.
       await response.log();
@@ -1633,7 +1633,7 @@ describe('metrics', () => {
       }),
     ]);
 
-    expect(response.createLogRequest()).toEqual(expectedLogReq);
+    expect(response.logRequest).toEqual(expectedLogReq);
 
     // Here is where clients will return their response.
     await response.log();
@@ -1699,7 +1699,7 @@ describe('metrics', () => {
       }),
     ]);
 
-    expect(response.createLogRequest()).toEqual(expectedLogReq);
+    expect(response.logRequest).toEqual(expectedLogReq);
 
     // Here is where clients will return their response.
     await response.log();
@@ -1767,7 +1767,7 @@ describe('metrics', () => {
       }),
     ]);
 
-    expect(response.createLogRequest()).toEqual(expectedLogReq);
+    expect(response.logRequest).toEqual(expectedLogReq);
   });
 
   it('non-zero page offset', async () => {
@@ -1831,7 +1831,7 @@ describe('metrics', () => {
       }),
     ]);
 
-    expect(response.createLogRequest()).toEqual(expectedLogReq);
+    expect(response.logRequest).toEqual(expectedLogReq);
 
     // Here is where clients will return their response.
     await response.log();
@@ -1923,7 +1923,7 @@ describe('metrics', () => {
       }),
     ]);
 
-    expect(response.createLogRequest()).toEqual(expectedLogReq);
+    expect(response.logRequest).toEqual(expectedLogReq);
 
     // Here is where clients will return their response.
     await response.log();
@@ -2043,7 +2043,7 @@ describe('shadow requests', () => {
       }),
     ]);
 
-    expect(response.createLogRequest()).toEqual(expectedLogReq);
+    expect(response.logRequest).toEqual(expectedLogReq);
 
     // Here is where clients will return their response.
     await response.log();
@@ -2120,7 +2120,6 @@ describe('log helper method', () => {
         toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
         toInsertion(newProduct('1'), { insertionId: 'uuid3' }),
       ],
-      createLogRequest: () => undefined,
     });
   });
 
@@ -2141,7 +2140,7 @@ describe('noop promoted client', () => {
       fullInsertion: [],
       insertionPageType: InsertionPageType.Unpaged,
     });
-    const logReq = (await resp).createLogRequest();
+    const logReq = (await resp).logRequest;
     expect(logReq).toBeUndefined();
 
     const resp2 = client.prepareForLogging({
@@ -2151,7 +2150,7 @@ describe('noop promoted client', () => {
       fullInsertion: [],
       insertionPageType: InsertionPageType.Unpaged,
     });
-    const logReq2 = (await resp2).createLogRequest();
+    const logReq2 = (await resp2).logRequest;
     expect(logReq2).toBeUndefined();
   });
 });

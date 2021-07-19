@@ -99,7 +99,6 @@ export class NoopPromotedClient implements PromotedClient {
     return {
       log: () => Promise.resolve(undefined),
       insertion,
-      createLogRequest: () => undefined,
     };
   }
 
@@ -109,7 +108,6 @@ export class NoopPromotedClient implements PromotedClient {
     return Promise.resolve({
       log: () => Promise.resolve(undefined),
       insertion,
-      createLogRequest: () => undefined,
     });
   }
 
@@ -213,11 +211,11 @@ export class PromotedClientImpl implements PromotedClient {
       this.addMissingIdsOnInsertions(request, insertion);
     }
 
-    const logRequestFn = this.createLogRequestFn(metricsRequest, request);
+    const logRequest = this.createLogRequest(metricsRequest, request);
     return {
-      log: this.createLogFn(logRequestFn),
+      log: this.createLogFn(logRequest),
       insertion,
-      createLogRequest: logRequestFn,
+      logRequest,
     };
   }
 
@@ -301,11 +299,11 @@ export class PromotedClientImpl implements PromotedClient {
       this.addMissingIdsOnInsertions(requestToLog, insertion);
     }
 
-    const logRequestFn = this.createLogRequestFn(deliveryRequest, requestToLog, cohortMembershipToLog);
+    const logRequest = this.createLogRequest(deliveryRequest, requestToLog, cohortMembershipToLog);
     return {
-      log: this.createLogFn(logRequestFn),
+      log: this.createLogFn(logRequest),
       insertion,
-      createLogRequest: logRequestFn,
+      logRequest,
     };
   }
 
@@ -333,54 +331,51 @@ export class PromotedClientImpl implements PromotedClient {
    * On-demand creation of a LogRequest suitable for sending to the metrics client.
    * @returns a function to create a LogRequest on demand.
    */
-  private createLogRequestFn(
+  private createLogRequest(
     deliveryRequest: DeliveryRequest,
     requestToLog?: Request,
     cohortMembershipToLog?: CohortMembership
-  ): () => LogRequest | undefined {
-    return () => {
-      if (requestToLog === undefined && cohortMembershipToLog === undefined) {
-        return undefined;
-      }
+  ): LogRequest | undefined {
+    if (requestToLog === undefined && cohortMembershipToLog === undefined) {
+      return undefined;
+    }
 
-      const logRequest: LogRequest = {};
-      const toCompactMetricsInsertion =
-        deliveryRequest.toCompactMetricsInsertion ?? this.defaultRequestValues.toCompactMetricsInsertion;
-      if (requestToLog) {
-        logRequest.request = [this.createLogRequestRequestToLog(requestToLog)];
-        logRequest.insertion = this.pager.applyPaging(
-          deliveryRequest.fullInsertion.map(toCompactMetricsInsertion),
-          false,
-          deliveryRequest.insertionPageType,
-          requestToLog?.paging
-        );
-      }
-      if (cohortMembershipToLog) {
-        logRequest.cohortMembership = [cohortMembershipToLog];
-      }
+    const logRequest: LogRequest = {};
+    const toCompactMetricsInsertion =
+      deliveryRequest.toCompactMetricsInsertion ?? this.defaultRequestValues.toCompactMetricsInsertion;
+    if (requestToLog) {
+      logRequest.request = [this.createLogRequestRequestToLog(requestToLog)];
+      logRequest.insertion = this.pager.applyPaging(
+        deliveryRequest.fullInsertion.map(toCompactMetricsInsertion),
+        false,
+        deliveryRequest.insertionPageType,
+        requestToLog?.paging
+      );
+    }
+    if (cohortMembershipToLog) {
+      logRequest.cohortMembership = [cohortMembershipToLog];
+    }
 
-      const {
-        request: { platformId, userInfo, timing },
-      } = deliveryRequest;
-      if (platformId) {
-        logRequest.platformId = platformId;
-      }
-      if (userInfo) {
-        logRequest.userInfo = userInfo;
-      }
-      if (timing) {
-        logRequest.timing = timing;
-      }
-      return logRequest;
-    };
+    const {
+      request: { platformId, userInfo, timing },
+    } = deliveryRequest;
+    if (platformId) {
+      logRequest.platformId = platformId;
+    }
+    if (userInfo) {
+      logRequest.userInfo = userInfo;
+    }
+    if (timing) {
+      logRequest.timing = timing;
+    }
+    return logRequest;
   }
 
   /**
    * Creates a function that can be used after sending the response.
    */
-  private createLogFn(logRequestFn: () => LogRequest | undefined): () => Promise<void> {
+  private createLogFn(logRequest: LogRequest | undefined): () => Promise<void> {
     return async () => {
-      const logRequest = logRequestFn();
       if (logRequest === undefined) {
         // If no log records, short-cut.
         return Promise.resolve(undefined);
