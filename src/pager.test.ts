@@ -27,6 +27,40 @@ describe('apply paging', () => {
     ];
   });
 
+  it('pages a window when unpaged', () => {
+    const paging: Paging = {
+      size: 2,
+      offset: 1,
+    };
+    const resIns = pager.applyPaging(insertions, InsertionPageType.Unpaged, paging);
+    expect(resIns.length).toEqual(insertions.length - 1);
+
+    // We take a page size of 2 starting at offset 1.
+    expect(resIns[0].insertionId).toEqual(insertions[1].insertionId);
+    expect(resIns[1].insertionId).toEqual(insertions[2].insertionId);
+
+    // Positions start at offset when Unpaged.
+    expect(resIns[0].position).toEqual(1);
+    expect(resIns[1].position).toEqual(2);
+  });
+
+  it('pages a window when prepaged', () => {
+    const paging: Paging = {
+      size: 2,
+      offset: 1,
+    };
+    const resIns = pager.applyPaging(insertions, InsertionPageType.PrePaged, paging);
+    expect(resIns.length).toEqual(insertions.length - 1);
+
+    // We take a page size of 2 starting at the beginning since prepaged.
+    expect(resIns[0].insertionId).toEqual(insertions[0].insertionId);
+    expect(resIns[1].insertionId).toEqual(insertions[1].insertionId);
+
+    // Positions start at offset.
+    expect(resIns[0].position).toEqual(1);
+    expect(resIns[1].position).toEqual(2);
+  });
+
   it('returns everything with no paging provided', () => {
     const resIns = pager.applyPaging(insertions, InsertionPageType.Unpaged);
     expect(resIns.length).toEqual(insertions.length);
@@ -98,39 +132,5 @@ describe('apply paging', () => {
     expect(resIns[0].position).toEqual(0);
     expect(resIns[1].position).toEqual(1);
     expect(resIns[2].position).toEqual(2);
-  });
-
-  it('pages a window when unpaged', () => {
-    const paging: Paging = {
-      size: 2,
-      offset: 1,
-    };
-    const resIns = pager.applyPaging(insertions, InsertionPageType.Unpaged, paging);
-    expect(resIns.length).toEqual(insertions.length - 1);
-
-    // We take a page size of 2 starting at offset 1.
-    expect(resIns[0].insertionId).toEqual(insertions[1].insertionId);
-    expect(resIns[1].insertionId).toEqual(insertions[2].insertionId);
-
-    // Positions start at offset when Unpaged.
-    expect(resIns[0].position).toEqual(1);
-    expect(resIns[1].position).toEqual(2);
-  });
-
-  it('pages a window when prepaged', () => {
-    const paging: Paging = {
-      size: 2,
-      offset: 1,
-    };
-    const resIns = pager.applyPaging(insertions, InsertionPageType.PrePaged, paging);
-    expect(resIns.length).toEqual(insertions.length - 1);
-
-    // We take a page size of 2 starting at the beginning since prepaged.
-    expect(resIns[0].insertionId).toEqual(insertions[0].insertionId);
-    expect(resIns[1].insertionId).toEqual(insertions[1].insertionId);
-
-    // Positions start at offset.
-    expect(resIns[0].position).toEqual(1);
-    expect(resIns[1].position).toEqual(2);
   });
 });

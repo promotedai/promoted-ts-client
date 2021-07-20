@@ -151,11 +151,7 @@ describe('no-op', () => {
         insertionPageType: InsertionPageType.Unpaged,
       });
 
-      const expectedRespInsertions = [
-        toInsertion(newProduct('3'), { position: 0 }),
-        toInsertion(newProduct('2'), { position: 1 }),
-        toInsertion(newProduct('1'), { position: 2 }),
-      ];
+      const expectedRespInsertions = toResponseInsertions([newProduct('3'), newProduct('2'), newProduct('1')]);
       expect(response.insertion).toEqual(expectedRespInsertions);
       await response.log();
     });

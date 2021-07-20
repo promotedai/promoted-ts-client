@@ -28,13 +28,15 @@ export class Pager {
     if (size <= 0) {
       size = insertions.length;
     }
-    const insertionPage: Insertion[] = [];
-    while (index < insertions.length && insertionPage.length < size) {
+
+    const finalInsertionSize = Math.min(size, insertions.length);
+    const insertionPage: Insertion[] = new Array(finalInsertionSize);
+    for (let i = 0; i < finalInsertionSize; i++) {
       const insertion = insertions[index];
       if (insertion.position === undefined) {
         insertion.position = offset;
       }
-      insertionPage.push(insertion);
+      insertionPage[i] = insertion;
       index++;
       offset++;
     }
