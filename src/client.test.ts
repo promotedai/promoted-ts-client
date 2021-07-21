@@ -2,6 +2,9 @@ import { copyAndRemoveProperties, log, newPromotedClient, noopFn, NoopPromotedCl
 import type { Insertion, Request } from './types/delivery';
 import { ClientType_PLATFORM_SERVER, TrafficType_PRODUCTION, TrafficType_SHADOW } from './client';
 import { PromotedClientArguments } from './client-args';
+import { InsertionPageType } from './insertion-page-type';
+import { DeliveryRequest } from './delivery-request';
+import { MetricsRequest } from './metrics-request';
 
 const fakeUuidGenerator = () => {
   let i = 0;
@@ -25,6 +28,12 @@ const newProduct = (id: string): Product => ({
 });
 
 const toInsertions = (products: Product[]): Insertion[] => products.map(toInsertionWithNoExtraFields);
+
+// Response insertions should always have position assigned.
+const toResponseInsertions = (products: Product[]): Insertion[] =>
+  products.map((product, idx) => {
+    return toInsertion(product, { position: idx });
+  });
 
 // An interface for setting optional fields.
 interface InsertionFields {
@@ -139,8 +148,11 @@ describe('no-op', () => {
           ...newBaseRequest(),
         },
         fullInsertion: toInsertions(products),
+        insertionPageType: InsertionPageType.Unpaged,
       });
-      expect(response.insertion).toEqual(toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]));
+
+      const expectedRespInsertions = toResponseInsertions([newProduct('3'), newProduct('2'), newProduct('1')]);
+      expect(response.insertion).toEqual(expectedRespInsertions);
       await response.log();
     });
 
@@ -159,8 +171,12 @@ describe('no-op', () => {
           },
         },
         fullInsertion: toInsertions(products),
+        insertionPageType: InsertionPageType.Unpaged,
       });
-      expect(response.insertion).toEqual(toInsertions([newProduct('3')]));
+
+      const expectedRespInsertions = [toInsertion(newProduct('3'), { position: 0 })];
+
+      expect(response.insertion).toEqual(expectedRespInsertions);
       await response.log();
     });
   });
@@ -178,8 +194,9 @@ describe('no-op', () => {
           ...newBaseRequest(),
         },
         fullInsertion: toInsertions(products),
+        insertionPageType: InsertionPageType.Unpaged,
       });
-      expect(response.insertion).toEqual(toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]));
+      expect(response.insertion).toEqual(toResponseInsertions([newProduct('3'), newProduct('2'), newProduct('1')]));
       await response.log();
     });
 
@@ -198,8 +215,9 @@ describe('no-op', () => {
           },
         },
         fullInsertion: toInsertions(products),
+        insertionPageType: InsertionPageType.Unpaged,
       });
-      expect(response.insertion).toEqual(toInsertions([newProduct('3')]));
+      expect(response.insertion).toEqual(toResponseInsertions([newProduct('3')]));
       await response.log();
     });
 
@@ -219,14 +237,73 @@ describe('no-op', () => {
           },
         },
         fullInsertion: toInsertions(products),
+        insertionPageType: InsertionPageType.Unpaged,
       });
-      expect(response.insertion).toEqual(toInsertions([newProduct('3')]));
+
+      // Paging parameters advance to the second insertion.
+      const expectedInsertions = toResponseInsertions([newProduct('2')]);
+      expectedInsertions[0].position = 1; // the offset
+      expect(response.insertion).toEqual(expectedInsertions);
       await response.log();
     });
   });
 });
 
 describe('deliver', () => {
+  it('allows you to set unpaged', async () => {
+    const deliveryClient = jest.fn(() => {
+      return Promise.resolve({});
+    });
+    const metricsClient = jest.fn(failFunction('All data should be logged in Delivery API'));
+    let gotError = false;
+
+    const promotedClient = newFakePromotedClient({
+      deliveryClient,
+      metricsClient,
+      handleError: () => {
+        gotError = true;
+      },
+    });
+
+    const products = [newProduct('3'), newProduct('2'), newProduct('1')];
+    const deliveryReq: DeliveryRequest = {
+      request: newBaseRequest(),
+      insertionPageType: InsertionPageType.Unpaged,
+      fullInsertion: toInsertions(products),
+    };
+
+    await promotedClient.deliver(deliveryReq);
+    expect(deliveryClient.mock.calls.length).toBe(1);
+    expect(gotError).toBeFalsy();
+  });
+
+  it('errors if you say prepaged', async () => {
+    const deliveryClient = jest.fn(() => {
+      return Promise.resolve({});
+    });
+    const metricsClient = jest.fn(failFunction('All data should be logged in Delivery API'));
+    let gotError = false;
+
+    const promotedClient = newFakePromotedClient({
+      deliveryClient,
+      metricsClient,
+      handleError: () => {
+        gotError = true;
+      },
+    });
+
+    const products = [newProduct('3'), newProduct('2'), newProduct('1')];
+    const deliveryReq: DeliveryRequest = {
+      request: newBaseRequest(),
+      insertionPageType: InsertionPageType.PrePaged,
+      fullInsertion: toInsertions(products),
+    };
+
+    await promotedClient.deliver(deliveryReq);
+    expect(deliveryClient.mock.calls.length).toBe(1); // note our precondition checks don't actually throw
+    expect(gotError).toBeTruthy();
+  });
+
   it('simple good case', async () => {
     const deliveryClient = jest.fn((request) => {
       expect(request).toEqual({
@@ -255,6 +332,7 @@ describe('deliver', () => {
     const response = await promotedClient.deliver({
       request: newBaseRequest(),
       fullInsertion: toInsertions(products),
+      insertionPageType: InsertionPageType.Unpaged,
     });
     expect(deliveryClient.mock.calls.length).toBe(1);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -336,26 +414,31 @@ describe('deliver', () => {
           cohortId: 'HOLD_OUT',
           arm: 'CONTROL',
         },
+        insertionPageType: InsertionPageType.Unpaged,
       });
       expect(deliveryClient.mock.calls.length).toBe(0);
       expect(metricsClient.mock.calls.length).toBe(0);
 
+      // SDK-provided positions
       expect(response.insertion).toEqual([
         toInsertion(newProduct('3'), {
           insertionId: 'uuid1',
           requestId: 'uuid0',
+          position: 0,
         }),
         toInsertion(newProduct('2'), {
           insertionId: 'uuid2',
           requestId: 'uuid0',
+          position: 1,
         }),
         toInsertion(newProduct('1'), {
           insertionId: 'uuid3',
           requestId: 'uuid0',
+          position: 2,
         }),
       ]);
 
-      expect(response.createLogRequest()).toEqual(expectedLogReq);
+      expect(response.logRequest).toEqual(expectedLogReq);
 
       // Here is where clients will return their response.
       await response.log();
@@ -418,6 +501,7 @@ describe('deliver', () => {
           cohortId: 'HOLD_OUT',
           arm: 'TREATMENT',
         },
+        insertionPageType: InsertionPageType.Unpaged,
       });
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(0);
@@ -428,7 +512,7 @@ describe('deliver', () => {
         toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
       ]);
 
-      expect(response.createLogRequest()).toEqual(expectedLogReq);
+      expect(response.logRequest).toEqual(expectedLogReq);
 
       // Here is where clients will return their response.
       await response.log();
@@ -493,26 +577,31 @@ describe('deliver', () => {
           cohortId: 'HOLD_OUT',
           arm: 'TREATMENT',
         },
+        insertionPageType: InsertionPageType.Unpaged,
       });
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(0);
 
+      // SDK-provided positions
       expect(response.insertion).toEqual([
         toInsertion(newProduct('3'), {
           insertionId: 'uuid1',
           requestId: 'uuid0',
+          position: 0,
         }),
         toInsertion(newProduct('2'), {
           insertionId: 'uuid2',
           requestId: 'uuid0',
+          position: 1,
         }),
         toInsertion(newProduct('1'), {
           insertionId: 'uuid3',
           requestId: 'uuid0',
+          position: 2,
         }),
       ]);
 
-      expect(response.createLogRequest()).toEqual(expectedLogReq);
+      expect(response.logRequest).toEqual(expectedLogReq);
 
       // Here is where clients will return their response.
       await response.log();
@@ -525,6 +614,7 @@ describe('deliver', () => {
   describe('toCompact', () => {
     it('toCompactMetricsInsertion arm=CONTROL', async () => {
       const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
+      // Should not have position set due to the custom compact function we're testing with.
       const expectedLogReq = {
         userInfo: {
           logUserId: 'logUserId1',
@@ -545,15 +635,9 @@ describe('deliver', () => {
           },
         ],
         insertion: [
-          toInsertionOnlyContentId(newProduct('3'), {
-            position: 0,
-          }),
-          toInsertionOnlyContentId(newProduct('2'), {
-            position: 1,
-          }),
-          toInsertionOnlyContentId(newProduct('1'), {
-            position: 2,
-          }),
+          toInsertionOnlyContentId(newProduct('3')),
+          toInsertionOnlyContentId(newProduct('2')),
+          toInsertionOnlyContentId(newProduct('1')),
         ],
         request: [
           {
@@ -585,26 +669,31 @@ describe('deliver', () => {
           cohortId: 'HOLD_OUT',
           arm: 'CONTROL',
         },
+        insertionPageType: InsertionPageType.Unpaged,
       });
       expect(deliveryClient.mock.calls.length).toBe(0);
       expect(metricsClient.mock.calls.length).toBe(0);
 
+      // SDK-provided positions
       expect(response.insertion).toEqual([
         toInsertion(newProduct('3'), {
           insertionId: 'uuid1',
           requestId: 'uuid0',
+          position: 0,
         }),
         toInsertion(newProduct('2'), {
           insertionId: 'uuid2',
           requestId: 'uuid0',
+          position: 1,
         }),
         toInsertion(newProduct('1'), {
           insertionId: 'uuid3',
           requestId: 'uuid0',
+          position: 2,
         }),
       ]);
 
-      expect(response.createLogRequest()).toEqual(expectedLogReq);
+      expect(response.logRequest).toEqual(expectedLogReq);
 
       // Here is where clients will return their response.
       await response.log();
@@ -614,6 +703,7 @@ describe('deliver', () => {
 
     it('toCompactMetricsInsertion arm=CONTROL defaultRequestValues', async () => {
       const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
+      // Should not have position set due to the custom compact function we're testing with.
       const expectedLogReq = {
         userInfo: {
           logUserId: 'logUserId1',
@@ -634,15 +724,9 @@ describe('deliver', () => {
           },
         ],
         insertion: [
-          toInsertionOnlyContentId(newProduct('3'), {
-            position: 0,
-          }),
-          toInsertionOnlyContentId(newProduct('2'), {
-            position: 1,
-          }),
-          toInsertionOnlyContentId(newProduct('1'), {
-            position: 2,
-          }),
+          toInsertionOnlyContentId(newProduct('3')),
+          toInsertionOnlyContentId(newProduct('2')),
+          toInsertionOnlyContentId(newProduct('1')),
         ],
         request: [
           {
@@ -676,26 +760,31 @@ describe('deliver', () => {
           cohortId: 'HOLD_OUT',
           arm: 'CONTROL',
         },
+        insertionPageType: InsertionPageType.Unpaged,
       });
       expect(deliveryClient.mock.calls.length).toBe(0);
       expect(metricsClient.mock.calls.length).toBe(0);
 
+      // SDK-provided positions
       expect(response.insertion).toEqual([
         toInsertion(newProduct('3'), {
           insertionId: 'uuid1',
           requestId: 'uuid0',
+          position: 0,
         }),
         toInsertion(newProduct('2'), {
           insertionId: 'uuid2',
           requestId: 'uuid0',
+          position: 1,
         }),
         toInsertion(newProduct('1'), {
           insertionId: 'uuid3',
           requestId: 'uuid0',
+          position: 2,
         }),
       ]);
 
-      expect(response.createLogRequest()).toEqual(expectedLogReq);
+      expect(response.logRequest).toEqual(expectedLogReq);
 
       // Here is where clients will return their response.
       await response.log();
@@ -764,6 +853,7 @@ describe('deliver', () => {
           cohortId: 'HOLD_OUT',
           arm: 'TREATMENT',
         },
+        insertionPageType: InsertionPageType.Unpaged,
       });
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(0);
@@ -777,7 +867,7 @@ describe('deliver', () => {
       // Here is where clients will return their response.
       await response.log();
 
-      expect(response.createLogRequest()).toEqual(expectedLogReq);
+      expect(response.logRequest).toEqual(expectedLogReq);
 
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(1);
@@ -846,6 +936,7 @@ describe('deliver', () => {
           cohortId: 'HOLD_OUT',
           arm: 'TREATMENT',
         },
+        insertionPageType: InsertionPageType.Unpaged,
       });
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(0);
@@ -856,7 +947,7 @@ describe('deliver', () => {
         toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
       ]);
 
-      expect(response.createLogRequest()).toEqual(expectedLogReq);
+      expect(response.logRequest).toEqual(expectedLogReq);
 
       // Here is where clients will return their response.
       await response.log();
@@ -928,18 +1019,21 @@ describe('deliver', () => {
         cohortId: 'HOLD_OUT',
         arm: 'CONTROL',
       },
+      insertionPageType: InsertionPageType.Unpaged,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
 
+    // SDK-provided position
     expect(response.insertion).toEqual([
       toInsertion(newProduct('3'), {
         insertionId: 'uuid1',
         requestId: 'uuid0',
+        position: 0,
       }),
     ]);
 
-    expect(response.createLogRequest()).toEqual(expectedLogReq);
+    expect(response.logRequest).toEqual(expectedLogReq);
 
     // Here is where clients will return their response.
     await response.log();
@@ -997,26 +1091,31 @@ describe('deliver', () => {
       onlyLog: true,
       request: newBaseRequest(),
       fullInsertion: toInsertions(products),
+      insertionPageType: InsertionPageType.Unpaged,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
 
+    // SDK-provided positions
     expect(response.insertion).toEqual([
       toInsertion(newProduct('3'), {
         insertionId: 'uuid1',
         requestId: 'uuid0',
+        position: 0,
       }),
       toInsertion(newProduct('2'), {
         insertionId: 'uuid2',
         requestId: 'uuid0',
+        position: 1,
       }),
       toInsertion(newProduct('1'), {
         insertionId: 'uuid3',
         requestId: 'uuid0',
+        position: 2,
       }),
     ]);
 
-    expect(response.createLogRequest()).toEqual(expectedLogReq);
+    expect(response.logRequest).toEqual(expectedLogReq);
 
     // Here is where clients will return their response.
     await response.log();
@@ -1098,26 +1197,31 @@ describe('deliver', () => {
         cohortId: 'HOLD_OUT',
         arm: 'CONTROL',
       },
+      insertionPageType: InsertionPageType.Unpaged,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
 
+    // SDK-provided positions
     expect(response.insertion).toEqual([
       toInsertion(newProduct('3'), {
         insertionId: 'uuid1',
         requestId: 'uuid0',
+        position: 0,
       }),
       toInsertion(newProduct('2'), {
         insertionId: 'uuid2',
         requestId: 'uuid0',
+        position: 1,
       }),
       toInsertion(newProduct('1'), {
         insertionId: 'uuid3',
         requestId: 'uuid0',
+        position: 2,
       }),
     ]);
 
-    expect(response.createLogRequest()).toEqual(expectedLogReq);
+    expect(response.logRequest).toEqual(expectedLogReq);
 
     // Here is where clients will return their response.
     await response.log();
@@ -1155,6 +1259,7 @@ describe('deliver', () => {
     const response = await promotedClient.deliver({
       request: newBaseRequest(),
       fullInsertion: toInsertions(products),
+      insertionPageType: InsertionPageType.Unpaged,
     });
     expect(deliveryClient.mock.calls.length).toBe(1);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -1177,7 +1282,7 @@ describe('deliver', () => {
     // This test mocks out the timeout wrapper and fails before the Delivery
     // API call.
     it('delivery timeout', async () => {
-      const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
+      const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in timeout'));
       const expectedLogReq = {
         userInfo: {
           logUserId: 'logUserId1',
@@ -1249,26 +1354,31 @@ describe('deliver', () => {
           cohortId: 'HOLD_OUT',
           arm: 'TREATMENT',
         },
+        insertionPageType: InsertionPageType.Unpaged,
       });
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(0);
 
+      // SDK-provided positions
       expect(response.insertion).toEqual([
         toInsertion(newProduct('3'), {
           insertionId: 'uuid1',
           requestId: 'uuid0',
+          position: 0,
         }),
         toInsertion(newProduct('2'), {
           insertionId: 'uuid2',
           requestId: 'uuid0',
+          position: 1,
         }),
         toInsertion(newProduct('1'), {
           insertionId: 'uuid3',
           requestId: 'uuid0',
+          position: 2,
         }),
       ]);
 
-      expect(response.createLogRequest()).toEqual(expectedLogReq);
+      expect(response.logRequest).toEqual(expectedLogReq);
 
       // Here is where clients will return their response.
       await response.log();
@@ -1343,6 +1453,7 @@ describe('deliver', () => {
           cohortId: 'HOLD_OUT',
           arm: 'TREATMENT',
         },
+        insertionPageType: InsertionPageType.Unpaged,
       });
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(0);
@@ -1353,7 +1464,7 @@ describe('deliver', () => {
         toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
       ]);
 
-      expect(response.createLogRequest()).toEqual(expectedLogReq);
+      expect(response.logRequest).toEqual(expectedLogReq);
 
       // Here is where clients will return their response.
       await response.log();
@@ -1372,6 +1483,7 @@ describe('deliver', () => {
             requestId: 'uuid0',
           },
           fullInsertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+          insertionPageType: InsertionPageType.Unpaged,
         })
       ).rejects.toEqual(new Error('Request.requestId should not be set'));
     });
@@ -1385,6 +1497,7 @@ describe('deliver', () => {
             insertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
           },
           fullInsertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+          insertionPageType: InsertionPageType.Unpaged,
         })
       ).rejects.toEqual(new Error('Do not set Request.insertion.  Set fullInsertion.'));
     });
@@ -1402,6 +1515,7 @@ describe('deliver', () => {
             toInsertion(newProduct('2')),
             toInsertion(newProduct('1')),
           ],
+          insertionPageType: InsertionPageType.Unpaged,
         })
       ).rejects.toEqual(new Error('Insertion.requestId should not be set'));
     });
@@ -1419,6 +1533,7 @@ describe('deliver', () => {
             toInsertion(newProduct('2')),
             toInsertion(newProduct('1')),
           ],
+          insertionPageType: InsertionPageType.Unpaged,
         })
       ).rejects.toEqual(new Error('Insertion.insertionId should not be set'));
     });
@@ -1429,6 +1544,7 @@ describe('deliver', () => {
         promotedClient.deliver({
           request: newBaseRequest(),
           fullInsertion: [{}, toInsertion(newProduct('2')), toInsertion(newProduct('1'))],
+          insertionPageType: InsertionPageType.Unpaged,
         })
       ).rejects.toEqual(new Error('Insertion.contentId should be set'));
     });
@@ -1455,7 +1571,8 @@ describe('client construction', () => {
 
 describe('metrics', () => {
   it('good case', async () => {
-    const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
+    const deliveryClient: any = jest.fn(failFunction('Delivery should not be called when logging only'));
+    // Log request doesn't set position.
     const expectedLogReq = {
       userInfo: {
         logUserId: 'logUserId1',
@@ -1503,6 +1620,7 @@ describe('metrics', () => {
     const response = promotedClient.prepareForLogging({
       request: newBaseRequest(),
       fullInsertion: toInsertions(products),
+      insertionPageType: InsertionPageType.Unpaged,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -1511,18 +1629,21 @@ describe('metrics', () => {
       toInsertion(newProduct('3'), {
         insertionId: 'uuid1',
         requestId: 'uuid0',
+        position: 0,
       }),
       toInsertion(newProduct('2'), {
         insertionId: 'uuid2',
         requestId: 'uuid0',
+        position: 1,
       }),
       toInsertion(newProduct('1'), {
         insertionId: 'uuid3',
         requestId: 'uuid0',
+        position: 2,
       }),
     ]);
 
-    expect(response.createLogRequest()).toEqual(expectedLogReq);
+    expect(response.logRequest).toEqual(expectedLogReq);
 
     // Here is where clients will return their response.
     await response.log();
@@ -1531,7 +1652,7 @@ describe('metrics', () => {
   });
 
   it('page size 1', async () => {
-    const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
+    const deliveryClient: any = jest.fn(failFunction('Delivery should not be called when logging only'));
     const expectedLogReq = {
       userInfo: {
         logUserId: 'logUserId1',
@@ -1577,6 +1698,7 @@ describe('metrics', () => {
         },
       },
       fullInsertion: toInsertions(products),
+      insertionPageType: InsertionPageType.Unpaged,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -1585,10 +1707,11 @@ describe('metrics', () => {
       toInsertion(newProduct('3'), {
         insertionId: 'uuid1',
         requestId: 'uuid0',
+        position: 0,
       }),
     ]);
 
-    expect(response.createLogRequest()).toEqual(expectedLogReq);
+    expect(response.logRequest).toEqual(expectedLogReq);
 
     // Here is where clients will return their response.
     await response.log();
@@ -1596,8 +1719,9 @@ describe('metrics', () => {
     expect(metricsClient.mock.calls.length).toBe(1);
   });
 
-  it('non-zero page offset', async () => {
-    const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
+  it('offsets position starting at the first insertion for prepaged insertions', async () => {
+    const deliveryClient: any = jest.fn(failFunction('Delivery should not be called when logging only'));
+    // Logging only doesn't set position.
     const expectedLogReq = {
       userInfo: {
         logUserId: 'logUserId1',
@@ -1636,7 +1760,7 @@ describe('metrics', () => {
     });
 
     const products = [newProduct('3'), newProduct('2'), newProduct('1')];
-    const response = promotedClient.prepareForLogging({
+    const metricsRequest: MetricsRequest = {
       request: {
         ...newBaseRequest(),
         paging: {
@@ -1645,18 +1769,85 @@ describe('metrics', () => {
         },
       },
       fullInsertion: toInsertions(products),
+      insertionPageType: InsertionPageType.PrePaged,
+    };
+
+    const response = promotedClient.prepareForLogging(metricsRequest);
+    expect(response.insertion).toEqual([
+      toInsertion(newProduct('3'), {
+        insertionId: 'uuid1',
+        requestId: 'uuid0',
+        position: 100, // the offset
+      }),
+    ]);
+
+    expect(response.logRequest).toEqual(expectedLogReq);
+  });
+
+  it('non-zero page offset', async () => {
+    const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in logging test'));
+    // Paging parameters advance to the second insertion.
+    const expectedLogReq = {
+      userInfo: {
+        logUserId: 'logUserId1',
+      },
+      timing: {
+        clientLogTimestamp: 12345678,
+      },
+      insertion: [
+        toInsertion(newProduct('2'), {
+          insertionId: 'uuid1',
+          requestId: 'uuid0',
+          position: 1, // the offset
+        }),
+      ],
+      request: [
+        {
+          ...newLogRequestRequest(),
+          requestId: 'uuid0',
+          paging: {
+            size: 1,
+            offset: 1,
+          },
+          timing: {
+            clientLogTimestamp: 12345678,
+          },
+        },
+      ],
+    };
+    const metricsClient: any = jest.fn((request) => {
+      expect(request).toEqual(expectedLogReq);
+    });
+
+    const promotedClient = newFakePromotedClient({
+      deliveryClient,
+      metricsClient,
+    });
+
+    const products = [newProduct('3'), newProduct('2'), newProduct('1')];
+    const response = promotedClient.prepareForLogging({
+      request: {
+        ...newBaseRequest(),
+        paging: {
+          size: 1,
+          offset: 1,
+        },
+      },
+      fullInsertion: toInsertions(products),
+      insertionPageType: InsertionPageType.Unpaged,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
 
     expect(response.insertion).toEqual([
-      toInsertion(newProduct('3'), {
+      toInsertion(newProduct('2'), {
         insertionId: 'uuid1',
         requestId: 'uuid0',
+        position: 1, // the offset
       }),
     ]);
 
-    expect(response.createLogRequest()).toEqual(expectedLogReq);
+    expect(response.logRequest).toEqual(expectedLogReq);
 
     // Here is where clients will return their response.
     await response.log();
@@ -1665,7 +1856,7 @@ describe('metrics', () => {
   });
 
   it('extra fields', async () => {
-    const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
+    const deliveryClient: any = jest.fn(failFunction('Delivery should not be called when logging only'));
     const expectedLogReq = {
       userInfo: {
         logUserId: 'logUserId1',
@@ -1725,6 +1916,7 @@ describe('metrics', () => {
         viewId: 'uuid11',
       },
       fullInsertion: toInsertions(products),
+      insertionPageType: InsertionPageType.Unpaged,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -1735,22 +1927,25 @@ describe('metrics', () => {
         requestId: 'uuid0',
         sessionId: 'uuid10',
         viewId: 'uuid11',
+        position: 0,
       }),
       toInsertion(newProduct('2'), {
         insertionId: 'uuid2',
         requestId: 'uuid0',
         sessionId: 'uuid10',
         viewId: 'uuid11',
+        position: 1,
       }),
       toInsertion(newProduct('1'), {
         insertionId: 'uuid3',
         requestId: 'uuid0',
         sessionId: 'uuid10',
         viewId: 'uuid11',
+        position: 2,
       }),
     ]);
 
-    expect(response.createLogRequest()).toEqual(expectedLogReq);
+    expect(response.logRequest).toEqual(expectedLogReq);
 
     // Here is where clients will return their response.
     await response.log();
@@ -1769,6 +1964,7 @@ describe('metrics', () => {
             requestId: 'uuid0',
           },
           fullInsertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+          insertionPageType: InsertionPageType.Unpaged,
         })
       ).toThrow(new Error('Request.requestId should not be set'));
     });
@@ -1856,6 +2052,7 @@ describe('shadow requests', () => {
         },
       },
       fullInsertion: toInsertions(products),
+      insertionPageType: InsertionPageType.Unpaged,
     });
     const deliveryCallCount = shouldCallDelivery ? 1 : 0;
     expect(deliveryClient.mock.calls.length).toBe(deliveryCallCount); // here lies the shadow request
@@ -1865,15 +2062,41 @@ describe('shadow requests', () => {
       toInsertion(newProduct('3'), {
         insertionId: 'uuid1',
         requestId: 'uuid0',
+        position: 0,
       }),
     ]);
 
-    expect(response.createLogRequest()).toEqual(expectedLogReq);
+    expect(response.logRequest).toEqual(expectedLogReq);
 
     // Here is where clients will return their response.
     await response.log();
     expect(deliveryClient.mock.calls.length).toBe(deliveryCallCount);
     expect(metricsClient.mock.calls.length).toBe(1);
+  }
+
+  function runPagingTypeErrorTest(insertionPagingType: InsertionPageType) {
+    const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in the error case'));
+    const metricsClient: any = jest.fn(failFunction('Metrics should not be called in the error case'));
+
+    const promotedClient = newFakePromotedClient({
+      deliveryClient,
+      metricsClient,
+      shadowTrafficDeliveryPercent: 0.5,
+      handleError: throwOnError,
+    });
+
+    const products = [newProduct('3')];
+    promotedClient.prepareForLogging({
+      request: {
+        ...newBaseRequest(),
+        clientInfo: {
+          trafficType: TrafficType_PRODUCTION,
+          clientType: ClientType_PLATFORM_SERVER,
+        },
+      },
+      fullInsertion: toInsertions(products),
+      insertionPageType: insertionPagingType,
+    });
   }
 
   it('makes a shadow request', async () => {
@@ -1886,6 +2109,12 @@ describe('shadow requests', () => {
 
   it('does not make a shadow request - sampling not turned on', async () => {
     await runShadowRequestSamplingTest(true, false, 0);
+  });
+
+  it('throws an error with the wrong paging type', async () => {
+    expect(() => runPagingTypeErrorTest(InsertionPageType.PrePaged)).toThrow(
+      'Insertions must be unpaged when shadow traffic is on'
+    );
   });
 });
 
@@ -1914,7 +2143,6 @@ describe('log helper method', () => {
         toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
         toInsertion(newProduct('1'), { insertionId: 'uuid3' }),
       ],
-      createLogRequest: () => undefined,
     });
   });
 
@@ -1933,8 +2161,9 @@ describe('noop promoted client', () => {
         ...newBaseRequest(),
       },
       fullInsertion: [],
+      insertionPageType: InsertionPageType.Unpaged,
     });
-    const logReq = (await resp).createLogRequest();
+    const logReq = (await resp).logRequest;
     expect(logReq).toBeUndefined();
 
     const resp2 = client.prepareForLogging({
@@ -1942,8 +2171,9 @@ describe('noop promoted client', () => {
         ...newBaseRequest(),
       },
       fullInsertion: [],
+      insertionPageType: InsertionPageType.Unpaged,
     });
-    const logReq2 = (await resp2).createLogRequest();
+    const logReq2 = (await resp2).logRequest;
     expect(logReq2).toBeUndefined();
   });
 });

@@ -1,4 +1,5 @@
 import { InsertionMapFn } from './base-request';
+import { InsertionPageType } from './insertion-page-type';
 import { Insertion, Request } from './types/delivery';
 
 /**
@@ -18,4 +19,9 @@ export interface MetricsRequest {
    * transform the fullInsertion to Insertions on each of the requests.
    */
   fullInsertion: Insertion[];
+
+  /**
+   * Indicates the page type of the full insertion list on this request.
+   */
+  insertionPageType: InsertionPageType;
 }

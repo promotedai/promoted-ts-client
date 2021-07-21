@@ -20,10 +20,10 @@ export interface ClientResponse {
   log: () => Promise<void>;
 
   /**
-   * Creates a LogRequest suitable for calling the metrics client.
+   * A LogRequest suitable for calling the metrics client.
    * Undefined means we do not need any follow up logging
    */
-  createLogRequest: () => LogRequest | undefined;
+  logRequest?: LogRequest;
 
   /**
    * A list of the response Insertions.  This list may be truncated

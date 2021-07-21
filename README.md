@@ -115,11 +115,20 @@ There are two ways of doing this with `PromotedClient`:
 1. You can use `deliver` but add a `shouldOptimize: false` property.
 2. You can use `prepareForLogging` method call instead. The `prepareForLogging` signature is similar to `deliver` and should be integrated the same way.
 
-## Enabled setting
-
-When calling the `newPromotedClient` factory method, you can set `PromotedClientArguments.enabled` to false in order to create a stub (no-op) client. The primary use of this functionality is to give you a quick way to turn off Promoted functionality everywhere in your code. You can check the value of this property with the `PromotedClient.enabled` property.
-
 ## Pagination
+
+- When calling `deliver`, we expect that you will pass an unpaged (complete) list of insertions, and the SDK assumes this to be the case. To help you catch this scenario, the SDK will call handleError in the pre-paged case if performChecks is turned on.
+
+- When calling `prepareForLogging` with shadow traffic turned on, we also expect an unpaged list of insertions, since in this case we are simulating delivery.
+
+- When calling `prepareForLogging` otherwise, you may choose to pass "pre-paged" or "unpaged" insertions based on the `insertionPageType` field on the `MetricsRequest`.
+  - When `insertionPageType` is "unpaged", the `Request.paging.offset` and `Request.paging.size` parameters are used to log a "window" of insertions.
+  - When `insertionPageType` is "pre-paged", the SDK will not handle pagination of the insertions that are part of the resulting lot request.
+
+### Position
+
+- Do not set the insertion `position` field in client code. The SDK and Delivery API will set it when `deliver` is called.
+- When logging only via `prepareForLogging`, the `position` field is not set by the SDK on the log request insertions.
 
 The `prepareForLogging` call assumes the client has already handled pagination. It needs a `Request.paging.offset` to be passed in for the number of items deep that the page is.
 
