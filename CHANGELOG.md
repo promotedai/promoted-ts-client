@@ -1,3 +1,10 @@
+## [6.5.1](https://github.com/promotedai/promoted-ts-client/compare/v6.5.0...v6.5.1) (2021-07-21)
+
+
+### Bug Fixes
+
+* a hanging Promise ([ad52228](https://github.com/promotedai/promoted-ts-client/commit/ad52228d354a0e88f9ff7d0aa6c5c7e3cf1f7dc2))
+
 # [6.5.0](https://github.com/promotedai/promoted-ts-client/compare/v6.4.0...v6.5.0) (2021-06-19)
 
 
