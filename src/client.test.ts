@@ -311,6 +311,7 @@ describe('deliver', () => {
         timing: {
           clientLogTimestamp: 12345678,
         },
+        clientRequestId: 'uuid0',
         insertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
       });
       return Promise.resolve({
@@ -372,25 +373,26 @@ describe('deliver', () => {
         ],
         insertion: [
           toInsertion(newProduct('3'), {
-            insertionId: 'uuid1',
-            requestId: 'uuid0',
+            insertionId: 'uuid2',
+            requestId: 'uuid1',
             position: 0,
           }),
           toInsertion(newProduct('2'), {
-            insertionId: 'uuid2',
-            requestId: 'uuid0',
+            insertionId: 'uuid3',
+            requestId: 'uuid1',
             position: 1,
           }),
           toInsertion(newProduct('1'), {
-            insertionId: 'uuid3',
-            requestId: 'uuid0',
+            insertionId: 'uuid4',
+            requestId: 'uuid1',
             position: 2,
           }),
         ],
         request: [
           {
             ...newLogRequestRequest(),
-            requestId: 'uuid0',
+            requestId: 'uuid1',
+            clientRequestId: 'uuid0',
             timing: {
               clientLogTimestamp: 12345678,
             },
@@ -422,18 +424,18 @@ describe('deliver', () => {
       // SDK-provided positions
       expect(response.insertion).toEqual([
         toInsertion(newProduct('3'), {
-          insertionId: 'uuid1',
-          requestId: 'uuid0',
+          insertionId: 'uuid2',
+          requestId: 'uuid1',
           position: 0,
         }),
         toInsertion(newProduct('2'), {
-          insertionId: 'uuid2',
-          requestId: 'uuid0',
+          insertionId: 'uuid3',
+          requestId: 'uuid1',
           position: 1,
         }),
         toInsertion(newProduct('1'), {
-          insertionId: 'uuid3',
-          requestId: 'uuid0',
+          insertionId: 'uuid4',
+          requestId: 'uuid1',
           position: 2,
         }),
       ]);
@@ -453,6 +455,7 @@ describe('deliver', () => {
           timing: {
             clientLogTimestamp: 12345678,
           },
+          clientRequestId: 'uuid0',
           insertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
         });
         return Promise.resolve({
@@ -531,9 +534,9 @@ describe('deliver', () => {
           clientLogTimestamp: 12345678,
         },
         insertion: [
-          toInsertion(newProduct('3'), { insertionId: 'uuid1', requestId: 'uuid0', position: 0 }),
-          toInsertion(newProduct('2'), { insertionId: 'uuid2', requestId: 'uuid0', position: 1 }),
-          toInsertion(newProduct('1'), { insertionId: 'uuid3', requestId: 'uuid0', position: 2 }),
+          toInsertion(newProduct('3'), { insertionId: 'uuid2', requestId: 'uuid1', position: 0 }),
+          toInsertion(newProduct('2'), { insertionId: 'uuid3', requestId: 'uuid1', position: 1 }),
+          toInsertion(newProduct('1'), { insertionId: 'uuid4', requestId: 'uuid1', position: 2 }),
         ],
         cohortMembership: [
           {
@@ -553,7 +556,8 @@ describe('deliver', () => {
             timing: {
               clientLogTimestamp: 12345678,
             },
-            requestId: 'uuid0',
+            requestId: 'uuid1',
+            clientRequestId: 'uuid0',
           },
         ],
       };
@@ -585,18 +589,18 @@ describe('deliver', () => {
       // SDK-provided positions
       expect(response.insertion).toEqual([
         toInsertion(newProduct('3'), {
-          insertionId: 'uuid1',
-          requestId: 'uuid0',
+          insertionId: 'uuid2',
+          requestId: 'uuid1',
           position: 0,
         }),
         toInsertion(newProduct('2'), {
-          insertionId: 'uuid2',
-          requestId: 'uuid0',
+          insertionId: 'uuid3',
+          requestId: 'uuid1',
           position: 1,
         }),
         toInsertion(newProduct('1'), {
-          insertionId: 'uuid3',
-          requestId: 'uuid0',
+          insertionId: 'uuid4',
+          requestId: 'uuid1',
           position: 2,
         }),
       ]);
@@ -642,10 +646,11 @@ describe('deliver', () => {
         request: [
           {
             ...newLogRequestRequest(),
-            requestId: 'uuid0',
+            requestId: 'uuid1',
             timing: {
               clientLogTimestamp: 12345678,
             },
+            clientRequestId: 'uuid0',
           },
         ],
       };
@@ -677,18 +682,18 @@ describe('deliver', () => {
       // SDK-provided positions
       expect(response.insertion).toEqual([
         toInsertion(newProduct('3'), {
-          insertionId: 'uuid1',
-          requestId: 'uuid0',
+          insertionId: 'uuid2',
+          requestId: 'uuid1',
           position: 0,
         }),
         toInsertion(newProduct('2'), {
-          insertionId: 'uuid2',
-          requestId: 'uuid0',
+          insertionId: 'uuid3',
+          requestId: 'uuid1',
           position: 1,
         }),
         toInsertion(newProduct('1'), {
-          insertionId: 'uuid3',
-          requestId: 'uuid0',
+          insertionId: 'uuid4',
+          requestId: 'uuid1',
           position: 2,
         }),
       ]);
@@ -731,10 +736,11 @@ describe('deliver', () => {
         request: [
           {
             ...newLogRequestRequest(),
-            requestId: 'uuid0',
+            requestId: 'uuid1',
             timing: {
               clientLogTimestamp: 12345678,
             },
+            clientRequestId: 'uuid0',
           },
         ],
       };
@@ -768,18 +774,18 @@ describe('deliver', () => {
       // SDK-provided positions
       expect(response.insertion).toEqual([
         toInsertion(newProduct('3'), {
-          insertionId: 'uuid1',
-          requestId: 'uuid0',
+          insertionId: 'uuid2',
+          requestId: 'uuid1',
           position: 0,
         }),
         toInsertion(newProduct('2'), {
-          insertionId: 'uuid2',
-          requestId: 'uuid0',
+          insertionId: 'uuid3',
+          requestId: 'uuid1',
           position: 1,
         }),
         toInsertion(newProduct('1'), {
-          insertionId: 'uuid3',
-          requestId: 'uuid0',
+          insertionId: 'uuid4',
+          requestId: 'uuid1',
           position: 2,
         }),
       ]);
@@ -804,6 +810,7 @@ describe('deliver', () => {
             toInsertionOnlyContentId(newProduct('2')),
             toInsertionOnlyContentId(newProduct('1')),
           ],
+          clientRequestId: 'uuid0',
         });
         return Promise.resolve({
           insertion: [
@@ -885,6 +892,7 @@ describe('deliver', () => {
             toInsertionOnlyContentId(newProduct('2')),
             toInsertionOnlyContentId(newProduct('1')),
           ],
+          clientRequestId: 'uuid0',
         });
         return Promise.resolve({
           insertion: [
@@ -979,21 +987,22 @@ describe('deliver', () => {
       ],
       insertion: [
         toInsertion(newProduct('3'), {
-          insertionId: 'uuid1',
-          requestId: 'uuid0',
+          insertionId: 'uuid2',
+          requestId: 'uuid1',
           position: 0,
         }),
       ],
       request: [
         {
           ...newLogRequestRequest(),
-          requestId: 'uuid0',
+          requestId: 'uuid1',
           paging: {
             size: 1,
           },
           timing: {
             clientLogTimestamp: 12345678,
           },
+          clientRequestId: 'uuid0',
         },
       ],
     };
@@ -1027,8 +1036,8 @@ describe('deliver', () => {
     // SDK-provided position
     expect(response.insertion).toEqual([
       toInsertion(newProduct('3'), {
-        insertionId: 'uuid1',
-        requestId: 'uuid0',
+        insertionId: 'uuid2',
+        requestId: 'uuid1',
         position: 0,
       }),
     ]);
@@ -1052,28 +1061,29 @@ describe('deliver', () => {
       },
       insertion: [
         toInsertion(newProduct('3'), {
-          insertionId: 'uuid1',
-          requestId: 'uuid0',
+          insertionId: 'uuid2',
+          requestId: 'uuid1',
           position: 0,
         }),
         toInsertion(newProduct('2'), {
-          insertionId: 'uuid2',
-          requestId: 'uuid0',
+          insertionId: 'uuid3',
+          requestId: 'uuid1',
           position: 1,
         }),
         toInsertion(newProduct('1'), {
-          insertionId: 'uuid3',
-          requestId: 'uuid0',
+          insertionId: 'uuid4',
+          requestId: 'uuid1',
           position: 2,
         }),
       ],
       request: [
         {
           ...newLogRequestRequest(),
-          requestId: 'uuid0',
+          requestId: 'uuid1',
           timing: {
             clientLogTimestamp: 12345678,
           },
+          clientRequestId: 'uuid0',
         },
       ],
     };
@@ -1099,18 +1109,18 @@ describe('deliver', () => {
     // SDK-provided positions
     expect(response.insertion).toEqual([
       toInsertion(newProduct('3'), {
-        insertionId: 'uuid1',
-        requestId: 'uuid0',
+        insertionId: 'uuid2',
+        requestId: 'uuid1',
         position: 0,
       }),
       toInsertion(newProduct('2'), {
-        insertionId: 'uuid2',
-        requestId: 'uuid0',
+        insertionId: 'uuid3',
+        requestId: 'uuid1',
         position: 1,
       }),
       toInsertion(newProduct('1'), {
-        insertionId: 'uuid3',
-        requestId: 'uuid0',
+        insertionId: 'uuid4',
+        requestId: 'uuid1',
         position: 2,
       }),
     ]);
@@ -1148,18 +1158,18 @@ describe('deliver', () => {
       ],
       insertion: [
         toInsertion(newProduct('3'), {
-          insertionId: 'uuid1',
-          requestId: 'uuid0',
+          insertionId: 'uuid2',
+          requestId: 'uuid1',
           position: 0,
         }),
         toInsertion(newProduct('2'), {
-          insertionId: 'uuid2',
-          requestId: 'uuid0',
+          insertionId: 'uuid3',
+          requestId: 'uuid1',
           position: 1,
         }),
         toInsertion(newProduct('1'), {
-          insertionId: 'uuid3',
-          requestId: 'uuid0',
+          insertionId: 'uuid4',
+          requestId: 'uuid1',
           position: 2,
         }),
       ],
@@ -1167,10 +1177,11 @@ describe('deliver', () => {
         {
           ...newLogRequestRequest(),
           platformId: 1,
-          requestId: 'uuid0',
+          requestId: 'uuid1',
           timing: {
             clientLogTimestamp: 87654321,
           },
+          clientRequestId: 'uuid0',
         },
       ],
     };
@@ -1205,18 +1216,18 @@ describe('deliver', () => {
     // SDK-provided positions
     expect(response.insertion).toEqual([
       toInsertion(newProduct('3'), {
-        insertionId: 'uuid1',
-        requestId: 'uuid0',
+        insertionId: 'uuid2',
+        requestId: 'uuid1',
         position: 0,
       }),
       toInsertion(newProduct('2'), {
-        insertionId: 'uuid2',
-        requestId: 'uuid0',
+        insertionId: 'uuid3',
+        requestId: 'uuid1',
         position: 1,
       }),
       toInsertion(newProduct('1'), {
-        insertionId: 'uuid3',
-        requestId: 'uuid0',
+        insertionId: 'uuid4',
+        requestId: 'uuid1',
         position: 2,
       }),
     ]);
@@ -1237,6 +1248,7 @@ describe('deliver', () => {
           clientLogTimestamp: 12345678,
         },
         insertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+        clientRequestId: 'uuid0',
       });
       return Promise.resolve({
         insertion: [
@@ -1304,28 +1316,29 @@ describe('deliver', () => {
         ],
         insertion: [
           toInsertion(newProduct('3'), {
-            insertionId: 'uuid1',
-            requestId: 'uuid0',
+            insertionId: 'uuid2',
+            requestId: 'uuid1',
             position: 0,
           }),
           toInsertion(newProduct('2'), {
-            insertionId: 'uuid2',
-            requestId: 'uuid0',
+            insertionId: 'uuid3',
+            requestId: 'uuid1',
             position: 1,
           }),
           toInsertion(newProduct('1'), {
-            insertionId: 'uuid3',
-            requestId: 'uuid0',
+            insertionId: 'uuid4',
+            requestId: 'uuid1',
             position: 2,
           }),
         ],
         request: [
           {
             ...newLogRequestRequest(),
-            requestId: 'uuid0',
+            requestId: 'uuid1',
             timing: {
               clientLogTimestamp: 12345678,
             },
+            clientRequestId: 'uuid0',
           },
         ],
       };
@@ -1362,18 +1375,18 @@ describe('deliver', () => {
       // SDK-provided positions
       expect(response.insertion).toEqual([
         toInsertion(newProduct('3'), {
-          insertionId: 'uuid1',
-          requestId: 'uuid0',
+          insertionId: 'uuid2',
+          requestId: 'uuid1',
           position: 0,
         }),
         toInsertion(newProduct('2'), {
-          insertionId: 'uuid2',
-          requestId: 'uuid0',
+          insertionId: 'uuid3',
+          requestId: 'uuid1',
           position: 1,
         }),
         toInsertion(newProduct('1'), {
-          insertionId: 'uuid3',
-          requestId: 'uuid0',
+          insertionId: 'uuid4',
+          requestId: 'uuid1',
           position: 2,
         }),
       ]);
@@ -1397,12 +1410,13 @@ describe('deliver', () => {
             clientLogTimestamp: 12345678,
           },
           insertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+          clientRequestId: 'uuid0',
         });
         return Promise.resolve({
           insertion: [
-            toInsertion(newProduct('1'), { insertionId: 'uuid1' }),
-            toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
-            toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
+            toInsertion(newProduct('1'), { insertionId: 'uuid2' }),
+            toInsertion(newProduct('2'), { insertionId: 'uuid3' }),
+            toInsertion(newProduct('3'), { insertionId: 'uuid4' }),
           ],
         });
       });
@@ -1446,7 +1460,7 @@ describe('deliver', () => {
         },
       });
 
-      const response = await promotedClient.deliver({
+      const deliveryReq: DeliveryRequest = {
         request: newBaseRequest(),
         fullInsertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
         experiment: {
@@ -1454,14 +1468,15 @@ describe('deliver', () => {
           arm: 'TREATMENT',
         },
         insertionPageType: InsertionPageType.Unpaged,
-      });
+      };
+      const response = await promotedClient.deliver(deliveryReq);
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(0);
 
       expect(response.insertion).toEqual([
-        toInsertion(newProduct('1'), { insertionId: 'uuid1' }),
-        toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
-        toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
+        toInsertion(newProduct('1'), { insertionId: 'uuid2' }),
+        toInsertion(newProduct('2'), { insertionId: 'uuid3' }),
+        toInsertion(newProduct('3'), { insertionId: 'uuid4' }),
       ]);
 
       expect(response.logRequest).toEqual(expectedLogReq);
@@ -1582,28 +1597,29 @@ describe('metrics', () => {
       },
       insertion: [
         toInsertion(newProduct('3'), {
-          insertionId: 'uuid1',
-          requestId: 'uuid0',
+          insertionId: 'uuid2',
+          requestId: 'uuid1',
           position: 0,
         }),
         toInsertion(newProduct('2'), {
-          insertionId: 'uuid2',
-          requestId: 'uuid0',
+          insertionId: 'uuid3',
+          requestId: 'uuid1',
           position: 1,
         }),
         toInsertion(newProduct('1'), {
-          insertionId: 'uuid3',
-          requestId: 'uuid0',
+          insertionId: 'uuid4',
+          requestId: 'uuid1',
           position: 2,
         }),
       ],
       request: [
         {
           ...newLogRequestRequest(),
-          requestId: 'uuid0',
+          requestId: 'uuid1',
           timing: {
             clientLogTimestamp: 12345678,
           },
+          clientRequestId: 'uuid0',
         },
       ],
     };
@@ -1627,18 +1643,18 @@ describe('metrics', () => {
 
     expect(response.insertion).toEqual([
       toInsertion(newProduct('3'), {
-        insertionId: 'uuid1',
-        requestId: 'uuid0',
+        insertionId: 'uuid2',
+        requestId: 'uuid1',
         position: 0,
       }),
       toInsertion(newProduct('2'), {
-        insertionId: 'uuid2',
-        requestId: 'uuid0',
+        insertionId: 'uuid3',
+        requestId: 'uuid1',
         position: 1,
       }),
       toInsertion(newProduct('1'), {
-        insertionId: 'uuid3',
-        requestId: 'uuid0',
+        insertionId: 'uuid4',
+        requestId: 'uuid1',
         position: 2,
       }),
     ]);
@@ -1662,21 +1678,22 @@ describe('metrics', () => {
       },
       insertion: [
         toInsertion(newProduct('3'), {
-          insertionId: 'uuid1',
-          requestId: 'uuid0',
+          insertionId: 'uuid2',
+          requestId: 'uuid1',
           position: 0,
         }),
       ],
       request: [
         {
           ...newLogRequestRequest(),
-          requestId: 'uuid0',
+          requestId: 'uuid1',
           paging: {
             size: 1,
           },
           timing: {
             clientLogTimestamp: 12345678,
           },
+          clientRequestId: 'uuid0',
         },
       ],
     };
@@ -1705,8 +1722,8 @@ describe('metrics', () => {
 
     expect(response.insertion).toEqual([
       toInsertion(newProduct('3'), {
-        insertionId: 'uuid1',
-        requestId: 'uuid0',
+        insertionId: 'uuid2',
+        requestId: 'uuid1',
         position: 0,
       }),
     ]);
@@ -1731,15 +1748,15 @@ describe('metrics', () => {
       },
       insertion: [
         toInsertion(newProduct('3'), {
-          insertionId: 'uuid1',
-          requestId: 'uuid0',
+          insertionId: 'uuid2',
+          requestId: 'uuid1',
           position: 100,
         }),
       ],
       request: [
         {
           ...newLogRequestRequest(),
-          requestId: 'uuid0',
+          requestId: 'uuid1',
           paging: {
             size: 1,
             offset: 100,
@@ -1747,6 +1764,7 @@ describe('metrics', () => {
           timing: {
             clientLogTimestamp: 12345678,
           },
+          clientRequestId: 'uuid0',
         },
       ],
     };
@@ -1775,8 +1793,8 @@ describe('metrics', () => {
     const response = promotedClient.prepareForLogging(metricsRequest);
     expect(response.insertion).toEqual([
       toInsertion(newProduct('3'), {
-        insertionId: 'uuid1',
-        requestId: 'uuid0',
+        insertionId: 'uuid2',
+        requestId: 'uuid1',
         position: 100, // the offset
       }),
     ]);
@@ -1796,15 +1814,15 @@ describe('metrics', () => {
       },
       insertion: [
         toInsertion(newProduct('2'), {
-          insertionId: 'uuid1',
-          requestId: 'uuid0',
+          insertionId: 'uuid2',
+          requestId: 'uuid1',
           position: 1, // the offset
         }),
       ],
       request: [
         {
           ...newLogRequestRequest(),
-          requestId: 'uuid0',
+          requestId: 'uuid1',
           paging: {
             size: 1,
             offset: 1,
@@ -1812,6 +1830,7 @@ describe('metrics', () => {
           timing: {
             clientLogTimestamp: 12345678,
           },
+          clientRequestId: 'uuid0',
         },
       ],
     };
@@ -1841,8 +1860,8 @@ describe('metrics', () => {
 
     expect(response.insertion).toEqual([
       toInsertion(newProduct('2'), {
-        insertionId: 'uuid1',
-        requestId: 'uuid0',
+        insertionId: 'uuid2',
+        requestId: 'uuid1',
         position: 1, // the offset
       }),
     ]);
@@ -1866,22 +1885,22 @@ describe('metrics', () => {
       },
       insertion: [
         toInsertion(newProduct('3'), {
-          insertionId: 'uuid1',
-          requestId: 'uuid0',
+          insertionId: 'uuid2',
+          requestId: 'uuid1',
           sessionId: 'uuid10',
           viewId: 'uuid11',
           position: 0,
         }),
         toInsertion(newProduct('2'), {
-          insertionId: 'uuid2',
-          requestId: 'uuid0',
+          insertionId: 'uuid3',
+          requestId: 'uuid1',
           sessionId: 'uuid10',
           viewId: 'uuid11',
           position: 1,
         }),
         toInsertion(newProduct('1'), {
-          insertionId: 'uuid3',
-          requestId: 'uuid0',
+          insertionId: 'uuid4',
+          requestId: 'uuid1',
           sessionId: 'uuid10',
           viewId: 'uuid11',
           position: 2,
@@ -1890,12 +1909,13 @@ describe('metrics', () => {
       request: [
         {
           ...newLogRequestRequest(),
-          requestId: 'uuid0',
+          requestId: 'uuid1',
           sessionId: 'uuid10',
           viewId: 'uuid11',
           timing: {
             clientLogTimestamp: 12345678,
           },
+          clientRequestId: 'uuid0',
         },
       ],
     };
@@ -1923,22 +1943,22 @@ describe('metrics', () => {
 
     expect(response.insertion).toEqual([
       toInsertion(newProduct('3'), {
-        insertionId: 'uuid1',
-        requestId: 'uuid0',
+        insertionId: 'uuid2',
+        requestId: 'uuid1',
         sessionId: 'uuid10',
         viewId: 'uuid11',
         position: 0,
       }),
       toInsertion(newProduct('2'), {
-        insertionId: 'uuid2',
-        requestId: 'uuid0',
+        insertionId: 'uuid3',
+        requestId: 'uuid1',
         sessionId: 'uuid10',
         viewId: 'uuid11',
         position: 1,
       }),
       toInsertion(newProduct('1'), {
-        insertionId: 'uuid3',
-        requestId: 'uuid0',
+        insertionId: 'uuid4',
+        requestId: 'uuid1',
         sessionId: 'uuid10',
         viewId: 'uuid11',
         position: 2,
@@ -1989,6 +2009,7 @@ describe('shadow requests', () => {
           trafficType: TrafficType_SHADOW,
           clientType: ClientType_PLATFORM_SERVER,
         },
+        clientRequestId: 'uuid0',
       };
       deliveryClient = jest.fn((request) => {
         expect(request).toEqual(expectedDeliveryReq);
@@ -2005,15 +2026,15 @@ describe('shadow requests', () => {
       },
       insertion: [
         toInsertion(newProduct('3'), {
-          insertionId: 'uuid1',
-          requestId: 'uuid0',
+          insertionId: 'uuid2',
+          requestId: 'uuid1',
           position: 0,
         }),
       ],
       request: [
         {
           ...newLogRequestRequest(),
-          requestId: 'uuid0',
+          requestId: 'uuid1',
           timing: {
             clientLogTimestamp: 12345678,
           },
@@ -2021,6 +2042,7 @@ describe('shadow requests', () => {
             trafficType: TrafficType_PRODUCTION,
             clientType: ClientType_PLATFORM_SERVER,
           },
+          clientRequestId: 'uuid0',
         },
       ],
     };
@@ -2060,8 +2082,8 @@ describe('shadow requests', () => {
 
     expect(response.insertion).toEqual([
       toInsertion(newProduct('3'), {
-        insertionId: 'uuid1',
-        requestId: 'uuid0',
+        insertionId: 'uuid2',
+        requestId: 'uuid1',
         position: 0,
       }),
     ]);
