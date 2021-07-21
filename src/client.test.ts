@@ -1796,6 +1796,7 @@ describe('shadow requests', () => {
       };
       deliveryClient = jest.fn((request) => {
         expect(request).toEqual(expectedDeliveryReq);
+        return Promise.resolve({});
       });
     }
 

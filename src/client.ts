@@ -297,7 +297,12 @@ export class PromotedClientImpl implements PromotedClient {
         trafficType: TrafficType_SHADOW,
       },
     };
-    this.deliveryClient(singleRequest);
+    // Swallow errors.
+    this.deliveryClient(singleRequest)
+      .then(() => {
+        /* do nothing */
+      })
+      .catch(this.handleError);
   }
 
   /**
