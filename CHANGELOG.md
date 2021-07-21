@@ -1,3 +1,10 @@
+# [6.6.0](https://github.com/promotedai/promoted-ts-client/compare/v6.5.1...v6.6.0) (2021-07-21)
+
+
+### Features
+
+* InsertionPageType on prepareForLogging\rTESTING=unit ([#28](https://github.com/promotedai/promoted-ts-client/issues/28)) ([24baa8a](https://github.com/promotedai/promoted-ts-client/commit/24baa8a8b56b3d8e394432ab58a2766249f09ee3))
+
 ## [6.5.1](https://github.com/promotedai/promoted-ts-client/compare/v6.5.0...v6.5.1) (2021-07-21)
 
 
