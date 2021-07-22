@@ -249,8 +249,6 @@ export class PromotedClientImpl implements PromotedClient {
     // If defined, log the CohortMembership to Metrics API.
     let cohortMembershipToLog: CohortMembership | undefined = undefined;
 
-    // TODO - add deliveryRequestId.
-
     let insertionsFromPromoted = false;
     if (!onlyLog) {
       try {
@@ -419,7 +417,10 @@ export class PromotedClientImpl implements PromotedClient {
     if (!timing.clientLogTimestamp) {
       timing.clientLogTimestamp = this.nowMillis();
     }
-    // TODO - fill in deliveryRequestId.
+
+    if (!request.clientRequestId) {
+      request.clientRequestId = this.uuid();
+    }
   };
 
   /**
