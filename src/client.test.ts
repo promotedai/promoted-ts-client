@@ -1450,7 +1450,10 @@ describe('deliver', () => {
       const promotedClient = newFakePromotedClient({
         deliveryClient,
         metricsClient,
-        metricsTimeoutWrapper: () => Promise.reject(new Error('timeout')),
+        metricsCallWrapper: (promiseFn) => {
+          promiseFn();
+          return Promise.reject(new Error('timeout'));
+        },
         handleError: (error: Error) => {
           // Skip the first error.
           if (numErrors > 0) {
@@ -1486,6 +1489,8 @@ describe('deliver', () => {
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(1);
     });
+
+    // TODO -
   });
 
   describe('check input fields should be undefined', () => {

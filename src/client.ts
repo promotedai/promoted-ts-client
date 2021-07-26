@@ -5,6 +5,7 @@ import { ClientResponse } from './client-response';
 import { DeliveryRequest } from './delivery-request';
 import { InsertionPageType } from './insertion-page-type';
 import { MetricsRequest } from './metrics-request';
+import { retryPromise } from './retry';
 import { Sampler, SamplerImpl } from './sampler';
 import { timeoutWrapper } from './timeout';
 import type { ErrorHandler } from './error-handler';
@@ -22,6 +23,7 @@ import { Pager } from './pager';
 
 const DEFAULT_DELIVERY_TIMEOUT_MILLIS = 250;
 const DEFAULT_METRICS_TIMEOUT_MILLIS = 3000;
+const MAX_METRICS_RETRY_ATTEMPTS = 3;
 
 /**
  * Traffic types
@@ -119,6 +121,15 @@ export class NoopPromotedClient implements PromotedClient {
 }
 
 /**
+ * Default metricsCallWrapper that retries a metrics call that also times out.
+ * The nasty promise function is so we can chain the methods together.
+ * Each retry attempt calls a function that creates a Promise that is awaited.
+ */
+const defaultRetryTimeoutMetricsCallWrapper = (timeoutMillis: number) => async <LogResponse>(
+  promiseFn: () => Promise<LogResponse>
+) => retryPromise(MAX_METRICS_RETRY_ATTEMPTS, () => timeoutWrapper(promiseFn(), timeoutMillis));
+
+/**
  * A PromotedClient implementation that calls Promoted's APIs.
  */
 export class PromotedClientImpl implements PromotedClient {
@@ -137,8 +148,8 @@ export class PromotedClientImpl implements PromotedClient {
 
   // For testing.
   private nowMillis: () => number;
-  private deliveryTimeoutWrapper: <T>(promise: Promise<T>, timeoutMillis: number) => Promise<T>;
-  private metricsTimeoutWrapper: <T>(promise: Promise<T>, timeoutMillis: number) => Promise<T>;
+  private deliveryTimeoutWrapper: <Response>(promise: Promise<Response>, timeoutMillis: number) => Promise<Response>;
+  private metricsCallWrapper: <LogResponse>(promiseFn: () => Promise<LogResponse>) => Promise<LogResponse>;
 
   // TODO - how to handle timeout?
 
@@ -172,7 +183,8 @@ export class PromotedClientImpl implements PromotedClient {
     this.nowMillis = args.nowMillis ?? (() => Date.now());
     this.shouldApplyTreatment = args.shouldApplyTreatment ?? defaultShouldApplyTreatment;
     this.deliveryTimeoutWrapper = args.deliveryTimeoutWrapper ?? timeoutWrapper;
-    this.metricsTimeoutWrapper = args.metricsTimeoutWrapper ?? timeoutWrapper;
+    this.metricsCallWrapper =
+      args.metricsCallWrapper ?? defaultRetryTimeoutMetricsCallWrapper(this.metricsTimeoutMillis);
   }
 
   // Returns whether or not the client is taking actions at this time.
@@ -380,7 +392,7 @@ export class PromotedClientImpl implements PromotedClient {
       }
 
       try {
-        await this.metricsTimeoutWrapper(this.metricsClient(logRequest), this.metricsTimeoutMillis);
+        await this.metricsCallWrapper(() => this.metricsClient(logRequest));
       } catch (error) {
         this.handleError(error);
       }

@@ -94,7 +94,7 @@ export interface PromotedClientArguments {
   deliveryTimeoutWrapper?: <T>(promise: Promise<T>, timeoutMillis: number) => Promise<T>;
 
   /**
-   * For testing. Used by unit tests to swap out timeout functionality.
+   * For testing. To override retry and timeout logic.
    */
-  metricsTimeoutWrapper?: <T>(promise: Promise<T>, timeoutMillis: number) => Promise<T>;
+  metricsCallWrapper?: <T>(promiseFn: () => Promise<T>) => Promise<T>;
 }
