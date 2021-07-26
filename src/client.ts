@@ -95,19 +95,23 @@ export class NoopPromotedClient implements PromotedClient {
 
   public prepareForLogging(metricsRequest: MetricsRequest): ClientResponse {
     const { request, fullInsertion } = metricsRequest;
-    const insertion = this.pager.applyPaging(fullInsertion, metricsRequest.insertionPageType, request?.paging);
+    const responseInsertions = this.pager.applyPaging(fullInsertion, metricsRequest.insertionPageType, request?.paging);
     return {
       log: () => Promise.resolve(undefined),
-      insertion,
+      insertion: responseInsertions,
     };
   }
 
   public async deliver(deliveryRequest: DeliveryRequest): Promise<ClientResponse> {
     const { request, fullInsertion } = deliveryRequest;
-    const insertion = this.pager.applyPaging(fullInsertion, deliveryRequest.insertionPageType, request?.paging);
+    const responseInsertions = this.pager.applyPaging(
+      fullInsertion,
+      deliveryRequest.insertionPageType,
+      request?.paging
+    );
     return Promise.resolve({
       log: () => Promise.resolve(undefined),
-      insertion,
+      insertion: responseInsertions,
     });
   }
 
@@ -255,12 +259,12 @@ export class PromotedClientImpl implements PromotedClient {
       try {
         cohortMembershipToLog = newCohortMembershipToLog(deliveryRequest);
         if (this.shouldApplyTreatment(cohortMembershipToLog)) {
-          const toCompactDeliveryInsertion = toCompactInsertionFn(
+          const toCompactDeliveryRequestInsertion = toCompactInsertionFn(
             deliveryRequest.toCompactDeliveryProperties ?? this.defaultRequestValues.toCompactDeliveryProperties
           );
           const singleRequest = {
             ...deliveryRequest.request,
-            insertion: deliveryRequest.fullInsertion.map(toCompactDeliveryInsertion),
+            insertion: deliveryRequest.fullInsertion.map(toCompactDeliveryRequestInsertion),
           };
           const response = await this.deliveryTimeoutWrapper(
             this.deliveryClient(singleRequest),
@@ -346,12 +350,13 @@ export class PromotedClientImpl implements PromotedClient {
     }
 
     const logRequest: LogRequest = {};
-    const toCompactMetricsInsertion = toCompactInsertionFn(
+    const toCompactMetricsResponseInsertion = toCompactInsertionFn(
       sdkRequest.toCompactMetricsProperties ?? this.defaultRequestValues.toCompactMetricsProperties
     );
     if (requestToLog) {
       logRequest.request = [this.createLogRequestRequestToLog(requestToLog)];
-      logRequest.insertion = responseInsertions.map(toCompactMetricsInsertion);
+      // These are responseInsertions.  We're not renaming the field right now.
+      logRequest.insertion = responseInsertions.map(toCompactMetricsResponseInsertion);
     }
     if (cohortMembershipToLog) {
       logRequest.cohortMembership = [cohortMembershipToLog];
@@ -435,21 +440,21 @@ export class PromotedClientImpl implements PromotedClient {
     }
   };
 
-  private addMissingIdsOnInsertions = (request: Request, insertions: Insertion[]) => {
+  private addMissingIdsOnInsertions = (request: Request, responseInsertions: Insertion[]) => {
     // platformId, userInfo and timing are copied onto LogRequest.
     const { sessionId, viewId, requestId } = request;
-    insertions.forEach((insertion) => {
-      if (!insertion.insertionId) {
-        insertion.insertionId = this.uuid();
+    responseInsertions.forEach((responseInsertion) => {
+      if (!responseInsertion.insertionId) {
+        responseInsertion.insertionId = this.uuid();
       }
       if (sessionId) {
-        insertion.sessionId = sessionId;
+        responseInsertion.sessionId = sessionId;
       }
       if (viewId) {
-        insertion.viewId = viewId;
+        responseInsertion.viewId = viewId;
       }
       if (requestId) {
-        insertion.requestId = requestId;
+        responseInsertion.requestId = requestId;
       }
     });
   };
