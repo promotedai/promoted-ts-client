@@ -1,4 +1,4 @@
-import { copyAndRemoveProperties, log, newPromotedClient, noopFn, NoopPromotedClient, throwOnError } from '.';
+import { log, newPromotedClient, noopFn, NoopPromotedClient, throwOnError } from '.';
 import type { Insertion, Request } from './types/delivery';
 import { ClientType_PLATFORM_SERVER, TrafficType_PRODUCTION, TrafficType_SHADOW } from './client';
 import { PromotedClientArguments } from './client-args';
@@ -639,9 +639,24 @@ describe('deliver', () => {
           },
         ],
         insertion: [
-          toInsertionOnlyContentId(newProduct('3')),
-          toInsertionOnlyContentId(newProduct('2')),
-          toInsertionOnlyContentId(newProduct('1')),
+          {
+            contentId: 'product3',
+            insertionId: 'uuid2',
+            position: 0,
+            requestId: 'uuid1',
+          },
+          {
+            contentId: 'product2',
+            insertionId: 'uuid3',
+            position: 1,
+            requestId: 'uuid1',
+          },
+          {
+            contentId: 'product1',
+            insertionId: 'uuid4',
+            position: 2,
+            requestId: 'uuid1',
+          },
         ],
         request: [
           {
@@ -667,9 +682,7 @@ describe('deliver', () => {
       const response = await promotedClient.deliver({
         request: newBaseRequest(),
         fullInsertion: toInsertions(products),
-        toCompactMetricsInsertion: (insertion) => ({
-          contentId: insertion.contentId,
-        }),
+        toCompactMetricsProperties: () => undefined,
         experiment: {
           cohortId: 'HOLD_OUT',
           arm: 'CONTROL',
@@ -729,9 +742,24 @@ describe('deliver', () => {
           },
         ],
         insertion: [
-          toInsertionOnlyContentId(newProduct('3')),
-          toInsertionOnlyContentId(newProduct('2')),
-          toInsertionOnlyContentId(newProduct('1')),
+          {
+            insertionId: 'uuid2',
+            contentId: 'product3',
+            requestId: 'uuid1',
+            position: 0,
+          },
+          {
+            insertionId: 'uuid3',
+            contentId: 'product2',
+            requestId: 'uuid1',
+            position: 1,
+          },
+          {
+            insertionId: 'uuid4',
+            contentId: 'product1',
+            requestId: 'uuid1',
+            position: 2,
+          },
         ],
         request: [
           {
@@ -752,9 +780,7 @@ describe('deliver', () => {
         deliveryClient,
         metricsClient,
         defaultRequestValues: {
-          toCompactMetricsInsertion: (insertion) => ({
-            contentId: insertion.contentId,
-          }),
+          toCompactMetricsProperties: () => undefined,
         },
       });
 
@@ -853,9 +879,7 @@ describe('deliver', () => {
       const response = await promotedClient.deliver({
         request: newBaseRequest(),
         fullInsertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
-        toCompactDeliveryInsertion: (insertion) => ({
-          contentId: insertion.contentId,
-        }),
+        toCompactDeliveryProperties: () => undefined,
         experiment: {
           cohortId: 'HOLD_OUT',
           arm: 'TREATMENT',
@@ -931,9 +955,7 @@ describe('deliver', () => {
         deliveryClient,
         metricsClient,
         defaultRequestValues: {
-          toCompactDeliveryInsertion: (insertion) => ({
-            contentId: insertion.contentId,
-          }),
+          toCompactDeliveryProperties: () => undefined,
         },
       });
 
@@ -2137,21 +2159,6 @@ describe('shadow requests', () => {
     expect(() => runPagingTypeErrorTest(InsertionPageType.PrePaged)).toThrow(
       'Insertions must be unpaged when shadow traffic is on'
     );
-  });
-});
-
-it('copyAndRemoveProperties', async () => {
-  expect(
-    copyAndRemoveProperties({
-      insertionId: '123',
-      properties: {
-        struct: {
-          fake: 'value',
-        },
-      },
-    })
-  ).toEqual({
-    insertionId: '123',
   });
 });
 

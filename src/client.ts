@@ -1,5 +1,5 @@
 import { ApiClient } from './api-client';
-import { RequiredBaseRequest } from './base-request';
+import { PropertiesMapFn, RequiredBaseRequest } from './base-request';
 import { PromotedClientArguments } from './client-args';
 import { ClientResponse } from './client-response';
 import { DeliveryRequest } from './delivery-request';
@@ -157,13 +157,13 @@ export class PromotedClientImpl implements PromotedClient {
     }
 
     this.sampler = args.sampler ?? new SamplerImpl();
-    const { defaultRequestValues: { onlyLog, toCompactDeliveryInsertion, toCompactMetricsInsertion } = {} } = args;
+    const { defaultRequestValues: { onlyLog, toCompactDeliveryProperties, toCompactMetricsProperties } = {} } = args;
     this.defaultRequestValues = {
       onlyLog: onlyLog === undefined ? false : onlyLog,
-      toCompactDeliveryInsertion:
-        toCompactDeliveryInsertion === undefined ? (insertion) => insertion : toCompactDeliveryInsertion,
-      toCompactMetricsInsertion:
-        toCompactMetricsInsertion === undefined ? (insertion) => insertion : toCompactMetricsInsertion,
+      toCompactDeliveryProperties:
+        toCompactDeliveryProperties === undefined ? (properties) => properties : toCompactDeliveryProperties,
+      toCompactMetricsProperties:
+        toCompactMetricsProperties === undefined ? (properties) => properties : toCompactMetricsProperties,
     };
     this.handleError = args.handleError;
     this.uuid = args.uuid;
@@ -254,8 +254,9 @@ export class PromotedClientImpl implements PromotedClient {
       try {
         cohortMembershipToLog = newCohortMembershipToLog(deliveryRequest);
         if (this.shouldApplyTreatment(cohortMembershipToLog)) {
-          const toCompactDeliveryInsertion =
-            deliveryRequest.toCompactDeliveryInsertion ?? this.defaultRequestValues.toCompactDeliveryInsertion;
+          const toCompactDeliveryInsertion = toCompactInsertionFn(
+            deliveryRequest.toCompactDeliveryProperties ?? this.defaultRequestValues.toCompactDeliveryProperties
+          );
           const singleRequest = {
             ...deliveryRequest.request,
             insertion: deliveryRequest.fullInsertion.map(toCompactDeliveryInsertion),
@@ -344,8 +345,9 @@ export class PromotedClientImpl implements PromotedClient {
     }
 
     const logRequest: LogRequest = {};
-    const toCompactMetricsInsertion =
-      deliveryRequest.toCompactMetricsInsertion ?? this.defaultRequestValues.toCompactMetricsInsertion;
+    const toCompactMetricsInsertion = toCompactInsertionFn(
+      deliveryRequest.toCompactMetricsProperties ?? this.defaultRequestValues.toCompactMetricsProperties
+    );
     if (requestToLog) {
       logRequest.request = [this.createLogRequestRequestToLog(requestToLog)];
       logRequest.insertion = responseInsertions.map(toCompactMetricsInsertion);
@@ -452,12 +454,27 @@ export class PromotedClientImpl implements PromotedClient {
   };
 }
 
-/**
- * A common toCompact helper function implementation.
- */
-export const copyAndRemoveProperties = (insertion: Insertion) => {
-  const copy = { ...insertion };
-  delete copy['properties'];
+const toCompactInsertionFn = (compactFn: PropertiesMapFn) => (fullInsertion: Insertion) =>
+  compactPropertiesOnFullInsertion(fullInsertion, compactFn);
+
+const compactPropertiesOnFullInsertion = (fullInsertion: Insertion, compactFn: PropertiesMapFn) => {
+  const { properties } = fullInsertion;
+  if (!properties) {
+    return fullInsertion;
+  }
+  const newProperties = compactFn(properties);
+  // If the same memory reference, do not copy.
+  if (newProperties === properties) {
+    return fullInsertion;
+  }
+  const copy = {
+    ...fullInsertion,
+  };
+  if (newProperties) {
+    copy.properties = newProperties;
+  } else {
+    delete copy['properties'];
+  }
   return copy;
 };
 

@@ -1,4 +1,4 @@
-import { InsertionMapFn } from './base-request';
+import { PropertiesMapFn } from './base-request';
 import { InsertionPageType } from './insertion-page-type';
 import { Insertion, Request } from './types/delivery';
 import { CohortMembership } from './types/event';
@@ -8,10 +8,10 @@ import { CohortMembership } from './types/event';
  */
 export interface DeliveryRequest {
   /** Removes unnecessary fields on Insertions for Delivery API. */
-  toCompactDeliveryInsertion?: InsertionMapFn;
+  toCompactDeliveryProperties?: PropertiesMapFn;
 
   /** Removes unnecessary fields on Insertions for Metrics API. */
-  toCompactMetricsInsertion?: InsertionMapFn;
+  toCompactMetricsProperties?: PropertiesMapFn;
 
   /**
    * The Request for content.
