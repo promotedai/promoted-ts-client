@@ -1,10 +1,4 @@
 import type { Properties } from './types/common';
-import type { Insertion } from './types/delivery';
-
-// TODO - can I delete this?
-export interface InsertionMapFn {
-  (insertion: Insertion): Insertion;
-}
 
 export interface PropertiesMapFn {
   (properties: Properties): Properties | undefined;

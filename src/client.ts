@@ -206,6 +206,7 @@ export class PromotedClientImpl implements PromotedClient {
     // If defined, log the Request to Metrics API.
     const { fullInsertion, request } = metricsRequest;
     const responseInsertions = this.pager.applyPaging(fullInsertion, metricsRequest.insertionPageType, request?.paging);
+
     if (request !== undefined) {
       this.addMissingRequestId(request);
       this.addMissingIdsOnInsertions(request, responseInsertions);
@@ -335,7 +336,7 @@ export class PromotedClientImpl implements PromotedClient {
    * @returns a function to create a LogRequest on demand.
    */
   private createLogRequest(
-    deliveryRequest: DeliveryRequest,
+    sdkRequest: DeliveryRequest | MetricsRequest,
     responseInsertions: Insertion[],
     requestToLog?: Request,
     cohortMembershipToLog?: CohortMembership
@@ -346,7 +347,7 @@ export class PromotedClientImpl implements PromotedClient {
 
     const logRequest: LogRequest = {};
     const toCompactMetricsInsertion = toCompactInsertionFn(
-      deliveryRequest.toCompactMetricsProperties ?? this.defaultRequestValues.toCompactMetricsProperties
+      sdkRequest.toCompactMetricsProperties ?? this.defaultRequestValues.toCompactMetricsProperties
     );
     if (requestToLog) {
       logRequest.request = [this.createLogRequestRequestToLog(requestToLog)];
@@ -358,7 +359,7 @@ export class PromotedClientImpl implements PromotedClient {
 
     const {
       request: { platformId, userInfo, timing },
-    } = deliveryRequest;
+    } = sdkRequest;
     if (platformId) {
       logRequest.platformId = platformId;
     }
