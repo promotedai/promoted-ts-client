@@ -1,3 +1,17 @@
+# [7.0.0](https://github.com/promotedai/promoted-ts-client/compare/v6.6.0...v7.0.0) (2021-07-30)
+
+
+### Code Refactoring
+
+* change compact*Insertions to compact*Properties ([2b8f5d0](https://github.com/promotedai/promoted-ts-client/commit/2b8f5d087d1bfd8ef2350cad27cd0b20f2cad3f6))
+
+
+### BREAKING CHANGES
+
+* this forces clients to change.  This will be a major version change.
+
+TESTING=unit tests
+
 # [6.6.0](https://github.com/promotedai/promoted-ts-client/compare/v6.5.1...v6.6.0) (2021-07-21)
 
 
