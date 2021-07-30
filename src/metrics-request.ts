@@ -1,4 +1,4 @@
-import { InsertionMapFn } from './base-request';
+import { PropertiesMapFn } from './base-request';
 import { InsertionPageType } from './insertion-page-type';
 import { Insertion, Request } from './types/delivery';
 
@@ -6,8 +6,8 @@ import { Insertion, Request } from './types/delivery';
  * Represents a single call for logging content.
  */
 export interface MetricsRequest {
-  /** A function to shrink the Insertions on Metrics API. */
-  toCompactMetricsInsertion?: InsertionMapFn;
+  /** A function to shrink the Properties on Metrics API. */
+  toCompactMetricsProperties?: PropertiesMapFn;
 
   /**
    * The Request for content.

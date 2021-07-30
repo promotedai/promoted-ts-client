@@ -1,7 +1,7 @@
-import type { Insertion } from './types/delivery';
+import type { Properties } from './types/common';
 
-export interface InsertionMapFn {
-  (insertion: Insertion): Insertion;
+export interface PropertiesMapFn {
+  (properties: Properties): Properties | undefined;
 }
 
 /**
@@ -15,9 +15,10 @@ export interface RequiredBaseRequest {
    */
   onlyLog: boolean;
 
-  /** A function to shrink the Insertions on Delivery API. */
-  toCompactDeliveryInsertion: InsertionMapFn;
-  toCompactMetricsInsertion: InsertionMapFn;
+  /** A function to shrink the Properties on Delivery API. */
+  toCompactDeliveryProperties: PropertiesMapFn;
+  /** A function to shrink the Properties on Metrics API. */
+  toCompactMetricsProperties: PropertiesMapFn;
 }
 
 /**
@@ -31,9 +32,9 @@ export interface BaseRequest {
    */
   onlyLog?: boolean;
 
-  /** Removes unnecessary fields on Insertions for Delivery API. */
-  toCompactDeliveryInsertion?: InsertionMapFn;
+  /** Removes unnecessary fields on Properties for Delivery API. */
+  toCompactDeliveryProperties?: PropertiesMapFn;
 
-  /** Removes unnecessary fields on Insertions for Metrics API. */
-  toCompactMetricsInsertion?: InsertionMapFn;
+  /** Removes unnecessary fields on Properties for Metrics API. */
+  toCompactMetricsProperties?: PropertiesMapFn;
 }
