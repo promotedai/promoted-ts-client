@@ -5,6 +5,7 @@ import { PromotedClientArguments } from './client-args';
 import { InsertionPageType } from './insertion-page-type';
 import { DeliveryRequest } from './delivery-request';
 import { MetricsRequest } from './metrics-request';
+import { ExecutionServer } from './execution-server';
 
 const fakeUuidGenerator = () => {
   let i = 0;
@@ -153,6 +154,8 @@ describe('no-op', () => {
 
       const expectedRespInsertions = toResponseInsertions([newProduct('3'), newProduct('2'), newProduct('1')]);
       expect(response.insertion).toEqual(expectedRespInsertions);
+      expect(response.executionServer).toEqual(ExecutionServer.SDK);
+      expect(response.clientRequestId).toBeUndefined();
       await response.log();
     });
 
@@ -177,6 +180,8 @@ describe('no-op', () => {
       const expectedRespInsertions = [toInsertion(newProduct('3'), { position: 0 })];
 
       expect(response.insertion).toEqual(expectedRespInsertions);
+      expect(response.executionServer).toEqual(ExecutionServer.SDK);
+      expect(response.clientRequestId).toBeUndefined();
       await response.log();
     });
   });
@@ -197,6 +202,8 @@ describe('no-op', () => {
         insertionPageType: InsertionPageType.Unpaged,
       });
       expect(response.insertion).toEqual(toResponseInsertions([newProduct('3'), newProduct('2'), newProduct('1')]));
+      expect(response.executionServer).toBeDefined();
+      expect(response.clientRequestId).toBeUndefined();
       await response.log();
     });
 
@@ -218,6 +225,8 @@ describe('no-op', () => {
         insertionPageType: InsertionPageType.Unpaged,
       });
       expect(response.insertion).toEqual(toResponseInsertions([newProduct('3')]));
+      expect(response.executionServer).toBeDefined();
+      expect(response.clientRequestId).toBeUndefined();
       await response.log();
     });
 
@@ -244,6 +253,8 @@ describe('no-op', () => {
       const expectedInsertions = toResponseInsertions([newProduct('2')]);
       expectedInsertions[0].position = 1; // the offset
       expect(response.insertion).toEqual(expectedInsertions);
+      expect(response.executionServer).toBeDefined();
+      expect(response.clientRequestId).toBeUndefined();
       await response.log();
     });
   });
@@ -343,6 +354,10 @@ describe('deliver', () => {
       toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
       toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
     ]);
+
+    expect(response.executionServer).toEqual(ExecutionServer.API);
+    expect(response.clientRequestId).toEqual('uuid0');
+
     // Here is where clients will return their response.
     await response.log();
     expect(deliveryClient.mock.calls.length).toBe(1);
@@ -441,6 +456,8 @@ describe('deliver', () => {
       ]);
 
       expect(response.logRequest).toEqual(expectedLogReq);
+      expect(response.executionServer).toEqual(ExecutionServer.SDK);
+      expect(response.clientRequestId).toEqual('uuid0');
 
       // Here is where clients will return their response.
       await response.log();
@@ -516,6 +533,8 @@ describe('deliver', () => {
       ]);
 
       expect(response.logRequest).toEqual(expectedLogReq);
+      expect(response.executionServer).toEqual(ExecutionServer.API);
+      expect(response.clientRequestId).toEqual('uuid0');
 
       // Here is where clients will return their response.
       await response.log();
@@ -606,6 +625,8 @@ describe('deliver', () => {
       ]);
 
       expect(response.logRequest).toEqual(expectedLogReq);
+      expect(response.executionServer).toEqual(ExecutionServer.SDK);
+      expect(response.clientRequestId).toEqual('uuid0');
 
       // Here is where clients will return their response.
       await response.log();
@@ -712,6 +733,8 @@ describe('deliver', () => {
       ]);
 
       expect(response.logRequest).toEqual(expectedLogReq);
+      expect(response.executionServer).toEqual(ExecutionServer.SDK);
+      expect(response.clientRequestId).toEqual('uuid0');
 
       // Here is where clients will return their response.
       await response.log();
@@ -817,6 +840,8 @@ describe('deliver', () => {
       ]);
 
       expect(response.logRequest).toEqual(expectedLogReq);
+      expect(response.executionServer).toEqual(ExecutionServer.SDK);
+      expect(response.clientRequestId).toEqual('uuid0');
 
       // Here is where clients will return their response.
       await response.log();
@@ -894,6 +919,8 @@ describe('deliver', () => {
         toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
         toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
       ]);
+      expect(response.executionServer).toEqual(ExecutionServer.API);
+      expect(response.clientRequestId).toEqual('uuid0');
 
       // Here is where clients will return their response.
       await response.log();
@@ -978,6 +1005,8 @@ describe('deliver', () => {
       ]);
 
       expect(response.logRequest).toEqual(expectedLogReq);
+      expect(response.executionServer).toEqual(ExecutionServer.API);
+      expect(response.clientRequestId).toEqual('uuid0');
 
       // Here is where clients will return their response.
       await response.log();
@@ -1065,6 +1094,8 @@ describe('deliver', () => {
     ]);
 
     expect(response.logRequest).toEqual(expectedLogReq);
+    expect(response.executionServer).toEqual(ExecutionServer.SDK);
+    expect(response.clientRequestId).toEqual('uuid0');
 
     // Here is where clients will return their response.
     await response.log();
@@ -1073,7 +1104,7 @@ describe('deliver', () => {
   });
 
   it('onlyLog override', async () => {
-    const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
+    const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in onlyLog'));
     const expectedLogReq = {
       userInfo: {
         logUserId: 'logUserId1',
@@ -1148,6 +1179,8 @@ describe('deliver', () => {
     ]);
 
     expect(response.logRequest).toEqual(expectedLogReq);
+    expect(response.executionServer).toEqual(ExecutionServer.SDK);
+    expect(response.clientRequestId).toEqual('uuid0');
 
     // Here is where clients will return their response.
     await response.log();
@@ -1255,6 +1288,8 @@ describe('deliver', () => {
     ]);
 
     expect(response.logRequest).toEqual(expectedLogReq);
+    expect(response.executionServer).toEqual(ExecutionServer.SDK);
+    expect(response.clientRequestId).toEqual('uuid0');
 
     // Here is where clients will return their response.
     await response.log();
@@ -1305,6 +1340,10 @@ describe('deliver', () => {
       toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
       toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
     ]);
+
+    expect(response.executionServer).toEqual(ExecutionServer.API);
+    expect(response.clientRequestId).toEqual('uuid0');
+
     // Here is where clients will return their response.
     await response.log();
     expect(deliveryClient.mock.calls.length).toBe(1);
@@ -1414,6 +1453,8 @@ describe('deliver', () => {
       ]);
 
       expect(response.logRequest).toEqual(expectedLogReq);
+      expect(response.executionServer).toEqual(ExecutionServer.SDK);
+      expect(response.clientRequestId).toEqual('uuid0');
 
       // Here is where clients will return their response.
       await response.log();
@@ -1502,6 +1543,8 @@ describe('deliver', () => {
       ]);
 
       expect(response.logRequest).toEqual(expectedLogReq);
+      expect(response.executionServer).toEqual(ExecutionServer.API);
+      expect(response.clientRequestId).toEqual('uuid0');
 
       // Here is where clients will return their response.
       await response.log();
@@ -1682,6 +1725,8 @@ describe('metrics', () => {
     ]);
 
     expect(response.logRequest).toEqual(expectedLogReq);
+    expect(response.executionServer).toBeUndefined();
+    expect(response.clientRequestId).toEqual('uuid0');
 
     // Here is where clients will return their response.
     await response.log();
@@ -1751,6 +1796,8 @@ describe('metrics', () => {
     ]);
 
     expect(response.logRequest).toEqual(expectedLogReq);
+    expect(response.executionServer).toBeUndefined();
+    expect(response.clientRequestId).toEqual('uuid0');
 
     // Here is where clients will return their response.
     await response.log();
@@ -1822,6 +1869,8 @@ describe('metrics', () => {
     ]);
 
     expect(response.logRequest).toEqual(expectedLogReq);
+    expect(response.executionServer).toBeUndefined();
+    expect(response.clientRequestId).toEqual('uuid0');
   });
 
   it('non-zero page offset', async () => {
@@ -1889,6 +1938,8 @@ describe('metrics', () => {
     ]);
 
     expect(response.logRequest).toEqual(expectedLogReq);
+    expect(response.executionServer).toBeUndefined();
+    expect(response.clientRequestId).toEqual('uuid0');
 
     // Here is where clients will return their response.
     await response.log();
@@ -1988,6 +2039,8 @@ describe('metrics', () => {
     ]);
 
     expect(response.logRequest).toEqual(expectedLogReq);
+    expect(response.executionServer).toBeUndefined();
+    expect(response.clientRequestId).toEqual('uuid0');
 
     // Here is where clients will return their response.
     await response.log();
@@ -2111,6 +2164,8 @@ describe('shadow requests', () => {
     ]);
 
     expect(response.logRequest).toEqual(expectedLogReq);
+    expect(response.executionServer).toBeUndefined();
+    expect(response.clientRequestId).toEqual('uuid0');
 
     // Here is where clients will return their response.
     await response.log();
