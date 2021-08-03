@@ -223,7 +223,7 @@ export class PromotedClientImpl implements PromotedClient {
     return {
       log: this.createLogFn(logRequest),
       insertion: responseInsertions,
-      clientRequestId: request ? request.clientRequestId : undefined,
+      clientRequestId: request?.clientRequestId,
       logRequest,
     };
   }
