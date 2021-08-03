@@ -11,6 +11,7 @@ import type { ErrorHandler } from './error-handler';
 import type { Insertion, Request, Response } from './types/delivery';
 import type { CohortMembership, LogRequest, LogResponse } from './types/event';
 import { Pager } from './pager';
+import { ExecutionServer } from './execution-server';
 
 /**
  * Design-wise
@@ -99,6 +100,7 @@ export class NoopPromotedClient implements PromotedClient {
     return {
       log: () => Promise.resolve(undefined),
       insertion: responseInsertions,
+      executionServer: ExecutionServer.SDK,
     };
   }
 
@@ -112,6 +114,7 @@ export class NoopPromotedClient implements PromotedClient {
     return Promise.resolve({
       log: () => Promise.resolve(undefined),
       insertion: responseInsertions,
+      executionServer: ExecutionServer.SDK,
     });
   }
 
@@ -220,6 +223,7 @@ export class PromotedClientImpl implements PromotedClient {
     return {
       log: this.createLogFn(logRequest),
       insertion: responseInsertions,
+      clientRequestId: request?.clientRequestId,
       logRequest,
     };
   }
@@ -306,6 +310,8 @@ export class PromotedClientImpl implements PromotedClient {
     return {
       log: this.createLogFn(logRequest),
       insertion: responseInsertions,
+      executionServer: insertionsFromPromoted ? ExecutionServer.API : ExecutionServer.SDK,
+      clientRequestId: deliveryRequest.request.clientRequestId,
       logRequest,
     };
   }

@@ -1,3 +1,4 @@
+import { ExecutionServer } from './execution-server';
 import { Insertion } from './types/delivery';
 import { LogRequest } from './types/event';
 
@@ -32,4 +33,15 @@ export interface ClientResponse {
    * request, at most page size insertions will be forwarded on.
    */
   insertion: Insertion[];
+
+  /**
+   * Where the response insertions  were generated (i.e. by the API or
+   * locally in the SDK). Undefined on prepareForLogging responses.
+   */
+  executionServer?: ExecutionServer;
+
+  /**
+   * The client request id, for tracking purposes.
+   */
+  clientRequestId?: string;
 }
