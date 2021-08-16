@@ -7,6 +7,7 @@ export interface Request {
   platformId?: number;
   userInfo?: proto_common_common_pb.UserInfo;
   timing?: proto_common_common_pb.Timing;
+  device?: proto_common_common_pb.Device;
   requestId?: string;
   viewId?: string;
   sessionId?: string;

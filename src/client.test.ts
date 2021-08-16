@@ -6,6 +6,8 @@ import { InsertionPageType } from './insertion-page-type';
 import { DeliveryRequest } from './delivery-request';
 import { MetricsRequest } from './metrics-request';
 import { ExecutionServer } from './execution-server';
+import { LogRequest } from './types/event';
+import { Device } from './types/common';
 
 const fakeUuidGenerator = () => {
   let i = 0;
@@ -21,6 +23,14 @@ interface Product {
   title: string;
   url: string;
 }
+
+const TEST_DEVICE: Device = {
+  browser: {
+    userAgent:
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 12_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.0 Mobile/15E148 Safari/604.1',
+  },
+  ipAddress: '127.0.0.1',
+};
 
 const newProduct = (id: string): Product => ({
   id: `product${id}`,
@@ -66,6 +76,7 @@ const newBaseRequest = (): Partial<Request> => ({
   userInfo: {
     logUserId: 'logUserId1',
   },
+  device: TEST_DEVICE,
   useCase: 'FEED',
   // TODO - sessionId: .
   // TODO - viewId: .
@@ -367,7 +378,7 @@ describe('deliver', () => {
   describe('using cohorts', () => {
     it('arm=CONTROL', async () => {
       const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
-      const expectedLogReq = {
+      const expectedLogReq: LogRequest = {
         userInfo: {
           logUserId: 'logUserId1',
         },
@@ -408,6 +419,7 @@ describe('deliver', () => {
             ...newLogRequestRequest(),
             requestId: 'uuid1',
             clientRequestId: 'uuid0',
+            device: TEST_DEVICE,
             timing: {
               clientLogTimestamp: 12345678,
             },
@@ -483,7 +495,7 @@ describe('deliver', () => {
           ],
         });
       });
-      const expectedLogReq = {
+      const expectedLogReq: LogRequest = {
         userInfo: {
           logUserId: 'logUserId1',
         },
@@ -545,7 +557,7 @@ describe('deliver', () => {
     // If Delivery fails and we silently handle it, we log like everything.
     it('arm=TREATMENT - Delivery failed', async () => {
       const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
-      const expectedLogReq = {
+      const expectedLogReq: LogRequest = {
         userInfo: {
           logUserId: 'logUserId1',
         },
@@ -577,6 +589,7 @@ describe('deliver', () => {
             },
             requestId: 'uuid1',
             clientRequestId: 'uuid0',
+            device: TEST_DEVICE,
           },
         ],
       };
@@ -640,7 +653,7 @@ describe('deliver', () => {
     it('toCompactMetricsInsertion arm=CONTROL', async () => {
       const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
       // Should not have position set due to the custom compact function we're testing with.
-      const expectedLogReq = {
+      const expectedLogReq: LogRequest = {
         userInfo: {
           logUserId: 'logUserId1',
         },
@@ -687,6 +700,7 @@ describe('deliver', () => {
               clientLogTimestamp: 12345678,
             },
             clientRequestId: 'uuid0',
+            device: TEST_DEVICE,
           },
         ],
       };
@@ -745,7 +759,7 @@ describe('deliver', () => {
     it('toCompactMetricsInsertion arm=CONTROL defaultRequestValues', async () => {
       const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
       // Should not have position set due to the custom compact function we're testing with.
-      const expectedLogReq = {
+      const expectedLogReq: LogRequest = {
         userInfo: {
           logUserId: 'logUserId1',
         },
@@ -792,6 +806,7 @@ describe('deliver', () => {
               clientLogTimestamp: 12345678,
             },
             clientRequestId: 'uuid0',
+            device: TEST_DEVICE,
           },
         ],
       };
@@ -871,7 +886,7 @@ describe('deliver', () => {
           ],
         });
       });
-      const expectedLogReq = {
+      const expectedLogReq: LogRequest = {
         userInfo: {
           logUserId: 'logUserId1',
         },
@@ -953,7 +968,7 @@ describe('deliver', () => {
           ],
         });
       });
-      const expectedLogReq = {
+      const expectedLogReq: LogRequest = {
         userInfo: {
           logUserId: 'logUserId1',
         },
@@ -1017,7 +1032,7 @@ describe('deliver', () => {
 
   it('page size 1', async () => {
     const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
-    const expectedLogReq = {
+    const expectedLogReq: LogRequest = {
       userInfo: {
         logUserId: 'logUserId1',
       },
@@ -1054,6 +1069,7 @@ describe('deliver', () => {
             clientLogTimestamp: 12345678,
           },
           clientRequestId: 'uuid0',
+          device: TEST_DEVICE,
         },
       ],
     };
@@ -1105,7 +1121,7 @@ describe('deliver', () => {
 
   it('onlyLog override', async () => {
     const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in onlyLog'));
-    const expectedLogReq = {
+    const expectedLogReq: LogRequest = {
       userInfo: {
         logUserId: 'logUserId1',
       },
@@ -1137,6 +1153,7 @@ describe('deliver', () => {
             clientLogTimestamp: 12345678,
           },
           clientRequestId: 'uuid0',
+          device: TEST_DEVICE,
         },
       ],
     };
@@ -1190,7 +1207,7 @@ describe('deliver', () => {
 
   it('with optional Request fields', async () => {
     const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
-    const expectedLogReq = {
+    const expectedLogReq: LogRequest = {
       platformId: 1,
       userInfo: {
         logUserId: 'logUserId1',
@@ -1237,6 +1254,7 @@ describe('deliver', () => {
             clientLogTimestamp: 87654321,
           },
           clientRequestId: 'uuid0',
+          device: TEST_DEVICE,
         },
       ],
     };
@@ -1356,7 +1374,7 @@ describe('deliver', () => {
     // API call.
     it('delivery timeout', async () => {
       const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in timeout'));
-      const expectedLogReq = {
+      const expectedLogReq: LogRequest = {
         userInfo: {
           logUserId: 'logUserId1',
         },
@@ -1400,6 +1418,7 @@ describe('deliver', () => {
               clientLogTimestamp: 12345678,
             },
             clientRequestId: 'uuid0',
+            device: TEST_DEVICE,
           },
         ],
       };
@@ -1484,7 +1503,7 @@ describe('deliver', () => {
         });
       });
 
-      const expectedLogReq = {
+      const expectedLogReq: LogRequest = {
         userInfo: {
           logUserId: 'logUserId1',
         },
@@ -1653,7 +1672,7 @@ describe('metrics', () => {
   it('good case', async () => {
     const deliveryClient: any = jest.fn(failFunction('Delivery should not be called when logging only'));
     // Log request doesn't set position.
-    const expectedLogReq = {
+    const expectedLogReq: LogRequest = {
       userInfo: {
         logUserId: 'logUserId1',
       },
@@ -1685,6 +1704,7 @@ describe('metrics', () => {
             clientLogTimestamp: 12345678,
           },
           clientRequestId: 'uuid0',
+          device: TEST_DEVICE,
         },
       ],
     };
@@ -1736,7 +1756,7 @@ describe('metrics', () => {
 
   it('page size 1', async () => {
     const deliveryClient: any = jest.fn(failFunction('Delivery should not be called when logging only'));
-    const expectedLogReq = {
+    const expectedLogReq: LogRequest = {
       userInfo: {
         logUserId: 'logUserId1',
       },
@@ -1761,6 +1781,7 @@ describe('metrics', () => {
             clientLogTimestamp: 12345678,
           },
           clientRequestId: 'uuid0',
+          device: TEST_DEVICE,
         },
       ],
     };
@@ -1808,7 +1829,7 @@ describe('metrics', () => {
   it('offsets position starting at the first insertion for prepaged insertions', async () => {
     const deliveryClient: any = jest.fn(failFunction('Delivery should not be called when logging only'));
     // Logging only doesn't set position.
-    const expectedLogReq = {
+    const expectedLogReq: LogRequest = {
       userInfo: {
         logUserId: 'logUserId1',
       },
@@ -1834,6 +1855,7 @@ describe('metrics', () => {
             clientLogTimestamp: 12345678,
           },
           clientRequestId: 'uuid0',
+          device: TEST_DEVICE,
         },
       ],
     };
@@ -1876,7 +1898,7 @@ describe('metrics', () => {
   it('non-zero page offset', async () => {
     const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in logging test'));
     // Paging parameters advance to the second insertion.
-    const expectedLogReq = {
+    const expectedLogReq: LogRequest = {
       userInfo: {
         logUserId: 'logUserId1',
       },
@@ -1902,6 +1924,7 @@ describe('metrics', () => {
             clientLogTimestamp: 12345678,
           },
           clientRequestId: 'uuid0',
+          device: TEST_DEVICE,
         },
       ],
     };
@@ -1949,7 +1972,7 @@ describe('metrics', () => {
 
   it('extra fields', async () => {
     const deliveryClient: any = jest.fn(failFunction('Delivery should not be called when logging only'));
-    const expectedLogReq = {
+    const expectedLogReq: LogRequest = {
       userInfo: {
         logUserId: 'logUserId1',
       },
@@ -1989,6 +2012,7 @@ describe('metrics', () => {
             clientLogTimestamp: 12345678,
           },
           clientRequestId: 'uuid0',
+          device: TEST_DEVICE,
         },
       ],
     };
@@ -2084,6 +2108,7 @@ describe('shadow requests', () => {
           trafficType: TrafficType_SHADOW,
           clientType: ClientType_PLATFORM_SERVER,
         },
+        device: TEST_DEVICE,
         clientRequestId: 'uuid0',
       };
       deliveryClient = jest.fn((request) => {
@@ -2092,7 +2117,7 @@ describe('shadow requests', () => {
       });
     }
 
-    const expectedLogReq = {
+    const expectedLogReq: LogRequest = {
       userInfo: {
         logUserId: 'logUserId1',
       },
@@ -2118,6 +2143,7 @@ describe('shadow requests', () => {
             clientType: ClientType_PLATFORM_SERVER,
           },
           clientRequestId: 'uuid0',
+          device: TEST_DEVICE,
         },
       ],
     };
