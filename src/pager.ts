@@ -29,7 +29,10 @@ export class Pager {
       size = insertions.length;
     }
 
-    const finalInsertionSize = Math.min(size, insertions.length);
+    const finalInsertionSize = Math.min(size, insertions.length - index);
+    if (finalInsertionSize <= 0) {
+      return [];
+    }
     const insertionPage: Insertion[] = new Array(finalInsertionSize);
     for (let i = 0; i < finalInsertionSize; i++) {
       const insertion = insertions[index];
