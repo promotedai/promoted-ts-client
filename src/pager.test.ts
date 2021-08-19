@@ -44,6 +44,23 @@ describe('apply paging', () => {
     expect(resIns[1].position).toEqual(2);
   });
 
+  it('creates a short page if necessary at the end', () => {
+    const paging: Paging = {
+      size: 3,
+      offset: 1,
+    };
+    const resIns = pager.applyPaging(insertions, InsertionPageType.Unpaged, paging);
+    expect(resIns.length).toEqual(insertions.length - 1);
+
+    // We take a page size of 2 since the 3rd would be off the end, starting at offset 1
+    expect(resIns[0].insertionId).toEqual(insertions[1].insertionId);
+    expect(resIns[1].insertionId).toEqual(insertions[2].insertionId);
+
+    // Positions start at offset when Unpaged.
+    expect(resIns[0].position).toEqual(1);
+    expect(resIns[1].position).toEqual(2);
+  });
+
   it('pages a window when prepaged', () => {
     const paging: Paging = {
       size: 2,
