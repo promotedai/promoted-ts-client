@@ -39,6 +39,11 @@ export interface PromotedClientArguments {
   shadowTrafficDeliveryPercent?: number;
 
   /**
+   * If true (the default), will send shadow traffic during delivery for the CONTROL arm of an experiment.
+   */
+  sendShadowTrafficForControl?: boolean;
+
+  /**
    * Default values to use on DeliveryRequests.
    */
   defaultRequestValues?: BaseRequest;

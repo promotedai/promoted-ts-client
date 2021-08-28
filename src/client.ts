@@ -133,6 +133,7 @@ export class PromotedClientImpl implements PromotedClient {
   private metricsClient: ApiClient<LogRequest, LogResponse>;
   private performChecks: boolean;
   private shadowTrafficDeliveryPercent: number;
+  private sendShadowTrafficForControl: boolean;
   private defaultRequestValues: RequiredBaseRequest;
   private handleError: ErrorHandler;
   private uuid: () => string;
@@ -180,6 +181,7 @@ export class PromotedClientImpl implements PromotedClient {
     this.shouldApplyTreatment = args.shouldApplyTreatment ?? defaultShouldApplyTreatment;
     this.deliveryTimeoutWrapper = args.deliveryTimeoutWrapper ?? timeoutWrapper;
     this.metricsTimeoutWrapper = args.metricsTimeoutWrapper ?? timeoutWrapper;
+    this.sendShadowTrafficForControl = args.sendShadowTrafficForControl ?? true;
   }
 
   // Returns whether or not the client is taking actions at this time.
@@ -207,7 +209,7 @@ export class PromotedClientImpl implements PromotedClient {
     // Send shadow traffic if necessary.
     if (this.shouldSendAsShadowTraffic()) {
       // Fire and forget.
-      this.deliverShadowTraffic(metricsRequest);
+      this.deliverShadowTraffic(metricsRequest.request, metricsRequest.fullInsertion);
     }
 
     // If defined, log the Request to Metrics API.
@@ -279,6 +281,8 @@ export class PromotedClientImpl implements PromotedClient {
             response.insertion === undefined ? [] : response.insertion,
             deliveryRequest.fullInsertion
           );
+        } else if (this.sendShadowTrafficForControl) {
+          this.deliverShadowTraffic(deliveryRequest.request, deliveryRequest.fullInsertion);
         }
       } catch (error) {
         this.handleError(error);
@@ -324,12 +328,17 @@ export class PromotedClientImpl implements PromotedClient {
   private shouldSendAsShadowTraffic = () =>
     this.shadowTrafficDeliveryPercent && this.sampler.sampleRandom(this.shadowTrafficDeliveryPercent);
 
-  private deliverShadowTraffic(metricsRequest: MetricsRequest) {
+  /**
+   * Creates a shadow traffic request to delivery.
+   * @param request the underlying request.
+   * @param fullInsertion the set of full insertions.
+   */
+  private deliverShadowTraffic(request: Request, fullInsertion: Insertion[]) {
     const singleRequest: Request = {
-      ...metricsRequest.request,
-      insertion: metricsRequest.fullInsertion, // CONSIDER: Whether to copy and/or compact this at some point.
+      ...request,
+      insertion: fullInsertion, // CONSIDER: Whether to copy and/or compact this at some point.
       clientInfo: {
-        ...metricsRequest.request.clientInfo,
+        ...request.clientInfo,
         trafficType: TrafficType_SHADOW,
       },
     };

@@ -106,6 +106,8 @@ const newFakePromotedClient = (overrideArgs: Partial<PromotedClientArguments>) =
     overrideArgs.metricsClient === undefined
       ? jest.fn(failFunction('Metrics should not be called in CONTROL'))
       : overrideArgs.metricsClient;
+  const sendShadowTrafficForControl =
+    overrideArgs.sendShadowTrafficForControl == undefined ? false : overrideArgs.sendShadowTrafficForControl;
 
   return newPromotedClient({
     defaultRequestValues: {
@@ -116,6 +118,7 @@ const newFakePromotedClient = (overrideArgs: Partial<PromotedClientArguments>) =
     handleError: throwOnError,
     uuid: fakeUuidGenerator(),
     nowMillis: () => 12345678,
+    sendShadowTrafficForControl: sendShadowTrafficForControl, // makes test setup easier to default to off.
     ...overrideArgs,
   });
 };
@@ -474,6 +477,128 @@ describe('deliver', () => {
       // Here is where clients will return their response.
       await response.log();
       expect(deliveryClient.mock.calls.length).toBe(0);
+      expect(metricsClient.mock.calls.length).toBe(1);
+    });
+
+    it('arm=CONTROL sends shadow traffic', async () => {
+      // Delivery gets called as shadow traffic in CONTROL.
+      const deliveryClient: any = jest.fn((request) => {
+        expect(request).toEqual({
+          ...newBaseRequest(),
+          timing: {
+            clientLogTimestamp: 12345678,
+          },
+          clientInfo: {
+            trafficType: TrafficType_SHADOW, // !!!
+          },
+          clientRequestId: 'uuid0',
+          insertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+        });
+        return Promise.resolve({
+          insertion: [
+            toInsertion(newProduct('1'), { insertionId: 'uuid1' }),
+            toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
+            toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
+          ],
+        });
+      });
+      const expectedLogReq: LogRequest = {
+        userInfo: {
+          logUserId: 'logUserId1',
+        },
+        timing: {
+          clientLogTimestamp: 12345678,
+        },
+        cohortMembership: [
+          {
+            arm: 'CONTROL',
+            cohortId: 'HOLD_OUT',
+            timing: {
+              clientLogTimestamp: 12345678,
+            },
+            userInfo: {
+              logUserId: 'logUserId1',
+            },
+          },
+        ],
+        insertion: [
+          toInsertion(newProduct('3'), {
+            insertionId: 'uuid2',
+            requestId: 'uuid1',
+            position: 0,
+          }),
+          toInsertion(newProduct('2'), {
+            insertionId: 'uuid3',
+            requestId: 'uuid1',
+            position: 1,
+          }),
+          toInsertion(newProduct('1'), {
+            insertionId: 'uuid4',
+            requestId: 'uuid1',
+            position: 2,
+          }),
+        ],
+        request: [
+          {
+            ...newLogRequestRequest(),
+            requestId: 'uuid1',
+            clientRequestId: 'uuid0',
+            device: TEST_DEVICE,
+            timing: {
+              clientLogTimestamp: 12345678,
+            },
+          },
+        ],
+      };
+      const metricsClient: any = jest.fn((request) => {
+        expect(request).toEqual(expectedLogReq);
+      });
+
+      const promotedClient = newFakePromotedClient({
+        deliveryClient,
+        metricsClient,
+        sendShadowTrafficForControl: true,
+      });
+
+      const products = [newProduct('3'), newProduct('2'), newProduct('1')];
+      const response = await promotedClient.deliver({
+        request: newBaseRequest(),
+        fullInsertion: toInsertions(products),
+        experiment: {
+          cohortId: 'HOLD_OUT',
+          arm: 'CONTROL',
+        },
+        insertionPageType: InsertionPageType.Unpaged,
+      });
+      expect(deliveryClient.mock.calls.length).toBe(1);
+      expect(metricsClient.mock.calls.length).toBe(0);
+
+      // SDK-provided positions
+      expect(response.insertion).toEqual([
+        toInsertion(newProduct('3'), {
+          insertionId: 'uuid2',
+          requestId: 'uuid1',
+          position: 0,
+        }),
+        toInsertion(newProduct('2'), {
+          insertionId: 'uuid3',
+          requestId: 'uuid1',
+          position: 1,
+        }),
+        toInsertion(newProduct('1'), {
+          insertionId: 'uuid4',
+          requestId: 'uuid1',
+          position: 2,
+        }),
+      ]);
+
+      expect(response.logRequest).toEqual(expectedLogReq);
+      expect(response.executionServer).toEqual(ExecutionServer.SDK);
+      expect(response.clientRequestId).toEqual('uuid0');
+
+      // Here is where clients will return their response.
+      await response.log();
+      expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(1);
     });
 
@@ -2090,7 +2215,7 @@ describe('metrics', () => {
   });
 });
 
-describe('shadow requests', () => {
+describe('shadow requests in prepareForLogging', () => {
   async function runShadowRequestSamplingTest(
     samplingReturn: boolean,
     shouldCallDelivery: boolean,
