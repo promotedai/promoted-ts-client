@@ -18,6 +18,7 @@ export interface LogRequest {
   platformId?: number;
   userInfo?: proto_common_common_pb.UserInfo;
   timing?: proto_common_common_pb.Timing;
+  clientInfo?: proto_common_common_pb.ClientInfo;
   cohortMembership?: Array<CohortMembership>;
   request?: Array<proto_delivery_delivery_pb.Request>;
   insertion?: Array<proto_delivery_delivery_pb.Insertion>;

@@ -268,10 +268,16 @@ export class PromotedClientImpl implements PromotedClient {
           const toCompactDeliveryRequestInsertion = toCompactInsertionFn(
             deliveryRequest.toCompactDeliveryProperties ?? this.defaultRequestValues.toCompactDeliveryProperties
           );
-          const singleRequest = {
+          const singleRequest: Request = {
             ...deliveryRequest.request,
+            clientInfo: {
+              ...deliveryRequest.request.clientInfo,
+              trafficType: TrafficType_PRODUCTION,
+              clientType: ClientType_PLATFORM_SERVER,
+            },
             insertion: deliveryRequest.fullInsertion.map(toCompactDeliveryRequestInsertion),
           };
+
           const response = await this.deliveryTimeoutWrapper(
             this.deliveryClient(singleRequest),
             this.deliveryTimeoutMillis
@@ -340,6 +346,7 @@ export class PromotedClientImpl implements PromotedClient {
       clientInfo: {
         ...request.clientInfo,
         trafficType: TrafficType_SHADOW,
+        clientType: ClientType_PLATFORM_SERVER,
       },
     };
     // Swallow errors.
@@ -378,7 +385,7 @@ export class PromotedClientImpl implements PromotedClient {
     }
 
     const {
-      request: { platformId, userInfo, timing },
+      request: { platformId, userInfo, timing, clientInfo },
     } = sdkRequest;
     if (platformId) {
       logRequest.platformId = platformId;
@@ -389,6 +396,11 @@ export class PromotedClientImpl implements PromotedClient {
     if (timing) {
       logRequest.timing = timing;
     }
+
+    logRequest.clientInfo = clientInfo ?? {};
+    logRequest.clientInfo.clientType = ClientType_PLATFORM_SERVER;
+    logRequest.clientInfo.trafficType = TrafficType_PRODUCTION;
+
     return logRequest;
   }
 
