@@ -4,6 +4,7 @@
 export interface UserInfo {
   userId?: string;
   logUserId?: string;
+  isInternalUser?: boolean;
 }
 
 export interface Timing {
