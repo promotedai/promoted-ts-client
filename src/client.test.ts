@@ -7,7 +7,7 @@ import { DeliveryRequest } from './delivery-request';
 import { MetricsRequest } from './metrics-request';
 import { ExecutionServer } from './execution-server';
 import { LogRequest } from './types/event';
-import { Device } from './types/common';
+import { ClientInfo, Device } from './types/common';
 
 const fakeUuidGenerator = () => {
   let i = 0;
@@ -121,6 +121,12 @@ const newFakePromotedClient = (overrideArgs: Partial<PromotedClientArguments>) =
     sendShadowTrafficForControl: sendShadowTrafficForControl, // makes test setup easier to default to off.
     ...overrideArgs,
   });
+};
+
+// ClientInfo with fields that are SDK-managed for production/server traffic.
+const DEFAULT_SDK_CLIENT_INFO: ClientInfo = {
+  trafficType: TrafficType_PRODUCTION,
+  clientType: ClientType_PLATFORM_SERVER,
 };
 
 const failFunction = (errorMessage: string) => () => {
@@ -336,6 +342,7 @@ describe('deliver', () => {
         timing: {
           clientLogTimestamp: 12345678,
         },
+        clientInfo: DEFAULT_SDK_CLIENT_INFO,
         clientRequestId: 'uuid0',
         insertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
       });
@@ -388,6 +395,7 @@ describe('deliver', () => {
         timing: {
           clientLogTimestamp: 12345678,
         },
+        clientInfo: DEFAULT_SDK_CLIENT_INFO,
         cohortMembership: [
           {
             arm: 'CONTROL',
@@ -490,6 +498,7 @@ describe('deliver', () => {
           },
           clientInfo: {
             trafficType: TrafficType_SHADOW, // !!!
+            clientType: ClientType_PLATFORM_SERVER,
           },
           clientRequestId: 'uuid0',
           insertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
@@ -509,6 +518,7 @@ describe('deliver', () => {
         timing: {
           clientLogTimestamp: 12345678,
         },
+        clientInfo: DEFAULT_SDK_CLIENT_INFO,
         cohortMembership: [
           {
             arm: 'CONTROL',
@@ -609,6 +619,7 @@ describe('deliver', () => {
           timing: {
             clientLogTimestamp: 12345678,
           },
+          clientInfo: DEFAULT_SDK_CLIENT_INFO,
           clientRequestId: 'uuid0',
           insertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
         });
@@ -627,6 +638,7 @@ describe('deliver', () => {
         timing: {
           clientLogTimestamp: 12345678,
         },
+        clientInfo: DEFAULT_SDK_CLIENT_INFO,
         cohortMembership: [
           {
             arm: 'TREATMENT',
@@ -689,6 +701,7 @@ describe('deliver', () => {
         timing: {
           clientLogTimestamp: 12345678,
         },
+        clientInfo: DEFAULT_SDK_CLIENT_INFO,
         insertion: [
           toInsertion(newProduct('3'), { insertionId: 'uuid2', requestId: 'uuid1', position: 0 }),
           toInsertion(newProduct('2'), { insertionId: 'uuid3', requestId: 'uuid1', position: 1 }),
@@ -785,6 +798,7 @@ describe('deliver', () => {
         timing: {
           clientLogTimestamp: 12345678,
         },
+        clientInfo: DEFAULT_SDK_CLIENT_INFO,
         cohortMembership: [
           {
             arm: 'CONTROL',
@@ -891,6 +905,7 @@ describe('deliver', () => {
         timing: {
           clientLogTimestamp: 12345678,
         },
+        clientInfo: DEFAULT_SDK_CLIENT_INFO,
         cohortMembership: [
           {
             arm: 'CONTROL',
@@ -1001,6 +1016,7 @@ describe('deliver', () => {
             toInsertionOnlyContentId(newProduct('2')),
             toInsertionOnlyContentId(newProduct('1')),
           ],
+          clientInfo: DEFAULT_SDK_CLIENT_INFO,
           clientRequestId: 'uuid0',
         });
         return Promise.resolve({
@@ -1018,6 +1034,7 @@ describe('deliver', () => {
         timing: {
           clientLogTimestamp: 12345678,
         },
+        clientInfo: DEFAULT_SDK_CLIENT_INFO,
         cohortMembership: [
           {
             arm: 'TREATMENT',
@@ -1083,6 +1100,7 @@ describe('deliver', () => {
             toInsertionOnlyContentId(newProduct('2')),
             toInsertionOnlyContentId(newProduct('1')),
           ],
+          clientInfo: DEFAULT_SDK_CLIENT_INFO,
           clientRequestId: 'uuid0',
         });
         return Promise.resolve({
@@ -1100,6 +1118,7 @@ describe('deliver', () => {
         timing: {
           clientLogTimestamp: 12345678,
         },
+        clientInfo: DEFAULT_SDK_CLIENT_INFO,
         cohortMembership: [
           {
             arm: 'TREATMENT',
@@ -1164,6 +1183,7 @@ describe('deliver', () => {
       timing: {
         clientLogTimestamp: 12345678,
       },
+      clientInfo: DEFAULT_SDK_CLIENT_INFO,
       cohortMembership: [
         {
           arm: 'CONTROL',
@@ -1253,6 +1273,7 @@ describe('deliver', () => {
       timing: {
         clientLogTimestamp: 12345678,
       },
+      clientInfo: DEFAULT_SDK_CLIENT_INFO,
       insertion: [
         toInsertion(newProduct('3'), {
           insertionId: 'uuid2',
@@ -1340,6 +1361,7 @@ describe('deliver', () => {
       timing: {
         clientLogTimestamp: 87654321,
       },
+      clientInfo: DEFAULT_SDK_CLIENT_INFO,
       cohortMembership: [
         {
           platformId: 1,
@@ -1448,6 +1470,7 @@ describe('deliver', () => {
           clientLogTimestamp: 12345678,
         },
         insertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+        clientInfo: DEFAULT_SDK_CLIENT_INFO,
         clientRequestId: 'uuid0',
       });
       return Promise.resolve({
@@ -1506,6 +1529,7 @@ describe('deliver', () => {
         timing: {
           clientLogTimestamp: 12345678,
         },
+        clientInfo: DEFAULT_SDK_CLIENT_INFO,
         cohortMembership: [
           {
             arm: 'TREATMENT',
@@ -1617,6 +1641,7 @@ describe('deliver', () => {
             clientLogTimestamp: 12345678,
           },
           insertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+          clientInfo: DEFAULT_SDK_CLIENT_INFO,
           clientRequestId: 'uuid0',
         });
         return Promise.resolve({
@@ -1635,6 +1660,7 @@ describe('deliver', () => {
         timing: {
           clientLogTimestamp: 12345678,
         },
+        clientInfo: DEFAULT_SDK_CLIENT_INFO,
         cohortMembership: [
           {
             arm: 'TREATMENT',
@@ -1804,6 +1830,7 @@ describe('metrics', () => {
       timing: {
         clientLogTimestamp: 12345678,
       },
+      clientInfo: DEFAULT_SDK_CLIENT_INFO,
       insertion: [
         toInsertion(newProduct('3'), {
           insertionId: 'uuid2',
@@ -1888,6 +1915,7 @@ describe('metrics', () => {
       timing: {
         clientLogTimestamp: 12345678,
       },
+      clientInfo: DEFAULT_SDK_CLIENT_INFO,
       insertion: [
         toInsertion(newProduct('3'), {
           insertionId: 'uuid2',
@@ -1961,6 +1989,7 @@ describe('metrics', () => {
       timing: {
         clientLogTimestamp: 12345678,
       },
+      clientInfo: DEFAULT_SDK_CLIENT_INFO,
       insertion: [
         toInsertion(newProduct('3'), {
           insertionId: 'uuid2',
@@ -2030,6 +2059,7 @@ describe('metrics', () => {
       timing: {
         clientLogTimestamp: 12345678,
       },
+      clientInfo: DEFAULT_SDK_CLIENT_INFO,
       insertion: [
         toInsertion(newProduct('2'), {
           insertionId: 'uuid2',
@@ -2104,6 +2134,7 @@ describe('metrics', () => {
       timing: {
         clientLogTimestamp: 12345678,
       },
+      clientInfo: DEFAULT_SDK_CLIENT_INFO,
       insertion: [
         toInsertion(newProduct('3'), {
           insertionId: 'uuid2',
@@ -2230,8 +2261,8 @@ describe('shadow requests in prepareForLogging', () => {
         },
         insertion: toInsertions([newProduct('3')]),
         clientInfo: {
-          trafficType: TrafficType_SHADOW,
           clientType: ClientType_PLATFORM_SERVER,
+          trafficType: TrafficType_SHADOW,
         },
         device: TEST_DEVICE,
         clientRequestId: 'uuid0',
@@ -2249,6 +2280,7 @@ describe('shadow requests in prepareForLogging', () => {
       timing: {
         clientLogTimestamp: 12345678,
       },
+      clientInfo: DEFAULT_SDK_CLIENT_INFO,
       insertion: [
         toInsertion(newProduct('3'), {
           insertionId: 'uuid2',
@@ -2263,10 +2295,7 @@ describe('shadow requests in prepareForLogging', () => {
           timing: {
             clientLogTimestamp: 12345678,
           },
-          clientInfo: {
-            trafficType: TrafficType_PRODUCTION,
-            clientType: ClientType_PLATFORM_SERVER,
-          },
+          clientInfo: DEFAULT_SDK_CLIENT_INFO,
           clientRequestId: 'uuid0',
           device: TEST_DEVICE,
         },
@@ -2294,10 +2323,7 @@ describe('shadow requests in prepareForLogging', () => {
     const response = promotedClient.prepareForLogging({
       request: {
         ...newBaseRequest(),
-        clientInfo: {
-          trafficType: TrafficType_PRODUCTION,
-          clientType: ClientType_PLATFORM_SERVER,
-        },
+        clientInfo: DEFAULT_SDK_CLIENT_INFO,
       },
       fullInsertion: toInsertions(products),
       insertionPageType: InsertionPageType.Unpaged,
@@ -2339,10 +2365,7 @@ describe('shadow requests in prepareForLogging', () => {
     promotedClient.prepareForLogging({
       request: {
         ...newBaseRequest(),
-        clientInfo: {
-          trafficType: TrafficType_PRODUCTION,
-          clientType: ClientType_PLATFORM_SERVER,
-        },
+        clientInfo: DEFAULT_SDK_CLIENT_INFO,
       },
       fullInsertion: toInsertions(products),
       insertionPageType: insertionPagingType,
