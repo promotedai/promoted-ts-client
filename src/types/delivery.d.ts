@@ -58,7 +58,8 @@ export interface Insertion {
   sessionId?: string;
   contentId?: string;
   position?: number;
-  deliveryScore?: number;
+  retrievalRank?: number;
+  retrievalScore?: number;
   properties?: proto_common_common_pb.Properties;
 }
 
