@@ -10,10 +10,18 @@ import { LogRequest } from './types/event';
 import { ClientInfo, Device } from './types/common';
 
 const fakeUuidGenerator = () => {
-  let i = 0;
-  return () => {
-    const value = 'uuid' + i;
-    i++;
+  const counters = new Map<string, number>();
+  return (uuidType?: string) => {
+    if (!uuidType) {
+      uuidType = 'uuid';
+    }
+
+    if (!counters.get(uuidType)) {
+      counters.set(uuidType, 0);
+    }
+    const i = counters.get(uuidType) as number;
+    const value = uuidType + i;
+    counters.set(uuidType, i + 1);
     return value;
   };
 };
@@ -343,14 +351,14 @@ describe('deliver', () => {
           clientLogTimestamp: 12345678,
         },
         clientInfo: DEFAULT_SDK_CLIENT_INFO,
-        clientRequestId: 'uuid0',
+        clientRequestId: 'clientRequestId0',
         insertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
       });
       return Promise.resolve({
         insertion: [
-          toInsertion(newProduct('1'), { insertionId: 'uuid1' }),
-          toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
-          toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
+          toInsertion(newProduct('1'), { insertionId: 'insertionId0' }),
+          toInsertion(newProduct('2'), { insertionId: 'insertionId1' }),
+          toInsertion(newProduct('3'), { insertionId: 'insertionId2' }),
         ],
       });
     });
@@ -371,13 +379,13 @@ describe('deliver', () => {
     expect(metricsClient.mock.calls.length).toBe(0);
 
     expect(response.insertion).toEqual([
-      toInsertion(newProduct('1'), { insertionId: 'uuid1' }),
-      toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
-      toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
+      toInsertion(newProduct('1'), { insertionId: 'insertionId0' }),
+      toInsertion(newProduct('2'), { insertionId: 'insertionId1' }),
+      toInsertion(newProduct('3'), { insertionId: 'insertionId2' }),
     ]);
 
     expect(response.executionServer).toEqual(ExecutionServer.API);
-    expect(response.clientRequestId).toEqual('uuid0');
+    expect(response.clientRequestId).toEqual('clientRequestId0');
 
     // Here is where clients will return their response.
     await response.log();
@@ -410,26 +418,26 @@ describe('deliver', () => {
         ],
         insertion: [
           toInsertion(newProduct('3'), {
-            insertionId: 'uuid2',
-            requestId: 'uuid1',
+            insertionId: 'insertionId0',
+            requestId: 'requestId0',
             position: 0,
           }),
           toInsertion(newProduct('2'), {
-            insertionId: 'uuid3',
-            requestId: 'uuid1',
+            insertionId: 'insertionId1',
+            requestId: 'requestId0',
             position: 1,
           }),
           toInsertion(newProduct('1'), {
-            insertionId: 'uuid4',
-            requestId: 'uuid1',
+            insertionId: 'insertionId2',
+            requestId: 'requestId0',
             position: 2,
           }),
         ],
         request: [
           {
             ...newLogRequestRequest(),
-            requestId: 'uuid1',
-            clientRequestId: 'uuid0',
+            requestId: 'requestId0',
+            clientRequestId: 'clientRequestId0',
             device: TEST_DEVICE,
             timing: {
               clientLogTimestamp: 12345678,
@@ -462,25 +470,25 @@ describe('deliver', () => {
       // SDK-provided positions
       expect(response.insertion).toEqual([
         toInsertion(newProduct('3'), {
-          insertionId: 'uuid2',
-          requestId: 'uuid1',
+          insertionId: 'insertionId0',
+          requestId: 'requestId0',
           position: 0,
         }),
         toInsertion(newProduct('2'), {
-          insertionId: 'uuid3',
-          requestId: 'uuid1',
+          insertionId: 'insertionId1',
+          requestId: 'requestId0',
           position: 1,
         }),
         toInsertion(newProduct('1'), {
-          insertionId: 'uuid4',
-          requestId: 'uuid1',
+          insertionId: 'insertionId2',
+          requestId: 'requestId0',
           position: 2,
         }),
       ]);
 
       expect(response.logRequest).toEqual(expectedLogReq);
       expect(response.executionServer).toEqual(ExecutionServer.SDK);
-      expect(response.clientRequestId).toEqual('uuid0');
+      expect(response.clientRequestId).toEqual('clientRequestId0');
 
       // Here is where clients will return their response.
       await response.log();
@@ -500,14 +508,14 @@ describe('deliver', () => {
             trafficType: TrafficType_SHADOW, // !!!
             clientType: ClientType_PLATFORM_SERVER,
           },
-          clientRequestId: 'uuid0',
+          clientRequestId: 'clientRequestId0',
           insertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
         });
         return Promise.resolve({
           insertion: [
-            toInsertion(newProduct('1'), { insertionId: 'uuid1' }),
-            toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
-            toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
+            toInsertion(newProduct('1'), { insertionId: 'insertionId0' }),
+            toInsertion(newProduct('2'), { insertionId: 'insertionId1' }),
+            toInsertion(newProduct('3'), { insertionId: 'insertionId2' }),
           ],
         });
       });
@@ -533,26 +541,26 @@ describe('deliver', () => {
         ],
         insertion: [
           toInsertion(newProduct('3'), {
-            insertionId: 'uuid2',
-            requestId: 'uuid1',
+            insertionId: 'insertionId0',
+            requestId: 'requestId0',
             position: 0,
           }),
           toInsertion(newProduct('2'), {
-            insertionId: 'uuid3',
-            requestId: 'uuid1',
+            insertionId: 'insertionId1',
+            requestId: 'requestId0',
             position: 1,
           }),
           toInsertion(newProduct('1'), {
-            insertionId: 'uuid4',
-            requestId: 'uuid1',
+            insertionId: 'insertionId2',
+            requestId: 'requestId0',
             position: 2,
           }),
         ],
         request: [
           {
             ...newLogRequestRequest(),
-            requestId: 'uuid1',
-            clientRequestId: 'uuid0',
+            requestId: 'requestId0',
+            clientRequestId: 'clientRequestId0',
             device: TEST_DEVICE,
             timing: {
               clientLogTimestamp: 12345678,
@@ -586,25 +594,25 @@ describe('deliver', () => {
       // SDK-provided positions
       expect(response.insertion).toEqual([
         toInsertion(newProduct('3'), {
-          insertionId: 'uuid2',
-          requestId: 'uuid1',
+          insertionId: 'insertionId0',
+          requestId: 'requestId0',
           position: 0,
         }),
         toInsertion(newProduct('2'), {
-          insertionId: 'uuid3',
-          requestId: 'uuid1',
+          insertionId: 'insertionId1',
+          requestId: 'requestId0',
           position: 1,
         }),
         toInsertion(newProduct('1'), {
-          insertionId: 'uuid4',
-          requestId: 'uuid1',
+          insertionId: 'insertionId2',
+          requestId: 'requestId0',
           position: 2,
         }),
       ]);
 
       expect(response.logRequest).toEqual(expectedLogReq);
       expect(response.executionServer).toEqual(ExecutionServer.SDK);
-      expect(response.clientRequestId).toEqual('uuid0');
+      expect(response.clientRequestId).toEqual('clientRequestId0');
 
       // Here is where clients will return their response.
       await response.log();
@@ -620,14 +628,14 @@ describe('deliver', () => {
             clientLogTimestamp: 12345678,
           },
           clientInfo: DEFAULT_SDK_CLIENT_INFO,
-          clientRequestId: 'uuid0',
+          clientRequestId: 'clientRequestId0',
           insertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
         });
         return Promise.resolve({
           insertion: [
-            toInsertion(newProduct('1'), { insertionId: 'uuid1' }),
-            toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
-            toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
+            toInsertion(newProduct('1'), { insertionId: 'insertionId0' }),
+            toInsertion(newProduct('2'), { insertionId: 'insertionId1' }),
+            toInsertion(newProduct('3'), { insertionId: 'insertionId2' }),
           ],
         });
       });
@@ -676,14 +684,14 @@ describe('deliver', () => {
       expect(metricsClient.mock.calls.length).toBe(0);
 
       expect(response.insertion).toEqual([
-        toInsertion(newProduct('1'), { insertionId: 'uuid1' }),
-        toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
-        toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
+        toInsertion(newProduct('1'), { insertionId: 'insertionId0' }),
+        toInsertion(newProduct('2'), { insertionId: 'insertionId1' }),
+        toInsertion(newProduct('3'), { insertionId: 'insertionId2' }),
       ]);
 
       expect(response.logRequest).toEqual(expectedLogReq);
       expect(response.executionServer).toEqual(ExecutionServer.API);
-      expect(response.clientRequestId).toEqual('uuid0');
+      expect(response.clientRequestId).toEqual('clientRequestId0');
 
       // Here is where clients will return their response.
       await response.log();
@@ -703,9 +711,9 @@ describe('deliver', () => {
         },
         clientInfo: DEFAULT_SDK_CLIENT_INFO,
         insertion: [
-          toInsertion(newProduct('3'), { insertionId: 'uuid2', requestId: 'uuid1', position: 0 }),
-          toInsertion(newProduct('2'), { insertionId: 'uuid3', requestId: 'uuid1', position: 1 }),
-          toInsertion(newProduct('1'), { insertionId: 'uuid4', requestId: 'uuid1', position: 2 }),
+          toInsertion(newProduct('3'), { insertionId: 'insertionId0', requestId: 'requestId0', position: 0 }),
+          toInsertion(newProduct('2'), { insertionId: 'insertionId1', requestId: 'requestId0', position: 1 }),
+          toInsertion(newProduct('1'), { insertionId: 'insertionId2', requestId: 'requestId0', position: 2 }),
         ],
         cohortMembership: [
           {
@@ -725,8 +733,8 @@ describe('deliver', () => {
             timing: {
               clientLogTimestamp: 12345678,
             },
-            requestId: 'uuid1',
-            clientRequestId: 'uuid0',
+            requestId: 'requestId0',
+            clientRequestId: 'clientRequestId0',
             device: TEST_DEVICE,
           },
         ],
@@ -759,25 +767,25 @@ describe('deliver', () => {
       // SDK-provided positions
       expect(response.insertion).toEqual([
         toInsertion(newProduct('3'), {
-          insertionId: 'uuid2',
-          requestId: 'uuid1',
+          insertionId: 'insertionId0',
+          requestId: 'requestId0',
           position: 0,
         }),
         toInsertion(newProduct('2'), {
-          insertionId: 'uuid3',
-          requestId: 'uuid1',
+          insertionId: 'insertionId1',
+          requestId: 'requestId0',
           position: 1,
         }),
         toInsertion(newProduct('1'), {
-          insertionId: 'uuid4',
-          requestId: 'uuid1',
+          insertionId: 'insertionId2',
+          requestId: 'requestId0',
           position: 2,
         }),
       ]);
 
       expect(response.logRequest).toEqual(expectedLogReq);
       expect(response.executionServer).toEqual(ExecutionServer.SDK);
-      expect(response.clientRequestId).toEqual('uuid0');
+      expect(response.clientRequestId).toEqual('clientRequestId0');
 
       // Here is where clients will return their response.
       await response.log();
@@ -814,31 +822,31 @@ describe('deliver', () => {
         insertion: [
           {
             contentId: 'product3',
-            insertionId: 'uuid2',
+            insertionId: 'insertionId0',
             position: 0,
-            requestId: 'uuid1',
+            requestId: 'requestId0',
           },
           {
             contentId: 'product2',
-            insertionId: 'uuid3',
+            insertionId: 'insertionId1',
             position: 1,
-            requestId: 'uuid1',
+            requestId: 'requestId0',
           },
           {
             contentId: 'product1',
-            insertionId: 'uuid4',
+            insertionId: 'insertionId2',
             position: 2,
-            requestId: 'uuid1',
+            requestId: 'requestId0',
           },
         ],
         request: [
           {
             ...newLogRequestRequest(),
-            requestId: 'uuid1',
+            requestId: 'requestId0',
             timing: {
               clientLogTimestamp: 12345678,
             },
-            clientRequestId: 'uuid0',
+            clientRequestId: 'clientRequestId0',
             device: TEST_DEVICE,
           },
         ],
@@ -869,25 +877,25 @@ describe('deliver', () => {
       // SDK-provided positions
       expect(response.insertion).toEqual([
         toInsertion(newProduct('3'), {
-          insertionId: 'uuid2',
-          requestId: 'uuid1',
+          insertionId: 'insertionId0',
+          requestId: 'requestId0',
           position: 0,
         }),
         toInsertion(newProduct('2'), {
-          insertionId: 'uuid3',
-          requestId: 'uuid1',
+          insertionId: 'insertionId1',
+          requestId: 'requestId0',
           position: 1,
         }),
         toInsertion(newProduct('1'), {
-          insertionId: 'uuid4',
-          requestId: 'uuid1',
+          insertionId: 'insertionId2',
+          requestId: 'requestId0',
           position: 2,
         }),
       ]);
 
       expect(response.logRequest).toEqual(expectedLogReq);
       expect(response.executionServer).toEqual(ExecutionServer.SDK);
-      expect(response.clientRequestId).toEqual('uuid0');
+      expect(response.clientRequestId).toEqual('clientRequestId0');
 
       // Here is where clients will return their response.
       await response.log();
@@ -920,32 +928,32 @@ describe('deliver', () => {
         ],
         insertion: [
           {
-            insertionId: 'uuid2',
+            insertionId: 'insertionId0',
             contentId: 'product3',
-            requestId: 'uuid1',
+            requestId: 'requestId0',
             position: 0,
           },
           {
-            insertionId: 'uuid3',
+            insertionId: 'insertionId1',
             contentId: 'product2',
-            requestId: 'uuid1',
+            requestId: 'requestId0',
             position: 1,
           },
           {
-            insertionId: 'uuid4',
+            insertionId: 'insertionId2',
             contentId: 'product1',
-            requestId: 'uuid1',
+            requestId: 'requestId0',
             position: 2,
           },
         ],
         request: [
           {
             ...newLogRequestRequest(),
-            requestId: 'uuid1',
+            requestId: 'requestId0',
             timing: {
               clientLogTimestamp: 12345678,
             },
-            clientRequestId: 'uuid0',
+            clientRequestId: 'clientRequestId0',
             device: TEST_DEVICE,
           },
         ],
@@ -978,25 +986,25 @@ describe('deliver', () => {
       // SDK-provided positions
       expect(response.insertion).toEqual([
         toInsertion(newProduct('3'), {
-          insertionId: 'uuid2',
-          requestId: 'uuid1',
+          insertionId: 'insertionId0',
+          requestId: 'requestId0',
           position: 0,
         }),
         toInsertion(newProduct('2'), {
-          insertionId: 'uuid3',
-          requestId: 'uuid1',
+          insertionId: 'insertionId1',
+          requestId: 'requestId0',
           position: 1,
         }),
         toInsertion(newProduct('1'), {
-          insertionId: 'uuid4',
-          requestId: 'uuid1',
+          insertionId: 'insertionId2',
+          requestId: 'requestId0',
           position: 2,
         }),
       ]);
 
       expect(response.logRequest).toEqual(expectedLogReq);
       expect(response.executionServer).toEqual(ExecutionServer.SDK);
-      expect(response.clientRequestId).toEqual('uuid0');
+      expect(response.clientRequestId).toEqual('clientRequestId0');
 
       // Here is where clients will return their response.
       await response.log();
@@ -1017,13 +1025,13 @@ describe('deliver', () => {
             toInsertionOnlyContentId(newProduct('1')),
           ],
           clientInfo: DEFAULT_SDK_CLIENT_INFO,
-          clientRequestId: 'uuid0',
+          clientRequestId: 'clientRequestId0',
         });
         return Promise.resolve({
           insertion: [
-            toInsertion(newProduct('1'), { insertionId: 'uuid1' }),
-            toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
-            toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
+            toInsertion(newProduct('1'), { insertionId: 'insertionId0' }),
+            toInsertion(newProduct('2'), { insertionId: 'insertionId1' }),
+            toInsertion(newProduct('3'), { insertionId: 'insertionId2' }),
           ],
         });
       });
@@ -1072,12 +1080,12 @@ describe('deliver', () => {
       expect(metricsClient.mock.calls.length).toBe(0);
 
       expect(response.insertion).toEqual([
-        toInsertion(newProduct('1'), { insertionId: 'uuid1' }),
-        toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
-        toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
+        toInsertion(newProduct('1'), { insertionId: 'insertionId0' }),
+        toInsertion(newProduct('2'), { insertionId: 'insertionId1' }),
+        toInsertion(newProduct('3'), { insertionId: 'insertionId2' }),
       ]);
       expect(response.executionServer).toEqual(ExecutionServer.API);
-      expect(response.clientRequestId).toEqual('uuid0');
+      expect(response.clientRequestId).toEqual('clientRequestId0');
 
       // Here is where clients will return their response.
       await response.log();
@@ -1101,13 +1109,13 @@ describe('deliver', () => {
             toInsertionOnlyContentId(newProduct('1')),
           ],
           clientInfo: DEFAULT_SDK_CLIENT_INFO,
-          clientRequestId: 'uuid0',
+          clientRequestId: 'clientRequestId0',
         });
         return Promise.resolve({
           insertion: [
-            toInsertion(newProduct('1'), { insertionId: 'uuid1' }),
-            toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
-            toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
+            toInsertion(newProduct('1'), { insertionId: 'insertionId0' }),
+            toInsertion(newProduct('2'), { insertionId: 'insertionId1' }),
+            toInsertion(newProduct('3'), { insertionId: 'insertionId2' }),
           ],
         });
       });
@@ -1158,14 +1166,14 @@ describe('deliver', () => {
       expect(metricsClient.mock.calls.length).toBe(0);
 
       expect(response.insertion).toEqual([
-        toInsertion(newProduct('1'), { insertionId: 'uuid1' }),
-        toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
-        toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
+        toInsertion(newProduct('1'), { insertionId: 'insertionId0' }),
+        toInsertion(newProduct('2'), { insertionId: 'insertionId1' }),
+        toInsertion(newProduct('3'), { insertionId: 'insertionId2' }),
       ]);
 
       expect(response.logRequest).toEqual(expectedLogReq);
       expect(response.executionServer).toEqual(ExecutionServer.API);
-      expect(response.clientRequestId).toEqual('uuid0');
+      expect(response.clientRequestId).toEqual('clientRequestId0');
 
       // Here is where clients will return their response.
       await response.log();
@@ -1198,22 +1206,22 @@ describe('deliver', () => {
       ],
       insertion: [
         toInsertion(newProduct('3'), {
-          insertionId: 'uuid2',
-          requestId: 'uuid1',
+          insertionId: 'insertionId0',
+          requestId: 'requestId0',
           position: 0,
         }),
       ],
       request: [
         {
           ...newLogRequestRequest(),
-          requestId: 'uuid1',
+          requestId: 'requestId0',
           paging: {
             size: 1,
           },
           timing: {
             clientLogTimestamp: 12345678,
           },
-          clientRequestId: 'uuid0',
+          clientRequestId: 'clientRequestId0',
           device: TEST_DEVICE,
         },
       ],
@@ -1248,15 +1256,15 @@ describe('deliver', () => {
     // SDK-provided position
     expect(response.insertion).toEqual([
       toInsertion(newProduct('3'), {
-        insertionId: 'uuid2',
-        requestId: 'uuid1',
+        insertionId: 'insertionId0',
+        requestId: 'requestId0',
         position: 0,
       }),
     ]);
 
     expect(response.logRequest).toEqual(expectedLogReq);
     expect(response.executionServer).toEqual(ExecutionServer.SDK);
-    expect(response.clientRequestId).toEqual('uuid0');
+    expect(response.clientRequestId).toEqual('clientRequestId0');
 
     // Here is where clients will return their response.
     await response.log();
@@ -1276,29 +1284,29 @@ describe('deliver', () => {
       clientInfo: DEFAULT_SDK_CLIENT_INFO,
       insertion: [
         toInsertion(newProduct('3'), {
-          insertionId: 'uuid2',
-          requestId: 'uuid1',
+          insertionId: 'insertionId0',
+          requestId: 'requestId0',
           position: 0,
         }),
         toInsertion(newProduct('2'), {
-          insertionId: 'uuid3',
-          requestId: 'uuid1',
+          insertionId: 'insertionId1',
+          requestId: 'requestId0',
           position: 1,
         }),
         toInsertion(newProduct('1'), {
-          insertionId: 'uuid4',
-          requestId: 'uuid1',
+          insertionId: 'insertionId2',
+          requestId: 'requestId0',
           position: 2,
         }),
       ],
       request: [
         {
           ...newLogRequestRequest(),
-          requestId: 'uuid1',
+          requestId: 'requestId0',
           timing: {
             clientLogTimestamp: 12345678,
           },
-          clientRequestId: 'uuid0',
+          clientRequestId: 'clientRequestId0',
           device: TEST_DEVICE,
         },
       ],
@@ -1325,25 +1333,25 @@ describe('deliver', () => {
     // SDK-provided positions
     expect(response.insertion).toEqual([
       toInsertion(newProduct('3'), {
-        insertionId: 'uuid2',
-        requestId: 'uuid1',
+        insertionId: 'insertionId0',
+        requestId: 'requestId0',
         position: 0,
       }),
       toInsertion(newProduct('2'), {
-        insertionId: 'uuid3',
-        requestId: 'uuid1',
+        insertionId: 'insertionId1',
+        requestId: 'requestId0',
         position: 1,
       }),
       toInsertion(newProduct('1'), {
-        insertionId: 'uuid4',
-        requestId: 'uuid1',
+        insertionId: 'insertionId2',
+        requestId: 'requestId0',
         position: 2,
       }),
     ]);
 
     expect(response.logRequest).toEqual(expectedLogReq);
     expect(response.executionServer).toEqual(ExecutionServer.SDK);
-    expect(response.clientRequestId).toEqual('uuid0');
+    expect(response.clientRequestId).toEqual('clientRequestId0');
 
     // Here is where clients will return their response.
     await response.log();
@@ -1377,18 +1385,18 @@ describe('deliver', () => {
       ],
       insertion: [
         toInsertion(newProduct('3'), {
-          insertionId: 'uuid2',
-          requestId: 'uuid1',
+          insertionId: 'insertionId0',
+          requestId: 'requestId0',
           position: 0,
         }),
         toInsertion(newProduct('2'), {
-          insertionId: 'uuid3',
-          requestId: 'uuid1',
+          insertionId: 'insertionId1',
+          requestId: 'requestId0',
           position: 1,
         }),
         toInsertion(newProduct('1'), {
-          insertionId: 'uuid4',
-          requestId: 'uuid1',
+          insertionId: 'insertionId2',
+          requestId: 'requestId0',
           position: 2,
         }),
       ],
@@ -1396,11 +1404,11 @@ describe('deliver', () => {
         {
           ...newLogRequestRequest(),
           platformId: 1,
-          requestId: 'uuid1',
+          requestId: 'requestId0',
           timing: {
             clientLogTimestamp: 87654321,
           },
-          clientRequestId: 'uuid0',
+          clientRequestId: 'clientRequestId0',
           device: TEST_DEVICE,
         },
       ],
@@ -1436,25 +1444,25 @@ describe('deliver', () => {
     // SDK-provided positions
     expect(response.insertion).toEqual([
       toInsertion(newProduct('3'), {
-        insertionId: 'uuid2',
-        requestId: 'uuid1',
+        insertionId: 'insertionId0',
+        requestId: 'requestId0',
         position: 0,
       }),
       toInsertion(newProduct('2'), {
-        insertionId: 'uuid3',
-        requestId: 'uuid1',
+        insertionId: 'insertionId1',
+        requestId: 'requestId0',
         position: 1,
       }),
       toInsertion(newProduct('1'), {
-        insertionId: 'uuid4',
-        requestId: 'uuid1',
+        insertionId: 'insertionId2',
+        requestId: 'requestId0',
         position: 2,
       }),
     ]);
 
     expect(response.logRequest).toEqual(expectedLogReq);
     expect(response.executionServer).toEqual(ExecutionServer.SDK);
-    expect(response.clientRequestId).toEqual('uuid0');
+    expect(response.clientRequestId).toEqual('clientRequestId0');
 
     // Here is where clients will return their response.
     await response.log();
@@ -1471,15 +1479,15 @@ describe('deliver', () => {
         },
         insertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
         clientInfo: DEFAULT_SDK_CLIENT_INFO,
-        clientRequestId: 'uuid0',
+        clientRequestId: 'clientRequestId0',
       });
       return Promise.resolve({
         insertion: [
           {
-            insertionId: 'uuid1',
+            insertionId: 'insertionId0',
           },
-          toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
-          toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
+          toInsertion(newProduct('2'), { insertionId: 'insertionId1' }),
+          toInsertion(newProduct('3'), { insertionId: 'insertionId2' }),
         ],
       });
     });
@@ -1501,14 +1509,14 @@ describe('deliver', () => {
 
     expect(response.insertion).toEqual([
       {
-        insertionId: 'uuid1',
+        insertionId: 'insertionId0',
       },
-      toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
-      toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
+      toInsertion(newProduct('2'), { insertionId: 'insertionId1' }),
+      toInsertion(newProduct('3'), { insertionId: 'insertionId2' }),
     ]);
 
     expect(response.executionServer).toEqual(ExecutionServer.API);
-    expect(response.clientRequestId).toEqual('uuid0');
+    expect(response.clientRequestId).toEqual('clientRequestId0');
 
     // Here is where clients will return their response.
     await response.log();
@@ -1544,29 +1552,29 @@ describe('deliver', () => {
         ],
         insertion: [
           toInsertion(newProduct('3'), {
-            insertionId: 'uuid2',
-            requestId: 'uuid1',
+            insertionId: 'insertionId0',
+            requestId: 'requestId0',
             position: 0,
           }),
           toInsertion(newProduct('2'), {
-            insertionId: 'uuid3',
-            requestId: 'uuid1',
+            insertionId: 'insertionId1',
+            requestId: 'requestId0',
             position: 1,
           }),
           toInsertion(newProduct('1'), {
-            insertionId: 'uuid4',
-            requestId: 'uuid1',
+            insertionId: 'insertionId2',
+            requestId: 'requestId0',
             position: 2,
           }),
         ],
         request: [
           {
             ...newLogRequestRequest(),
-            requestId: 'uuid1',
+            requestId: 'requestId0',
             timing: {
               clientLogTimestamp: 12345678,
             },
-            clientRequestId: 'uuid0',
+            clientRequestId: 'clientRequestId0',
             device: TEST_DEVICE,
           },
         ],
@@ -1604,25 +1612,25 @@ describe('deliver', () => {
       // SDK-provided positions
       expect(response.insertion).toEqual([
         toInsertion(newProduct('3'), {
-          insertionId: 'uuid2',
-          requestId: 'uuid1',
+          insertionId: 'insertionId0',
+          requestId: 'requestId0',
           position: 0,
         }),
         toInsertion(newProduct('2'), {
-          insertionId: 'uuid3',
-          requestId: 'uuid1',
+          insertionId: 'insertionId1',
+          requestId: 'requestId0',
           position: 1,
         }),
         toInsertion(newProduct('1'), {
-          insertionId: 'uuid4',
-          requestId: 'uuid1',
+          insertionId: 'insertionId2',
+          requestId: 'requestId0',
           position: 2,
         }),
       ]);
 
       expect(response.logRequest).toEqual(expectedLogReq);
       expect(response.executionServer).toEqual(ExecutionServer.SDK);
-      expect(response.clientRequestId).toEqual('uuid0');
+      expect(response.clientRequestId).toEqual('clientRequestId0');
 
       // Here is where clients will return their response.
       await response.log();
@@ -1642,13 +1650,13 @@ describe('deliver', () => {
           },
           insertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
           clientInfo: DEFAULT_SDK_CLIENT_INFO,
-          clientRequestId: 'uuid0',
+          clientRequestId: 'clientRequestId0',
         });
         return Promise.resolve({
           insertion: [
-            toInsertion(newProduct('1'), { insertionId: 'uuid2' }),
-            toInsertion(newProduct('2'), { insertionId: 'uuid3' }),
-            toInsertion(newProduct('3'), { insertionId: 'uuid4' }),
+            toInsertion(newProduct('1'), { insertionId: 'insertionId0' }),
+            toInsertion(newProduct('2'), { insertionId: 'insertionId1' }),
+            toInsertion(newProduct('3'), { insertionId: 'insertionId2' }),
           ],
         });
       });
@@ -1707,14 +1715,14 @@ describe('deliver', () => {
       expect(metricsClient.mock.calls.length).toBe(0);
 
       expect(response.insertion).toEqual([
-        toInsertion(newProduct('1'), { insertionId: 'uuid2' }),
-        toInsertion(newProduct('2'), { insertionId: 'uuid3' }),
-        toInsertion(newProduct('3'), { insertionId: 'uuid4' }),
+        toInsertion(newProduct('1'), { insertionId: 'insertionId0' }),
+        toInsertion(newProduct('2'), { insertionId: 'insertionId1' }),
+        toInsertion(newProduct('3'), { insertionId: 'insertionId2' }),
       ]);
 
       expect(response.logRequest).toEqual(expectedLogReq);
       expect(response.executionServer).toEqual(ExecutionServer.API);
-      expect(response.clientRequestId).toEqual('uuid0');
+      expect(response.clientRequestId).toEqual('clientRequestId0');
 
       // Here is where clients will return their response.
       await response.log();
@@ -1730,7 +1738,7 @@ describe('deliver', () => {
         promotedClient.deliver({
           request: {
             ...newBaseRequest(),
-            requestId: 'uuid0',
+            requestId: 'requestId0',
           },
           fullInsertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
           insertionPageType: InsertionPageType.Unpaged,
@@ -1833,29 +1841,29 @@ describe('metrics', () => {
       clientInfo: DEFAULT_SDK_CLIENT_INFO,
       insertion: [
         toInsertion(newProduct('3'), {
-          insertionId: 'uuid2',
-          requestId: 'uuid1',
+          insertionId: 'insertionId0',
+          requestId: 'requestId0',
           position: 0,
         }),
         toInsertion(newProduct('2'), {
-          insertionId: 'uuid3',
-          requestId: 'uuid1',
+          insertionId: 'insertionId1',
+          requestId: 'requestId0',
           position: 1,
         }),
         toInsertion(newProduct('1'), {
-          insertionId: 'uuid4',
-          requestId: 'uuid1',
+          insertionId: 'insertionId2',
+          requestId: 'requestId0',
           position: 2,
         }),
       ],
       request: [
         {
           ...newLogRequestRequest(),
-          requestId: 'uuid1',
+          requestId: 'requestId0',
           timing: {
             clientLogTimestamp: 12345678,
           },
-          clientRequestId: 'uuid0',
+          clientRequestId: 'clientRequestId0',
           device: TEST_DEVICE,
         },
       ],
@@ -1880,25 +1888,25 @@ describe('metrics', () => {
 
     expect(response.insertion).toEqual([
       toInsertion(newProduct('3'), {
-        insertionId: 'uuid2',
-        requestId: 'uuid1',
+        insertionId: 'insertionId0',
+        requestId: 'requestId0',
         position: 0,
       }),
       toInsertion(newProduct('2'), {
-        insertionId: 'uuid3',
-        requestId: 'uuid1',
+        insertionId: 'insertionId1',
+        requestId: 'requestId0',
         position: 1,
       }),
       toInsertion(newProduct('1'), {
-        insertionId: 'uuid4',
-        requestId: 'uuid1',
+        insertionId: 'insertionId2',
+        requestId: 'requestId0',
         position: 2,
       }),
     ]);
 
     expect(response.logRequest).toEqual(expectedLogReq);
     expect(response.executionServer).toBeUndefined();
-    expect(response.clientRequestId).toEqual('uuid0');
+    expect(response.clientRequestId).toEqual('clientRequestId0');
 
     // Here is where clients will return their response.
     await response.log();
@@ -1918,22 +1926,22 @@ describe('metrics', () => {
       clientInfo: DEFAULT_SDK_CLIENT_INFO,
       insertion: [
         toInsertion(newProduct('3'), {
-          insertionId: 'uuid2',
-          requestId: 'uuid1',
+          insertionId: 'insertionId0',
+          requestId: 'requestId0',
           position: 0,
         }),
       ],
       request: [
         {
           ...newLogRequestRequest(),
-          requestId: 'uuid1',
+          requestId: 'requestId0',
           paging: {
             size: 1,
           },
           timing: {
             clientLogTimestamp: 12345678,
           },
-          clientRequestId: 'uuid0',
+          clientRequestId: 'clientRequestId0',
           device: TEST_DEVICE,
         },
       ],
@@ -1963,15 +1971,15 @@ describe('metrics', () => {
 
     expect(response.insertion).toEqual([
       toInsertion(newProduct('3'), {
-        insertionId: 'uuid2',
-        requestId: 'uuid1',
+        insertionId: 'insertionId0',
+        requestId: 'requestId0',
         position: 0,
       }),
     ]);
 
     expect(response.logRequest).toEqual(expectedLogReq);
     expect(response.executionServer).toBeUndefined();
-    expect(response.clientRequestId).toEqual('uuid0');
+    expect(response.clientRequestId).toEqual('clientRequestId0');
 
     // Here is where clients will return their response.
     await response.log();
@@ -1992,15 +2000,15 @@ describe('metrics', () => {
       clientInfo: DEFAULT_SDK_CLIENT_INFO,
       insertion: [
         toInsertion(newProduct('3'), {
-          insertionId: 'uuid2',
-          requestId: 'uuid1',
+          insertionId: 'insertionId0',
+          requestId: 'requestId0',
           position: 100,
         }),
       ],
       request: [
         {
           ...newLogRequestRequest(),
-          requestId: 'uuid1',
+          requestId: 'requestId0',
           paging: {
             size: 1,
             offset: 100,
@@ -2008,7 +2016,7 @@ describe('metrics', () => {
           timing: {
             clientLogTimestamp: 12345678,
           },
-          clientRequestId: 'uuid0',
+          clientRequestId: 'clientRequestId0',
           device: TEST_DEVICE,
         },
       ],
@@ -2038,15 +2046,15 @@ describe('metrics', () => {
     const response = promotedClient.prepareForLogging(metricsRequest);
     expect(response.insertion).toEqual([
       toInsertion(newProduct('3'), {
-        insertionId: 'uuid2',
-        requestId: 'uuid1',
+        insertionId: 'insertionId0',
+        requestId: 'requestId0',
         position: 100, // the offset
       }),
     ]);
 
     expect(response.logRequest).toEqual(expectedLogReq);
     expect(response.executionServer).toBeUndefined();
-    expect(response.clientRequestId).toEqual('uuid0');
+    expect(response.clientRequestId).toEqual('clientRequestId0');
   });
 
   it('non-zero page offset', async () => {
@@ -2062,15 +2070,15 @@ describe('metrics', () => {
       clientInfo: DEFAULT_SDK_CLIENT_INFO,
       insertion: [
         toInsertion(newProduct('2'), {
-          insertionId: 'uuid2',
-          requestId: 'uuid1',
+          insertionId: 'insertionId0',
+          requestId: 'requestId0',
           position: 1, // the offset
         }),
       ],
       request: [
         {
           ...newLogRequestRequest(),
-          requestId: 'uuid1',
+          requestId: 'requestId0',
           paging: {
             size: 1,
             offset: 1,
@@ -2078,7 +2086,7 @@ describe('metrics', () => {
           timing: {
             clientLogTimestamp: 12345678,
           },
-          clientRequestId: 'uuid0',
+          clientRequestId: 'clientRequestId0',
           device: TEST_DEVICE,
         },
       ],
@@ -2109,15 +2117,15 @@ describe('metrics', () => {
 
     expect(response.insertion).toEqual([
       toInsertion(newProduct('2'), {
-        insertionId: 'uuid2',
-        requestId: 'uuid1',
+        insertionId: 'insertionId0',
+        requestId: 'requestId0',
         position: 1, // the offset
       }),
     ]);
 
     expect(response.logRequest).toEqual(expectedLogReq);
     expect(response.executionServer).toBeUndefined();
-    expect(response.clientRequestId).toEqual('uuid0');
+    expect(response.clientRequestId).toEqual('clientRequestId0');
 
     // Here is where clients will return their response.
     await response.log();
@@ -2137,22 +2145,22 @@ describe('metrics', () => {
       clientInfo: DEFAULT_SDK_CLIENT_INFO,
       insertion: [
         toInsertion(newProduct('3'), {
-          insertionId: 'uuid2',
-          requestId: 'uuid1',
+          insertionId: 'insertionId0',
+          requestId: 'requestId0',
           sessionId: 'uuid10',
           viewId: 'uuid11',
           position: 0,
         }),
         toInsertion(newProduct('2'), {
-          insertionId: 'uuid3',
-          requestId: 'uuid1',
+          insertionId: 'insertionId1',
+          requestId: 'requestId0',
           sessionId: 'uuid10',
           viewId: 'uuid11',
           position: 1,
         }),
         toInsertion(newProduct('1'), {
-          insertionId: 'uuid4',
-          requestId: 'uuid1',
+          insertionId: 'insertionId2',
+          requestId: 'requestId0',
           sessionId: 'uuid10',
           viewId: 'uuid11',
           position: 2,
@@ -2161,13 +2169,13 @@ describe('metrics', () => {
       request: [
         {
           ...newLogRequestRequest(),
-          requestId: 'uuid1',
+          requestId: 'requestId0',
           sessionId: 'uuid10',
           viewId: 'uuid11',
           timing: {
             clientLogTimestamp: 12345678,
           },
-          clientRequestId: 'uuid0',
+          clientRequestId: 'clientRequestId0',
           device: TEST_DEVICE,
         },
       ],
@@ -2196,22 +2204,22 @@ describe('metrics', () => {
 
     expect(response.insertion).toEqual([
       toInsertion(newProduct('3'), {
-        insertionId: 'uuid2',
-        requestId: 'uuid1',
+        insertionId: 'insertionId0',
+        requestId: 'requestId0',
         sessionId: 'uuid10',
         viewId: 'uuid11',
         position: 0,
       }),
       toInsertion(newProduct('2'), {
-        insertionId: 'uuid3',
-        requestId: 'uuid1',
+        insertionId: 'insertionId1',
+        requestId: 'requestId0',
         sessionId: 'uuid10',
         viewId: 'uuid11',
         position: 1,
       }),
       toInsertion(newProduct('1'), {
-        insertionId: 'uuid4',
-        requestId: 'uuid1',
+        insertionId: 'insertionId2',
+        requestId: 'requestId0',
         sessionId: 'uuid10',
         viewId: 'uuid11',
         position: 2,
@@ -2220,7 +2228,7 @@ describe('metrics', () => {
 
     expect(response.logRequest).toEqual(expectedLogReq);
     expect(response.executionServer).toBeUndefined();
-    expect(response.clientRequestId).toEqual('uuid0');
+    expect(response.clientRequestId).toEqual('clientRequestId0');
 
     // Here is where clients will return their response.
     await response.log();
@@ -2265,7 +2273,7 @@ describe('shadow requests in prepareForLogging', () => {
           trafficType: TrafficType_SHADOW,
         },
         device: TEST_DEVICE,
-        clientRequestId: 'uuid0',
+        clientRequestId: 'clientRequestId0',
       };
       deliveryClient = jest.fn((request) => {
         expect(request).toEqual(expectedDeliveryReq);
@@ -2283,20 +2291,20 @@ describe('shadow requests in prepareForLogging', () => {
       clientInfo: DEFAULT_SDK_CLIENT_INFO,
       insertion: [
         toInsertion(newProduct('3'), {
-          insertionId: 'uuid2',
-          requestId: 'uuid1',
+          insertionId: 'insertionId0',
+          requestId: 'requestId0',
           position: 0,
         }),
       ],
       request: [
         {
           ...newLogRequestRequest(),
-          requestId: 'uuid1',
+          requestId: 'requestId0',
           timing: {
             clientLogTimestamp: 12345678,
           },
           clientInfo: DEFAULT_SDK_CLIENT_INFO,
-          clientRequestId: 'uuid0',
+          clientRequestId: 'clientRequestId0',
           device: TEST_DEVICE,
         },
       ],
@@ -2334,15 +2342,15 @@ describe('shadow requests in prepareForLogging', () => {
 
     expect(response.insertion).toEqual([
       toInsertion(newProduct('3'), {
-        insertionId: 'uuid2',
-        requestId: 'uuid1',
+        insertionId: 'insertionId0',
+        requestId: 'requestId0',
         position: 0,
       }),
     ]);
 
     expect(response.logRequest).toEqual(expectedLogReq);
     expect(response.executionServer).toBeUndefined();
-    expect(response.clientRequestId).toEqual('uuid0');
+    expect(response.clientRequestId).toEqual('clientRequestId0');
 
     // Here is where clients will return their response.
     await response.log();
@@ -2397,9 +2405,9 @@ describe('log helper method', () => {
     log({
       log: () => Promise.resolve(undefined),
       insertion: [
-        toInsertion(newProduct('3'), { insertionId: 'uuid1' }),
-        toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
-        toInsertion(newProduct('1'), { insertionId: 'uuid3' }),
+        toInsertion(newProduct('3'), { insertionId: 'insertionId0' }),
+        toInsertion(newProduct('2'), { insertionId: 'insertionId1' }),
+        toInsertion(newProduct('1'), { insertionId: 'insertionId2' }),
       ],
     });
   });

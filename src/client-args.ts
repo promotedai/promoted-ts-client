@@ -70,7 +70,7 @@ export interface PromotedClientArguments {
    * Required as a dependency so clients can load reduce dependency on multiple
    * uuid libraries.
    */
-  uuid: () => string;
+  uuid: (uuidType?: string) => string;
 
   /* Defaults to 250ms */
   deliveryTimeoutMillis?: number;

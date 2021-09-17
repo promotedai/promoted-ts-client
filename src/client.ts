@@ -136,7 +136,7 @@ export class PromotedClientImpl implements PromotedClient {
   private sendShadowTrafficForControl: boolean;
   private defaultRequestValues: RequiredBaseRequest;
   private handleError: ErrorHandler;
-  private uuid: () => string;
+  private uuid: (uuidType?: string) => string;
   private deliveryTimeoutMillis: number;
   private metricsTimeoutMillis: number;
   private shouldApplyTreatment: (cohortMembership: CohortMembership | undefined) => boolean;
@@ -454,7 +454,7 @@ export class PromotedClientImpl implements PromotedClient {
     }
 
     if (!request.clientRequestId) {
-      request.clientRequestId = this.uuid();
+      request.clientRequestId = this.uuid('clientRequestId');
     }
   };
 
@@ -463,7 +463,7 @@ export class PromotedClientImpl implements PromotedClient {
    */
   private addMissingRequestId = (logRequest: Request) => {
     if (!logRequest.requestId) {
-      logRequest.requestId = this.uuid();
+      logRequest.requestId = this.uuid('requestId');
     }
   };
 
@@ -472,7 +472,7 @@ export class PromotedClientImpl implements PromotedClient {
     const { sessionId, viewId, requestId } = request;
     responseInsertions.forEach((responseInsertion) => {
       if (!responseInsertion.insertionId) {
-        responseInsertion.insertionId = this.uuid();
+        responseInsertion.insertionId = this.uuid('insertionId');
       }
       if (sessionId) {
         responseInsertion.sessionId = sessionId;
