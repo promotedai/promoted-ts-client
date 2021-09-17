@@ -1,3 +1,10 @@
+# [7.1.0](https://github.com/promotedai/promoted-ts-client/compare/v7.0.0...v7.1.0) (2021-09-17)
+
+
+### Features
+
+* Fix onlyLog doc\rTESTING=manual ([#43](https://github.com/promotedai/promoted-ts-client/issues/43)) ([646f60d](https://github.com/promotedai/promoted-ts-client/commit/646f60d0fb94a579adc177222c4b7a1fb304bdc5))
+
 # [7.0.0](https://github.com/promotedai/promoted-ts-client/compare/v6.6.0...v7.0.0) (2021-07-30)
 
 
