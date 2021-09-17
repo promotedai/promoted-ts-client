@@ -112,7 +112,7 @@ There are other optional options.
 
 There are two ways of doing this with `PromotedClient`:
 
-1. You can use `deliver` but add a `shouldOptimize: false` property.
+1. You can use `deliver` but add a `onlyLog: true` property.
 2. You can use `prepareForLogging` method call instead. The `prepareForLogging` signature is similar to `deliver` and should be integrated the same way.
 
 ## Pagination
