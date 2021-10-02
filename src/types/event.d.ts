@@ -20,6 +20,7 @@ export interface LogRequest {
   timing?: proto_common_common_pb.Timing;
   clientInfo?: proto_common_common_pb.ClientInfo;
   cohortMembership?: Array<CohortMembership>;
+  deliveryLog?: Array<proto_delivery_delivery_pb.DeliveryLog>;
   request?: Array<proto_delivery_delivery_pb.Request>;
   insertion?: Array<proto_delivery_delivery_pb.Insertion>;
 }

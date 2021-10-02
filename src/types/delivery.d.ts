@@ -3,6 +3,12 @@
 
 import * as proto_common_common_pb from './common';
 
+export interface DeliveryLog {
+  request?: Request;
+  response?: Response;
+  execution?: DeliveryExecution;
+}
+
 export interface Request {
   platformId?: number;
   userInfo?: proto_common_common_pb.UserInfo;
@@ -37,6 +43,21 @@ export interface Response {
   insertion?: Array<Insertion>;
   pagingInfo?: PagingInfo;
 }
+
+export interface DeliveryExecution {
+  executionServer?: ExecutionServerMap[keyof ExecutionServerMap] | ExecutionServerString;
+}
+
+export interface ExecutionServerMap {
+  UNKNOWN_EXECUTION_SERVER: 0;
+  API: 1;
+  SDK: 2;
+  SIMPLE_API: 3;
+}
+
+export type ExecutionServerString = 'UNKNOWN_EXECUTION_SERVER' | 'API' | 'SDK' | 'SIMPLE_API';
+
+export const ExecutionServer: ExecutionServerMap;
 
 export interface BlenderRule {
   ruleType?: BlenderRuleTypeMap[keyof BlenderRuleTypeMap] | BlenderRuleTypeString;

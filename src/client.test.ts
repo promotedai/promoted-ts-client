@@ -408,31 +408,38 @@ describe('deliver', () => {
             },
           },
         ],
-        insertion: [
-          toInsertion(newProduct('3'), {
-            insertionId: 'uuid2',
-            requestId: 'uuid1',
-            position: 0,
-          }),
-          toInsertion(newProduct('2'), {
-            insertionId: 'uuid3',
-            requestId: 'uuid1',
-            position: 1,
-          }),
-          toInsertion(newProduct('1'), {
-            insertionId: 'uuid4',
-            requestId: 'uuid1',
-            position: 2,
-          }),
-        ],
-        request: [
+        deliveryLog: [
           {
-            ...newLogRequestRequest(),
-            requestId: 'uuid1',
-            clientRequestId: 'uuid0',
-            device: TEST_DEVICE,
-            timing: {
-              clientLogTimestamp: 12345678,
+            request: {
+              ...newLogRequestRequest(),
+              requestId: 'uuid1',
+              clientRequestId: 'uuid0',
+              device: TEST_DEVICE,
+              timing: {
+                clientLogTimestamp: 12345678,
+              },
+            },
+            response: {
+              insertion: [
+                toInsertion(newProduct('3'), {
+                  insertionId: 'uuid2',
+                  requestId: 'uuid1',
+                  position: 0,
+                }),
+                toInsertion(newProduct('2'), {
+                  insertionId: 'uuid3',
+                  requestId: 'uuid1',
+                  position: 1,
+                }),
+                toInsertion(newProduct('1'), {
+                  insertionId: 'uuid4',
+                  requestId: 'uuid1',
+                  position: 2,
+                }),
+              ],
+            },
+            execution: {
+              executionServer: 2,
             },
           },
         ],
@@ -531,31 +538,38 @@ describe('deliver', () => {
             },
           },
         ],
-        insertion: [
-          toInsertion(newProduct('3'), {
-            insertionId: 'uuid2',
-            requestId: 'uuid1',
-            position: 0,
-          }),
-          toInsertion(newProduct('2'), {
-            insertionId: 'uuid3',
-            requestId: 'uuid1',
-            position: 1,
-          }),
-          toInsertion(newProduct('1'), {
-            insertionId: 'uuid4',
-            requestId: 'uuid1',
-            position: 2,
-          }),
-        ],
-        request: [
+        deliveryLog: [
           {
-            ...newLogRequestRequest(),
-            requestId: 'uuid1',
-            clientRequestId: 'uuid0',
-            device: TEST_DEVICE,
-            timing: {
-              clientLogTimestamp: 12345678,
+            request: {
+              ...newLogRequestRequest(),
+              requestId: 'uuid1',
+              clientRequestId: 'uuid0',
+              device: TEST_DEVICE,
+              timing: {
+                clientLogTimestamp: 12345678,
+              },
+            },
+            response: {
+              insertion: [
+                toInsertion(newProduct('3'), {
+                  insertionId: 'uuid2',
+                  requestId: 'uuid1',
+                  position: 0,
+                }),
+                toInsertion(newProduct('2'), {
+                  insertionId: 'uuid3',
+                  requestId: 'uuid1',
+                  position: 1,
+                }),
+                toInsertion(newProduct('1'), {
+                  insertionId: 'uuid4',
+                  requestId: 'uuid1',
+                  position: 2,
+                }),
+              ],
+            },
+            execution: {
+              executionServer: 2,
             },
           },
         ],
@@ -702,11 +716,6 @@ describe('deliver', () => {
           clientLogTimestamp: 12345678,
         },
         clientInfo: DEFAULT_SDK_CLIENT_INFO,
-        insertion: [
-          toInsertion(newProduct('3'), { insertionId: 'uuid2', requestId: 'uuid1', position: 0 }),
-          toInsertion(newProduct('2'), { insertionId: 'uuid3', requestId: 'uuid1', position: 1 }),
-          toInsertion(newProduct('1'), { insertionId: 'uuid4', requestId: 'uuid1', position: 2 }),
-        ],
         cohortMembership: [
           {
             arm: 'TREATMENT',
@@ -719,15 +728,27 @@ describe('deliver', () => {
             },
           },
         ],
-        request: [
+        deliveryLog: [
           {
-            ...newLogRequestRequest(),
-            timing: {
-              clientLogTimestamp: 12345678,
+            request: {
+              ...newLogRequestRequest(),
+              timing: {
+                clientLogTimestamp: 12345678,
+              },
+              requestId: 'uuid1',
+              clientRequestId: 'uuid0',
+              device: TEST_DEVICE,
             },
-            requestId: 'uuid1',
-            clientRequestId: 'uuid0',
-            device: TEST_DEVICE,
+            response: {
+              insertion: [
+                toInsertion(newProduct('3'), { insertionId: 'uuid2', requestId: 'uuid1', position: 0 }),
+                toInsertion(newProduct('2'), { insertionId: 'uuid3', requestId: 'uuid1', position: 1 }),
+                toInsertion(newProduct('1'), { insertionId: 'uuid4', requestId: 'uuid1', position: 2 }),
+              ],
+            },
+            execution: {
+              executionServer: 2,
+            },
           },
         ],
       };
@@ -811,35 +832,42 @@ describe('deliver', () => {
             },
           },
         ],
-        insertion: [
+        deliveryLog: [
           {
-            contentId: 'product3',
-            insertionId: 'uuid2',
-            position: 0,
-            requestId: 'uuid1',
-          },
-          {
-            contentId: 'product2',
-            insertionId: 'uuid3',
-            position: 1,
-            requestId: 'uuid1',
-          },
-          {
-            contentId: 'product1',
-            insertionId: 'uuid4',
-            position: 2,
-            requestId: 'uuid1',
-          },
-        ],
-        request: [
-          {
-            ...newLogRequestRequest(),
-            requestId: 'uuid1',
-            timing: {
-              clientLogTimestamp: 12345678,
+            request: {
+              ...newLogRequestRequest(),
+              requestId: 'uuid1',
+              timing: {
+                clientLogTimestamp: 12345678,
+              },
+              clientRequestId: 'uuid0',
+              device: TEST_DEVICE,
             },
-            clientRequestId: 'uuid0',
-            device: TEST_DEVICE,
+            response: {
+              insertion: [
+                {
+                  contentId: 'product3',
+                  insertionId: 'uuid2',
+                  position: 0,
+                  requestId: 'uuid1',
+                },
+                {
+                  contentId: 'product2',
+                  insertionId: 'uuid3',
+                  position: 1,
+                  requestId: 'uuid1',
+                },
+                {
+                  contentId: 'product1',
+                  insertionId: 'uuid4',
+                  position: 2,
+                  requestId: 'uuid1',
+                },
+              ],
+            },
+            execution: {
+              executionServer: 2,
+            },
           },
         ],
       };
@@ -918,35 +946,42 @@ describe('deliver', () => {
             },
           },
         ],
-        insertion: [
+        deliveryLog: [
           {
-            insertionId: 'uuid2',
-            contentId: 'product3',
-            requestId: 'uuid1',
-            position: 0,
-          },
-          {
-            insertionId: 'uuid3',
-            contentId: 'product2',
-            requestId: 'uuid1',
-            position: 1,
-          },
-          {
-            insertionId: 'uuid4',
-            contentId: 'product1',
-            requestId: 'uuid1',
-            position: 2,
-          },
-        ],
-        request: [
-          {
-            ...newLogRequestRequest(),
-            requestId: 'uuid1',
-            timing: {
-              clientLogTimestamp: 12345678,
+            request: {
+              ...newLogRequestRequest(),
+              requestId: 'uuid1',
+              timing: {
+                clientLogTimestamp: 12345678,
+              },
+              clientRequestId: 'uuid0',
+              device: TEST_DEVICE,
             },
-            clientRequestId: 'uuid0',
-            device: TEST_DEVICE,
+            response: {
+              insertion: [
+                {
+                  insertionId: 'uuid2',
+                  contentId: 'product3',
+                  requestId: 'uuid1',
+                  position: 0,
+                },
+                {
+                  insertionId: 'uuid3',
+                  contentId: 'product2',
+                  requestId: 'uuid1',
+                  position: 1,
+                },
+                {
+                  insertionId: 'uuid4',
+                  contentId: 'product1',
+                  requestId: 'uuid1',
+                  position: 2,
+                },
+              ],
+            },
+            execution: {
+              executionServer: 2,
+            },
           },
         ],
       };
@@ -1196,25 +1231,32 @@ describe('deliver', () => {
           },
         },
       ],
-      insertion: [
-        toInsertion(newProduct('3'), {
-          insertionId: 'uuid2',
-          requestId: 'uuid1',
-          position: 0,
-        }),
-      ],
-      request: [
+      deliveryLog: [
         {
-          ...newLogRequestRequest(),
-          requestId: 'uuid1',
-          paging: {
-            size: 1,
+          request: {
+            ...newLogRequestRequest(),
+            requestId: 'uuid1',
+            paging: {
+              size: 1,
+            },
+            timing: {
+              clientLogTimestamp: 12345678,
+            },
+            clientRequestId: 'uuid0',
+            device: TEST_DEVICE,
           },
-          timing: {
-            clientLogTimestamp: 12345678,
+          response: {
+            insertion: [
+              toInsertion(newProduct('3'), {
+                insertionId: 'uuid2',
+                requestId: 'uuid1',
+                position: 0,
+              }),
+            ],
           },
-          clientRequestId: 'uuid0',
-          device: TEST_DEVICE,
+          execution: {
+            executionServer: 2,
+          },
         },
       ],
     };
@@ -1274,32 +1316,39 @@ describe('deliver', () => {
         clientLogTimestamp: 12345678,
       },
       clientInfo: DEFAULT_SDK_CLIENT_INFO,
-      insertion: [
-        toInsertion(newProduct('3'), {
-          insertionId: 'uuid2',
-          requestId: 'uuid1',
-          position: 0,
-        }),
-        toInsertion(newProduct('2'), {
-          insertionId: 'uuid3',
-          requestId: 'uuid1',
-          position: 1,
-        }),
-        toInsertion(newProduct('1'), {
-          insertionId: 'uuid4',
-          requestId: 'uuid1',
-          position: 2,
-        }),
-      ],
-      request: [
+      deliveryLog: [
         {
-          ...newLogRequestRequest(),
-          requestId: 'uuid1',
-          timing: {
-            clientLogTimestamp: 12345678,
+          request: {
+            ...newLogRequestRequest(),
+            requestId: 'uuid1',
+            timing: {
+              clientLogTimestamp: 12345678,
+            },
+            clientRequestId: 'uuid0',
+            device: TEST_DEVICE,
           },
-          clientRequestId: 'uuid0',
-          device: TEST_DEVICE,
+          response: {
+            insertion: [
+              toInsertion(newProduct('3'), {
+                insertionId: 'uuid2',
+                requestId: 'uuid1',
+                position: 0,
+              }),
+              toInsertion(newProduct('2'), {
+                insertionId: 'uuid3',
+                requestId: 'uuid1',
+                position: 1,
+              }),
+              toInsertion(newProduct('1'), {
+                insertionId: 'uuid4',
+                requestId: 'uuid1',
+                position: 2,
+              }),
+            ],
+          },
+          execution: {
+            executionServer: 2,
+          },
         },
       ],
     };
@@ -1375,33 +1424,40 @@ describe('deliver', () => {
           },
         },
       ],
-      insertion: [
-        toInsertion(newProduct('3'), {
-          insertionId: 'uuid2',
-          requestId: 'uuid1',
-          position: 0,
-        }),
-        toInsertion(newProduct('2'), {
-          insertionId: 'uuid3',
-          requestId: 'uuid1',
-          position: 1,
-        }),
-        toInsertion(newProduct('1'), {
-          insertionId: 'uuid4',
-          requestId: 'uuid1',
-          position: 2,
-        }),
-      ],
-      request: [
+      deliveryLog: [
         {
-          ...newLogRequestRequest(),
-          platformId: 1,
-          requestId: 'uuid1',
-          timing: {
-            clientLogTimestamp: 87654321,
+          request: {
+            ...newLogRequestRequest(),
+            platformId: 1,
+            requestId: 'uuid1',
+            timing: {
+              clientLogTimestamp: 87654321,
+            },
+            clientRequestId: 'uuid0',
+            device: TEST_DEVICE,
           },
-          clientRequestId: 'uuid0',
-          device: TEST_DEVICE,
+          response: {
+            insertion: [
+              toInsertion(newProduct('3'), {
+                insertionId: 'uuid2',
+                requestId: 'uuid1',
+                position: 0,
+              }),
+              toInsertion(newProduct('2'), {
+                insertionId: 'uuid3',
+                requestId: 'uuid1',
+                position: 1,
+              }),
+              toInsertion(newProduct('1'), {
+                insertionId: 'uuid4',
+                requestId: 'uuid1',
+                position: 2,
+              }),
+            ],
+          },
+          execution: {
+            executionServer: 2,
+          },
         },
       ],
     };
@@ -1542,32 +1598,39 @@ describe('deliver', () => {
             },
           },
         ],
-        insertion: [
-          toInsertion(newProduct('3'), {
-            insertionId: 'uuid2',
-            requestId: 'uuid1',
-            position: 0,
-          }),
-          toInsertion(newProduct('2'), {
-            insertionId: 'uuid3',
-            requestId: 'uuid1',
-            position: 1,
-          }),
-          toInsertion(newProduct('1'), {
-            insertionId: 'uuid4',
-            requestId: 'uuid1',
-            position: 2,
-          }),
-        ],
-        request: [
+        deliveryLog: [
           {
-            ...newLogRequestRequest(),
-            requestId: 'uuid1',
-            timing: {
-              clientLogTimestamp: 12345678,
+            request: {
+              ...newLogRequestRequest(),
+              requestId: 'uuid1',
+              timing: {
+                clientLogTimestamp: 12345678,
+              },
+              clientRequestId: 'uuid0',
+              device: TEST_DEVICE,
             },
-            clientRequestId: 'uuid0',
-            device: TEST_DEVICE,
+            response: {
+              insertion: [
+                toInsertion(newProduct('3'), {
+                  insertionId: 'uuid2',
+                  requestId: 'uuid1',
+                  position: 0,
+                }),
+                toInsertion(newProduct('2'), {
+                  insertionId: 'uuid3',
+                  requestId: 'uuid1',
+                  position: 1,
+                }),
+                toInsertion(newProduct('1'), {
+                  insertionId: 'uuid4',
+                  requestId: 'uuid1',
+                  position: 2,
+                }),
+              ],
+            },
+            execution: {
+              executionServer: 2,
+            },
           },
         ],
       };
@@ -1831,32 +1894,39 @@ describe('metrics', () => {
         clientLogTimestamp: 12345678,
       },
       clientInfo: DEFAULT_SDK_CLIENT_INFO,
-      insertion: [
-        toInsertion(newProduct('3'), {
-          insertionId: 'uuid2',
-          requestId: 'uuid1',
-          position: 0,
-        }),
-        toInsertion(newProduct('2'), {
-          insertionId: 'uuid3',
-          requestId: 'uuid1',
-          position: 1,
-        }),
-        toInsertion(newProduct('1'), {
-          insertionId: 'uuid4',
-          requestId: 'uuid1',
-          position: 2,
-        }),
-      ],
-      request: [
+      deliveryLog: [
         {
-          ...newLogRequestRequest(),
-          requestId: 'uuid1',
-          timing: {
-            clientLogTimestamp: 12345678,
+          request: {
+            ...newLogRequestRequest(),
+            requestId: 'uuid1',
+            timing: {
+              clientLogTimestamp: 12345678,
+            },
+            clientRequestId: 'uuid0',
+            device: TEST_DEVICE,
           },
-          clientRequestId: 'uuid0',
-          device: TEST_DEVICE,
+          response: {
+            insertion: [
+              toInsertion(newProduct('3'), {
+                insertionId: 'uuid2',
+                requestId: 'uuid1',
+                position: 0,
+              }),
+              toInsertion(newProduct('2'), {
+                insertionId: 'uuid3',
+                requestId: 'uuid1',
+                position: 1,
+              }),
+              toInsertion(newProduct('1'), {
+                insertionId: 'uuid4',
+                requestId: 'uuid1',
+                position: 2,
+              }),
+            ],
+          },
+          execution: {
+            executionServer: 2,
+          },
         },
       ],
     };
@@ -1916,25 +1986,32 @@ describe('metrics', () => {
         clientLogTimestamp: 12345678,
       },
       clientInfo: DEFAULT_SDK_CLIENT_INFO,
-      insertion: [
-        toInsertion(newProduct('3'), {
-          insertionId: 'uuid2',
-          requestId: 'uuid1',
-          position: 0,
-        }),
-      ],
-      request: [
+      deliveryLog: [
         {
-          ...newLogRequestRequest(),
-          requestId: 'uuid1',
-          paging: {
-            size: 1,
+          request: {
+            ...newLogRequestRequest(),
+            requestId: 'uuid1',
+            paging: {
+              size: 1,
+            },
+            timing: {
+              clientLogTimestamp: 12345678,
+            },
+            clientRequestId: 'uuid0',
+            device: TEST_DEVICE,
           },
-          timing: {
-            clientLogTimestamp: 12345678,
+          response: {
+            insertion: [
+              toInsertion(newProduct('3'), {
+                insertionId: 'uuid2',
+                requestId: 'uuid1',
+                position: 0,
+              }),
+            ],
           },
-          clientRequestId: 'uuid0',
-          device: TEST_DEVICE,
+          execution: {
+            executionServer: 2,
+          },
         },
       ],
     };
@@ -1990,26 +2067,33 @@ describe('metrics', () => {
         clientLogTimestamp: 12345678,
       },
       clientInfo: DEFAULT_SDK_CLIENT_INFO,
-      insertion: [
-        toInsertion(newProduct('3'), {
-          insertionId: 'uuid2',
-          requestId: 'uuid1',
-          position: 100,
-        }),
-      ],
-      request: [
+      deliveryLog: [
         {
-          ...newLogRequestRequest(),
-          requestId: 'uuid1',
-          paging: {
-            size: 1,
-            offset: 100,
+          request: {
+            ...newLogRequestRequest(),
+            requestId: 'uuid1',
+            paging: {
+              size: 1,
+              offset: 100,
+            },
+            timing: {
+              clientLogTimestamp: 12345678,
+            },
+            clientRequestId: 'uuid0',
+            device: TEST_DEVICE,
           },
-          timing: {
-            clientLogTimestamp: 12345678,
+          response: {
+            insertion: [
+              toInsertion(newProduct('3'), {
+                insertionId: 'uuid2',
+                requestId: 'uuid1',
+                position: 100,
+              }),
+            ],
           },
-          clientRequestId: 'uuid0',
-          device: TEST_DEVICE,
+          execution: {
+            executionServer: 2,
+          },
         },
       ],
     };
@@ -2060,26 +2144,33 @@ describe('metrics', () => {
         clientLogTimestamp: 12345678,
       },
       clientInfo: DEFAULT_SDK_CLIENT_INFO,
-      insertion: [
-        toInsertion(newProduct('2'), {
-          insertionId: 'uuid2',
-          requestId: 'uuid1',
-          position: 1, // the offset
-        }),
-      ],
-      request: [
+      deliveryLog: [
         {
-          ...newLogRequestRequest(),
-          requestId: 'uuid1',
-          paging: {
-            size: 1,
-            offset: 1,
+          request: {
+            ...newLogRequestRequest(),
+            requestId: 'uuid1',
+            paging: {
+              size: 1,
+              offset: 1,
+            },
+            timing: {
+              clientLogTimestamp: 12345678,
+            },
+            clientRequestId: 'uuid0',
+            device: TEST_DEVICE,
           },
-          timing: {
-            clientLogTimestamp: 12345678,
+          response: {
+            insertion: [
+              toInsertion(newProduct('2'), {
+                insertionId: 'uuid2',
+                requestId: 'uuid1',
+                position: 1, // the offset
+              }),
+            ],
           },
-          clientRequestId: 'uuid0',
-          device: TEST_DEVICE,
+          execution: {
+            executionServer: 2,
+          },
         },
       ],
     };
@@ -2135,40 +2226,47 @@ describe('metrics', () => {
         clientLogTimestamp: 12345678,
       },
       clientInfo: DEFAULT_SDK_CLIENT_INFO,
-      insertion: [
-        toInsertion(newProduct('3'), {
-          insertionId: 'uuid2',
-          requestId: 'uuid1',
-          sessionId: 'uuid10',
-          viewId: 'uuid11',
-          position: 0,
-        }),
-        toInsertion(newProduct('2'), {
-          insertionId: 'uuid3',
-          requestId: 'uuid1',
-          sessionId: 'uuid10',
-          viewId: 'uuid11',
-          position: 1,
-        }),
-        toInsertion(newProduct('1'), {
-          insertionId: 'uuid4',
-          requestId: 'uuid1',
-          sessionId: 'uuid10',
-          viewId: 'uuid11',
-          position: 2,
-        }),
-      ],
-      request: [
+      deliveryLog: [
         {
-          ...newLogRequestRequest(),
-          requestId: 'uuid1',
-          sessionId: 'uuid10',
-          viewId: 'uuid11',
-          timing: {
-            clientLogTimestamp: 12345678,
+          request: {
+            ...newLogRequestRequest(),
+            requestId: 'uuid1',
+            sessionId: 'uuid10',
+            viewId: 'uuid11',
+            timing: {
+              clientLogTimestamp: 12345678,
+            },
+            clientRequestId: 'uuid0',
+            device: TEST_DEVICE,
           },
-          clientRequestId: 'uuid0',
-          device: TEST_DEVICE,
+          response: {
+            insertion: [
+              toInsertion(newProduct('3'), {
+                insertionId: 'uuid2',
+                requestId: 'uuid1',
+                sessionId: 'uuid10',
+                viewId: 'uuid11',
+                position: 0,
+              }),
+              toInsertion(newProduct('2'), {
+                insertionId: 'uuid3',
+                requestId: 'uuid1',
+                sessionId: 'uuid10',
+                viewId: 'uuid11',
+                position: 1,
+              }),
+              toInsertion(newProduct('1'), {
+                insertionId: 'uuid4',
+                requestId: 'uuid1',
+                sessionId: 'uuid10',
+                viewId: 'uuid11',
+                position: 2,
+              }),
+            ],
+          },
+          execution: {
+            executionServer: 2,
+          },
         },
       ],
     };
@@ -2281,23 +2379,30 @@ describe('shadow requests in prepareForLogging', () => {
         clientLogTimestamp: 12345678,
       },
       clientInfo: DEFAULT_SDK_CLIENT_INFO,
-      insertion: [
-        toInsertion(newProduct('3'), {
-          insertionId: 'uuid2',
-          requestId: 'uuid1',
-          position: 0,
-        }),
-      ],
-      request: [
+      deliveryLog: [
         {
-          ...newLogRequestRequest(),
-          requestId: 'uuid1',
-          timing: {
-            clientLogTimestamp: 12345678,
+          request: {
+            ...newLogRequestRequest(),
+            requestId: 'uuid1',
+            timing: {
+              clientLogTimestamp: 12345678,
+            },
+            clientInfo: DEFAULT_SDK_CLIENT_INFO,
+            clientRequestId: 'uuid0',
+            device: TEST_DEVICE,
           },
-          clientInfo: DEFAULT_SDK_CLIENT_INFO,
-          clientRequestId: 'uuid0',
-          device: TEST_DEVICE,
+          response: {
+            insertion: [
+              toInsertion(newProduct('3'), {
+                insertionId: 'uuid2',
+                requestId: 'uuid1',
+                position: 0,
+              }),
+            ],
+          },
+          execution: {
+            executionServer: 2,
+          },
         },
       ],
     };
