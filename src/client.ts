@@ -376,9 +376,17 @@ export class PromotedClientImpl implements PromotedClient {
       sdkRequest.toCompactMetricsProperties ?? this.defaultRequestValues.toCompactMetricsProperties
     );
     if (requestToLog) {
-      logRequest.request = [this.createLogRequestRequestToLog(requestToLog)];
-      // These are responseInsertions.  We're not renaming the field right now.
-      logRequest.insertion = responseInsertions.map(toCompactMetricsResponseInsertion);
+      logRequest.deliveryLog = [
+        {
+          request: this.createLogRequestRequestToLog(requestToLog),
+          response: {
+            insertion: responseInsertions.map(toCompactMetricsResponseInsertion),
+          },
+          execution: {
+            executionServer: ExecutionServer.SDK,
+          },
+        },
+      ];
     }
     if (cohortMembershipToLog) {
       logRequest.cohortMembership = [cohortMembershipToLog];
