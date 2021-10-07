@@ -1,3 +1,10 @@
+# [7.2.0](https://github.com/promotedai/promoted-ts-client/compare/v7.1.0...v7.2.0) (2021-10-07)
+
+
+### Features
+
+* switching to log using DeliveryLog ([#45](https://github.com/promotedai/promoted-ts-client/issues/45)) ([e18ca2f](https://github.com/promotedai/promoted-ts-client/commit/e18ca2ff202d9a8b0d14dd6cec7d4391a11ef2c0))
+
 # [7.1.0](https://github.com/promotedai/promoted-ts-client/compare/v7.0.0...v7.1.0) (2021-09-17)
 
 
