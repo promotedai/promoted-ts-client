@@ -383,7 +383,7 @@ export class PromotedClientImpl implements PromotedClient {
             insertion: responseInsertions.map(toCompactMetricsResponseInsertion),
           },
           execution: {
-            executionServer: 2, // SDK.
+            executionServer: ExecutionServer.SDK,
           },
         },
       ];
