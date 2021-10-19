@@ -179,6 +179,27 @@ describe('no-op', () => {
       await response.log();
     });
 
+    it('no request insertions', async () => {
+      const promotedClient = newFakePromotedClient({
+        enabled: false,
+        deliveryClient: jest.fn(failFunction('Delivery should not be called in CONTROL')),
+        metricsClient: jest.fn(failFunction('Metrics should not be called in CONTROL')),
+      });
+      const response = await promotedClient.deliver({
+        request: {
+          ...newBaseRequest(),
+        },
+        fullInsertion: [],
+        insertionPageType: InsertionPageType.Unpaged,
+      });
+
+      const expectedRespInsertions = toResponseInsertions([]);
+      expect(response.insertion).toEqual(expectedRespInsertions);
+      expect(response.executionServer).toEqual(ExecutionServer.SDK);
+      expect(response.clientRequestId).toBeUndefined();
+      await response.log();
+    });
+
     it('page size 1', async () => {
       const promotedClient = newFakePromotedClient({
         enabled: false,
@@ -222,6 +243,25 @@ describe('no-op', () => {
         insertionPageType: InsertionPageType.Unpaged,
       });
       expect(response.insertion).toEqual(toResponseInsertions([newProduct('3'), newProduct('2'), newProduct('1')]));
+      expect(response.executionServer).toBeDefined();
+      expect(response.clientRequestId).toBeUndefined();
+      await response.log();
+    });
+
+    it('no request insertions', async () => {
+      const promotedClient = newFakePromotedClient({
+        enabled: false,
+        deliveryClient: jest.fn(failFunction('Delivery should not be called')),
+        metricsClient: jest.fn(failFunction('Metrics should not be called')),
+      });
+      const response = promotedClient.prepareForLogging({
+        request: {
+          ...newBaseRequest(),
+        },
+        fullInsertion: [],
+        insertionPageType: InsertionPageType.Unpaged,
+      });
+      expect(response.insertion).toEqual(toResponseInsertions([]));
       expect(response.executionServer).toBeDefined();
       expect(response.clientRequestId).toBeUndefined();
       await response.log();
@@ -375,6 +415,47 @@ describe('deliver', () => {
       toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
       toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
     ]);
+
+    expect(response.executionServer).toEqual(ExecutionServer.API);
+    expect(response.clientRequestId).toEqual('uuid0');
+
+    // Here is where clients will return their response.
+    await response.log();
+    expect(deliveryClient.mock.calls.length).toBe(1);
+    expect(metricsClient.mock.calls.length).toBe(0);
+  });
+
+  it('no request insertions', async () => {
+    const deliveryClient = jest.fn((request) => {
+      expect(request).toEqual({
+        ...newBaseRequest(),
+        timing: {
+          clientLogTimestamp: 12345678,
+        },
+        clientInfo: DEFAULT_SDK_CLIENT_INFO,
+        clientRequestId: 'uuid0',
+        insertion: [],
+      });
+      return Promise.resolve({
+        insertion: [],
+      });
+    });
+    const metricsClient = jest.fn(failFunction('All data should be logged in Delivery API'));
+
+    const promotedClient = newFakePromotedClient({
+      deliveryClient,
+      metricsClient,
+    });
+
+    const response = await promotedClient.deliver({
+      request: newBaseRequest(),
+      fullInsertion: [],
+      insertionPageType: InsertionPageType.Unpaged,
+    });
+    expect(deliveryClient.mock.calls.length).toBe(1);
+    expect(metricsClient.mock.calls.length).toBe(0);
+
+    expect(response.insertion).toEqual([]);
 
     expect(response.executionServer).toEqual(ExecutionServer.API);
     expect(response.clientRequestId).toEqual('uuid0');
@@ -1966,6 +2047,65 @@ describe('metrics', () => {
       }),
     ]);
 
+    expect(response.logRequest).toEqual(expectedLogReq);
+    expect(response.executionServer).toBeUndefined();
+    expect(response.clientRequestId).toEqual('uuid0');
+
+    // Here is where clients will return their response.
+    await response.log();
+    expect(deliveryClient.mock.calls.length).toBe(0);
+    expect(metricsClient.mock.calls.length).toBe(1);
+  });
+
+  it('no request insertions', async () => {
+    const deliveryClient: any = jest.fn(failFunction('Delivery should not be called when logging only'));
+    // Log request doesn't set position.
+    const expectedLogReq: LogRequest = {
+      userInfo: {
+        logUserId: 'logUserId1',
+      },
+      timing: {
+        clientLogTimestamp: 12345678,
+      },
+      clientInfo: DEFAULT_SDK_CLIENT_INFO,
+      deliveryLog: [
+        {
+          request: {
+            ...newLogRequestRequest(),
+            requestId: 'uuid1',
+            timing: {
+              clientLogTimestamp: 12345678,
+            },
+            clientRequestId: 'uuid0',
+            device: TEST_DEVICE,
+          },
+          response: {
+            insertion: [],
+          },
+          execution: {
+            executionServer: 2,
+          },
+        },
+      ],
+    };
+    const metricsClient: any = jest.fn((request) => {
+      expect(request).toEqual(expectedLogReq);
+    });
+
+    const promotedClient = newFakePromotedClient({
+      deliveryClient,
+      metricsClient,
+    });
+
+    const response = promotedClient.prepareForLogging({
+      request: newBaseRequest(),
+      fullInsertion: [],
+      insertionPageType: InsertionPageType.Unpaged,
+    });
+    expect(deliveryClient.mock.calls.length).toBe(0);
+    expect(metricsClient.mock.calls.length).toBe(0);
+
+    expect(response.insertion).toEqual([]);
     expect(response.logRequest).toEqual(expectedLogReq);
     expect(response.executionServer).toBeUndefined();
     expect(response.clientRequestId).toEqual('uuid0');
