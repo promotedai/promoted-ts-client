@@ -47,6 +47,8 @@ const throwError =
   (typeof location !== "undefined" && location?.hostname === "localhost");
 
 export const promotedClient = newPromotedClient({
+  // TODO - Customize handleError for your server.
+  // When developing using Node.js, throwOnError will give a scary unhandled promise warning.
   handleError: throwError ? throwOnError : logOnError;
   deliveryClient: axiosApiClient(deliveryApi, deliveryApiKey, deliveryTimeoutMillis),
   metricsClient: axiosApiClient(metricsApi, metricsApiKey, metricsTimeoutMillis),
