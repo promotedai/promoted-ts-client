@@ -38,12 +38,11 @@ const newProduct = (id: string): Product => ({
   url: `www.mymarket.com/p/${id}`,
 });
 
-const toInsertions = (products: Product[]): Insertion[] => products.map(toInsertionWithNoExtraFields);
-
 // Response insertions should always have position assigned.
 const toResponseInsertions = (products: Product[]): Insertion[] =>
   products.map((product, idx) => {
-    return toInsertion(product, { position: idx });
+    // TODO - we'll change these to just have contentId soon.
+    return toFullInsertion(product, { position: idx });
   });
 
 // An interface for setting optional fields.
@@ -55,9 +54,12 @@ interface InsertionFields {
   position?: number;
 }
 
-const toInsertionWithNoExtraFields = (product: Product): Insertion => toInsertion(product);
+const toFullInsertions = (products: Product[]): Insertion[] => products.map(singleArgToFullInsertion);
 
-const toInsertion = (product: Product, extraFields: InsertionFields = {}): Insertion => ({
+// This helper is only needed because map fails type checks for the 2 arg version.
+const singleArgToFullInsertion = (product: Product): Insertion => toFullInsertion(product);
+
+const toFullInsertion = (product: Product, extraFields: InsertionFields = {}): Insertion => ({
   ...toInsertionOnlyContentId(product, extraFields),
   properties: {
     struct: {
@@ -65,6 +67,11 @@ const toInsertion = (product: Product, extraFields: InsertionFields = {}): Inser
     },
   },
 });
+
+const toInsertionsOnlyContentId = (products: Product[]): Insertion[] => products.map(singleArgToInsertionOnlyContentId);
+
+// This helper is only needed because map fails type checks for the 2 arg version.
+const singleArgToInsertionOnlyContentId = (product: Product): Insertion => toInsertionOnlyContentId(product);
 
 const toInsertionOnlyContentId = (product: Product, extraFields: InsertionFields = {}): Insertion => ({
   ...extraFields,
@@ -168,7 +175,7 @@ describe('no-op', () => {
         request: {
           ...newBaseRequest(),
         },
-        fullInsertion: toInsertions(products),
+        fullInsertion: toFullInsertions(products),
         insertionPageType: InsertionPageType.Unpaged,
       });
 
@@ -214,11 +221,11 @@ describe('no-op', () => {
             size: 1,
           },
         },
-        fullInsertion: toInsertions(products),
+        fullInsertion: toFullInsertions(products),
         insertionPageType: InsertionPageType.Unpaged,
       });
 
-      const expectedRespInsertions = [toInsertion(newProduct('3'), { position: 0 })];
+      const expectedRespInsertions = [toFullInsertion(newProduct('3'), { position: 0 })];
 
       expect(response.insertion).toEqual(expectedRespInsertions);
       expect(response.executionServer).toEqual(ExecutionServer.SDK);
@@ -239,7 +246,7 @@ describe('no-op', () => {
         request: {
           ...newBaseRequest(),
         },
-        fullInsertion: toInsertions(products),
+        fullInsertion: toFullInsertions(products),
         insertionPageType: InsertionPageType.Unpaged,
       });
       expect(response.insertion).toEqual(toResponseInsertions([newProduct('3'), newProduct('2'), newProduct('1')]));
@@ -281,7 +288,7 @@ describe('no-op', () => {
             size: 1,
           },
         },
-        fullInsertion: toInsertions(products),
+        fullInsertion: toFullInsertions(products),
         insertionPageType: InsertionPageType.Unpaged,
       });
       expect(response.insertion).toEqual(toResponseInsertions([newProduct('3')]));
@@ -305,7 +312,7 @@ describe('no-op', () => {
             offset: 1,
           },
         },
-        fullInsertion: toInsertions(products),
+        fullInsertion: toFullInsertions(products),
         insertionPageType: InsertionPageType.Unpaged,
       });
 
@@ -340,7 +347,7 @@ describe('deliver', () => {
     const deliveryReq: DeliveryRequest = {
       request: newBaseRequest(),
       insertionPageType: InsertionPageType.Unpaged,
-      fullInsertion: toInsertions(products),
+      fullInsertion: toFullInsertions(products),
     };
 
     await promotedClient.deliver(deliveryReq);
@@ -367,7 +374,7 @@ describe('deliver', () => {
     const deliveryReq: DeliveryRequest = {
       request: newBaseRequest(),
       insertionPageType: InsertionPageType.PrePaged,
-      fullInsertion: toInsertions(products),
+      fullInsertion: toFullInsertions(products),
     };
 
     await promotedClient.deliver(deliveryReq);
@@ -384,13 +391,13 @@ describe('deliver', () => {
         },
         clientInfo: DEFAULT_SDK_CLIENT_INFO,
         clientRequestId: 'uuid0',
-        insertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+        insertion: toFullInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
       });
       return Promise.resolve({
         insertion: [
-          toInsertion(newProduct('1'), { insertionId: 'uuid1' }),
-          toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
-          toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
+          toFullInsertion(newProduct('1'), { insertionId: 'uuid1' }),
+          toFullInsertion(newProduct('2'), { insertionId: 'uuid2' }),
+          toFullInsertion(newProduct('3'), { insertionId: 'uuid3' }),
         ],
       });
     });
@@ -404,16 +411,16 @@ describe('deliver', () => {
     const products = [newProduct('3'), newProduct('2'), newProduct('1')];
     const response = await promotedClient.deliver({
       request: newBaseRequest(),
-      fullInsertion: toInsertions(products),
+      fullInsertion: toFullInsertions(products),
       insertionPageType: InsertionPageType.Unpaged,
     });
     expect(deliveryClient.mock.calls.length).toBe(1);
     expect(metricsClient.mock.calls.length).toBe(0);
 
     expect(response.insertion).toEqual([
-      toInsertion(newProduct('1'), { insertionId: 'uuid1' }),
-      toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
-      toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
+      toFullInsertion(newProduct('1'), { insertionId: 'uuid1' }),
+      toFullInsertion(newProduct('2'), { insertionId: 'uuid2' }),
+      toFullInsertion(newProduct('3'), { insertionId: 'uuid3' }),
     ]);
 
     expect(response.executionServer).toEqual(ExecutionServer.API);
@@ -502,17 +509,17 @@ describe('deliver', () => {
             },
             response: {
               insertion: [
-                toInsertion(newProduct('3'), {
+                toFullInsertion(newProduct('3'), {
                   insertionId: 'uuid2',
                   requestId: 'uuid1',
                   position: 0,
                 }),
-                toInsertion(newProduct('2'), {
+                toFullInsertion(newProduct('2'), {
                   insertionId: 'uuid3',
                   requestId: 'uuid1',
                   position: 1,
                 }),
-                toInsertion(newProduct('1'), {
+                toFullInsertion(newProduct('1'), {
                   insertionId: 'uuid4',
                   requestId: 'uuid1',
                   position: 2,
@@ -537,7 +544,7 @@ describe('deliver', () => {
       const products = [newProduct('3'), newProduct('2'), newProduct('1')];
       const response = await promotedClient.deliver({
         request: newBaseRequest(),
-        fullInsertion: toInsertions(products),
+        fullInsertion: toFullInsertions(products),
         experiment: {
           cohortId: 'HOLD_OUT',
           arm: 'CONTROL',
@@ -549,17 +556,17 @@ describe('deliver', () => {
 
       // SDK-provided positions
       expect(response.insertion).toEqual([
-        toInsertion(newProduct('3'), {
+        toFullInsertion(newProduct('3'), {
           insertionId: 'uuid2',
           requestId: 'uuid1',
           position: 0,
         }),
-        toInsertion(newProduct('2'), {
+        toFullInsertion(newProduct('2'), {
           insertionId: 'uuid3',
           requestId: 'uuid1',
           position: 1,
         }),
-        toInsertion(newProduct('1'), {
+        toFullInsertion(newProduct('1'), {
           insertionId: 'uuid4',
           requestId: 'uuid1',
           position: 2,
@@ -576,9 +583,11 @@ describe('deliver', () => {
       expect(metricsClient.mock.calls.length).toBe(1);
     });
 
-    it('arm=CONTROL sends shadow traffic', async () => {
+    const controlSendsShadowTraffic = async (compactInsertions: boolean) => {
       // Delivery gets called as shadow traffic in CONTROL.
       const deliveryClient: any = jest.fn((request) => {
+        const products = [newProduct('3'), newProduct('2'), newProduct('1')];
+        const requestInsertions = compactInsertions ? toInsertionsOnlyContentId(products) : toFullInsertions(products);
         expect(request).toEqual({
           ...newBaseRequest(),
           timing: {
@@ -589,13 +598,13 @@ describe('deliver', () => {
             clientType: ClientType_PLATFORM_SERVER,
           },
           clientRequestId: 'uuid0',
-          insertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+          insertion: requestInsertions,
         });
         return Promise.resolve({
           insertion: [
-            toInsertion(newProduct('1'), { insertionId: 'uuid1' }),
-            toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
-            toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
+            toFullInsertion(newProduct('1'), { insertionId: 'uuid1' }),
+            toFullInsertion(newProduct('2'), { insertionId: 'uuid2' }),
+            toFullInsertion(newProduct('3'), { insertionId: 'uuid3' }),
           ],
         });
       });
@@ -632,17 +641,17 @@ describe('deliver', () => {
             },
             response: {
               insertion: [
-                toInsertion(newProduct('3'), {
+                toFullInsertion(newProduct('3'), {
                   insertionId: 'uuid2',
                   requestId: 'uuid1',
                   position: 0,
                 }),
-                toInsertion(newProduct('2'), {
+                toFullInsertion(newProduct('2'), {
                   insertionId: 'uuid3',
                   requestId: 'uuid1',
                   position: 1,
                 }),
-                toInsertion(newProduct('1'), {
+                toFullInsertion(newProduct('1'), {
                   insertionId: 'uuid4',
                   requestId: 'uuid1',
                   position: 2,
@@ -666,31 +675,36 @@ describe('deliver', () => {
       });
 
       const products = [newProduct('3'), newProduct('2'), newProduct('1')];
-      const response = await promotedClient.deliver({
+      const deliveryRequest: DeliveryRequest = {
         request: newBaseRequest(),
-        fullInsertion: toInsertions(products),
+        fullInsertion: toFullInsertions(products),
         experiment: {
           cohortId: 'HOLD_OUT',
           arm: 'CONTROL',
         },
         insertionPageType: InsertionPageType.Unpaged,
-      });
+      };
+      if (compactInsertions) {
+        // Clear out the properties.
+        deliveryRequest.toCompactDeliveryProperties = () => undefined;
+      }
+      const response = await promotedClient.deliver(deliveryRequest);
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(0);
 
       // SDK-provided positions
       expect(response.insertion).toEqual([
-        toInsertion(newProduct('3'), {
+        toFullInsertion(newProduct('3'), {
           insertionId: 'uuid2',
           requestId: 'uuid1',
           position: 0,
         }),
-        toInsertion(newProduct('2'), {
+        toFullInsertion(newProduct('2'), {
           insertionId: 'uuid3',
           requestId: 'uuid1',
           position: 1,
         }),
-        toInsertion(newProduct('1'), {
+        toFullInsertion(newProduct('1'), {
           insertionId: 'uuid4',
           requestId: 'uuid1',
           position: 2,
@@ -705,6 +719,14 @@ describe('deliver', () => {
       await response.log();
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(1);
+    };
+
+    it('arm=CONTROL sends shadow traffic', async () => {
+      return controlSendsShadowTraffic(false);
+    });
+
+    it('arm=CONTROL sends shadow traffic w/ compact', async () => {
+      return controlSendsShadowTraffic(true);
     });
 
     it('arm=TREATMENT', async () => {
@@ -716,13 +738,13 @@ describe('deliver', () => {
           },
           clientInfo: DEFAULT_SDK_CLIENT_INFO,
           clientRequestId: 'uuid0',
-          insertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+          insertion: toFullInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
         });
         return Promise.resolve({
           insertion: [
-            toInsertion(newProduct('1'), { insertionId: 'uuid1' }),
-            toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
-            toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
+            toFullInsertion(newProduct('1'), { insertionId: 'uuid1' }),
+            toFullInsertion(newProduct('2'), { insertionId: 'uuid2' }),
+            toFullInsertion(newProduct('3'), { insertionId: 'uuid3' }),
           ],
         });
       });
@@ -760,7 +782,7 @@ describe('deliver', () => {
 
       const response = await promotedClient.deliver({
         request: newBaseRequest(),
-        fullInsertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+        fullInsertion: toFullInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
         experiment: {
           cohortId: 'HOLD_OUT',
           arm: 'TREATMENT',
@@ -771,9 +793,9 @@ describe('deliver', () => {
       expect(metricsClient.mock.calls.length).toBe(0);
 
       expect(response.insertion).toEqual([
-        toInsertion(newProduct('1'), { insertionId: 'uuid1' }),
-        toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
-        toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
+        toFullInsertion(newProduct('1'), { insertionId: 'uuid1' }),
+        toFullInsertion(newProduct('2'), { insertionId: 'uuid2' }),
+        toFullInsertion(newProduct('3'), { insertionId: 'uuid3' }),
       ]);
 
       expect(response.logRequest).toEqual(expectedLogReq);
@@ -822,9 +844,9 @@ describe('deliver', () => {
             },
             response: {
               insertion: [
-                toInsertion(newProduct('3'), { insertionId: 'uuid2', requestId: 'uuid1', position: 0 }),
-                toInsertion(newProduct('2'), { insertionId: 'uuid3', requestId: 'uuid1', position: 1 }),
-                toInsertion(newProduct('1'), { insertionId: 'uuid4', requestId: 'uuid1', position: 2 }),
+                toFullInsertion(newProduct('3'), { insertionId: 'uuid2', requestId: 'uuid1', position: 0 }),
+                toFullInsertion(newProduct('2'), { insertionId: 'uuid3', requestId: 'uuid1', position: 1 }),
+                toFullInsertion(newProduct('1'), { insertionId: 'uuid4', requestId: 'uuid1', position: 2 }),
               ],
             },
             execution: {
@@ -848,7 +870,7 @@ describe('deliver', () => {
       const products = [newProduct('3'), newProduct('2'), newProduct('1')];
       const response = await promotedClient.deliver({
         request: newBaseRequest(),
-        fullInsertion: toInsertions(products),
+        fullInsertion: toFullInsertions(products),
         experiment: {
           cohortId: 'HOLD_OUT',
           arm: 'TREATMENT',
@@ -860,17 +882,17 @@ describe('deliver', () => {
 
       // SDK-provided positions
       expect(response.insertion).toEqual([
-        toInsertion(newProduct('3'), {
+        toFullInsertion(newProduct('3'), {
           insertionId: 'uuid2',
           requestId: 'uuid1',
           position: 0,
         }),
-        toInsertion(newProduct('2'), {
+        toFullInsertion(newProduct('2'), {
           insertionId: 'uuid3',
           requestId: 'uuid1',
           position: 1,
         }),
-        toInsertion(newProduct('1'), {
+        toFullInsertion(newProduct('1'), {
           insertionId: 'uuid4',
           requestId: 'uuid1',
           position: 2,
@@ -964,7 +986,7 @@ describe('deliver', () => {
       const products = [newProduct('3'), newProduct('2'), newProduct('1')];
       const response = await promotedClient.deliver({
         request: newBaseRequest(),
-        fullInsertion: toInsertions(products),
+        fullInsertion: toFullInsertions(products),
         toCompactMetricsProperties: () => undefined,
         experiment: {
           cohortId: 'HOLD_OUT',
@@ -977,17 +999,17 @@ describe('deliver', () => {
 
       // SDK-provided positions
       expect(response.insertion).toEqual([
-        toInsertion(newProduct('3'), {
+        toFullInsertion(newProduct('3'), {
           insertionId: 'uuid2',
           requestId: 'uuid1',
           position: 0,
         }),
-        toInsertion(newProduct('2'), {
+        toFullInsertion(newProduct('2'), {
           insertionId: 'uuid3',
           requestId: 'uuid1',
           position: 1,
         }),
-        toInsertion(newProduct('1'), {
+        toFullInsertion(newProduct('1'), {
           insertionId: 'uuid4',
           requestId: 'uuid1',
           position: 2,
@@ -1081,7 +1103,7 @@ describe('deliver', () => {
       const products = [newProduct('3'), newProduct('2'), newProduct('1')];
       const response = await promotedClient.deliver({
         request: newBaseRequest(),
-        fullInsertion: toInsertions(products),
+        fullInsertion: toFullInsertions(products),
         experiment: {
           cohortId: 'HOLD_OUT',
           arm: 'CONTROL',
@@ -1093,17 +1115,17 @@ describe('deliver', () => {
 
       // SDK-provided positions
       expect(response.insertion).toEqual([
-        toInsertion(newProduct('3'), {
+        toFullInsertion(newProduct('3'), {
           insertionId: 'uuid2',
           requestId: 'uuid1',
           position: 0,
         }),
-        toInsertion(newProduct('2'), {
+        toFullInsertion(newProduct('2'), {
           insertionId: 'uuid3',
           requestId: 'uuid1',
           position: 1,
         }),
-        toInsertion(newProduct('1'), {
+        toFullInsertion(newProduct('1'), {
           insertionId: 'uuid4',
           requestId: 'uuid1',
           position: 2,
@@ -1137,9 +1159,9 @@ describe('deliver', () => {
         });
         return Promise.resolve({
           insertion: [
-            toInsertion(newProduct('1'), { insertionId: 'uuid1' }),
-            toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
-            toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
+            toFullInsertion(newProduct('1'), { insertionId: 'uuid1' }),
+            toFullInsertion(newProduct('2'), { insertionId: 'uuid2' }),
+            toFullInsertion(newProduct('3'), { insertionId: 'uuid3' }),
           ],
         });
       });
@@ -1176,7 +1198,7 @@ describe('deliver', () => {
 
       const response = await promotedClient.deliver({
         request: newBaseRequest(),
-        fullInsertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+        fullInsertion: toFullInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
         toCompactDeliveryProperties: () => undefined,
         experiment: {
           cohortId: 'HOLD_OUT',
@@ -1188,9 +1210,9 @@ describe('deliver', () => {
       expect(metricsClient.mock.calls.length).toBe(0);
 
       expect(response.insertion).toEqual([
-        toInsertion(newProduct('1'), { insertionId: 'uuid1' }),
-        toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
-        toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
+        toFullInsertion(newProduct('1'), { insertionId: 'uuid1' }),
+        toFullInsertion(newProduct('2'), { insertionId: 'uuid2' }),
+        toFullInsertion(newProduct('3'), { insertionId: 'uuid3' }),
       ]);
       expect(response.executionServer).toEqual(ExecutionServer.API);
       expect(response.clientRequestId).toEqual('uuid0');
@@ -1221,9 +1243,9 @@ describe('deliver', () => {
         });
         return Promise.resolve({
           insertion: [
-            toInsertion(newProduct('1'), { insertionId: 'uuid1' }),
-            toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
-            toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
+            toFullInsertion(newProduct('1'), { insertionId: 'uuid1' }),
+            toFullInsertion(newProduct('2'), { insertionId: 'uuid2' }),
+            toFullInsertion(newProduct('3'), { insertionId: 'uuid3' }),
           ],
         });
       });
@@ -1263,7 +1285,7 @@ describe('deliver', () => {
 
       const response = await promotedClient.deliver({
         request: newBaseRequest(),
-        fullInsertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+        fullInsertion: toFullInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
         experiment: {
           cohortId: 'HOLD_OUT',
           arm: 'TREATMENT',
@@ -1274,9 +1296,9 @@ describe('deliver', () => {
       expect(metricsClient.mock.calls.length).toBe(0);
 
       expect(response.insertion).toEqual([
-        toInsertion(newProduct('1'), { insertionId: 'uuid1' }),
-        toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
-        toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
+        toFullInsertion(newProduct('1'), { insertionId: 'uuid1' }),
+        toFullInsertion(newProduct('2'), { insertionId: 'uuid2' }),
+        toFullInsertion(newProduct('3'), { insertionId: 'uuid3' }),
       ]);
 
       expect(response.logRequest).toEqual(expectedLogReq);
@@ -1328,7 +1350,7 @@ describe('deliver', () => {
           },
           response: {
             insertion: [
-              toInsertion(newProduct('3'), {
+              toFullInsertion(newProduct('3'), {
                 insertionId: 'uuid2',
                 requestId: 'uuid1',
                 position: 0,
@@ -1358,7 +1380,7 @@ describe('deliver', () => {
           size: 1,
         },
       },
-      fullInsertion: toInsertions(products),
+      fullInsertion: toFullInsertions(products),
       experiment: {
         cohortId: 'HOLD_OUT',
         arm: 'CONTROL',
@@ -1370,7 +1392,7 @@ describe('deliver', () => {
 
     // SDK-provided position
     expect(response.insertion).toEqual([
-      toInsertion(newProduct('3'), {
+      toFullInsertion(newProduct('3'), {
         insertionId: 'uuid2',
         requestId: 'uuid1',
         position: 0,
@@ -1410,17 +1432,17 @@ describe('deliver', () => {
           },
           response: {
             insertion: [
-              toInsertion(newProduct('3'), {
+              toFullInsertion(newProduct('3'), {
                 insertionId: 'uuid2',
                 requestId: 'uuid1',
                 position: 0,
               }),
-              toInsertion(newProduct('2'), {
+              toFullInsertion(newProduct('2'), {
                 insertionId: 'uuid3',
                 requestId: 'uuid1',
                 position: 1,
               }),
-              toInsertion(newProduct('1'), {
+              toFullInsertion(newProduct('1'), {
                 insertionId: 'uuid4',
                 requestId: 'uuid1',
                 position: 2,
@@ -1446,7 +1468,7 @@ describe('deliver', () => {
     const response = await promotedClient.deliver({
       onlyLog: true,
       request: newBaseRequest(),
-      fullInsertion: toInsertions(products),
+      fullInsertion: toFullInsertions(products),
       insertionPageType: InsertionPageType.Unpaged,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
@@ -1454,17 +1476,17 @@ describe('deliver', () => {
 
     // SDK-provided positions
     expect(response.insertion).toEqual([
-      toInsertion(newProduct('3'), {
+      toFullInsertion(newProduct('3'), {
         insertionId: 'uuid2',
         requestId: 'uuid1',
         position: 0,
       }),
-      toInsertion(newProduct('2'), {
+      toFullInsertion(newProduct('2'), {
         insertionId: 'uuid3',
         requestId: 'uuid1',
         position: 1,
       }),
-      toInsertion(newProduct('1'), {
+      toFullInsertion(newProduct('1'), {
         insertionId: 'uuid4',
         requestId: 'uuid1',
         position: 2,
@@ -1519,17 +1541,17 @@ describe('deliver', () => {
           },
           response: {
             insertion: [
-              toInsertion(newProduct('3'), {
+              toFullInsertion(newProduct('3'), {
                 insertionId: 'uuid2',
                 requestId: 'uuid1',
                 position: 0,
               }),
-              toInsertion(newProduct('2'), {
+              toFullInsertion(newProduct('2'), {
                 insertionId: 'uuid3',
                 requestId: 'uuid1',
                 position: 1,
               }),
-              toInsertion(newProduct('1'), {
+              toFullInsertion(newProduct('1'), {
                 insertionId: 'uuid4',
                 requestId: 'uuid1',
                 position: 2,
@@ -1560,7 +1582,7 @@ describe('deliver', () => {
           clientLogTimestamp: 87654321,
         },
       },
-      fullInsertion: toInsertions(products),
+      fullInsertion: toFullInsertions(products),
       experiment: {
         cohortId: 'HOLD_OUT',
         arm: 'CONTROL',
@@ -1572,17 +1594,17 @@ describe('deliver', () => {
 
     // SDK-provided positions
     expect(response.insertion).toEqual([
-      toInsertion(newProduct('3'), {
+      toFullInsertion(newProduct('3'), {
         insertionId: 'uuid2',
         requestId: 'uuid1',
         position: 0,
       }),
-      toInsertion(newProduct('2'), {
+      toFullInsertion(newProduct('2'), {
         insertionId: 'uuid3',
         requestId: 'uuid1',
         position: 1,
       }),
-      toInsertion(newProduct('1'), {
+      toFullInsertion(newProduct('1'), {
         insertionId: 'uuid4',
         requestId: 'uuid1',
         position: 2,
@@ -1606,7 +1628,7 @@ describe('deliver', () => {
         timing: {
           clientLogTimestamp: 12345678,
         },
-        insertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+        insertion: toFullInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
         clientInfo: DEFAULT_SDK_CLIENT_INFO,
         clientRequestId: 'uuid0',
       });
@@ -1615,8 +1637,8 @@ describe('deliver', () => {
           {
             insertionId: 'uuid1',
           },
-          toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
-          toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
+          toFullInsertion(newProduct('2'), { insertionId: 'uuid2' }),
+          toFullInsertion(newProduct('3'), { insertionId: 'uuid3' }),
         ],
       });
     });
@@ -1630,7 +1652,7 @@ describe('deliver', () => {
     const products = [newProduct('3'), newProduct('2'), newProduct('1')];
     const response = await promotedClient.deliver({
       request: newBaseRequest(),
-      fullInsertion: toInsertions(products),
+      fullInsertion: toFullInsertions(products),
       insertionPageType: InsertionPageType.Unpaged,
     });
     expect(deliveryClient.mock.calls.length).toBe(1);
@@ -1640,8 +1662,8 @@ describe('deliver', () => {
       {
         insertionId: 'uuid1',
       },
-      toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
-      toInsertion(newProduct('3'), { insertionId: 'uuid3' }),
+      toFullInsertion(newProduct('2'), { insertionId: 'uuid2' }),
+      toFullInsertion(newProduct('3'), { insertionId: 'uuid3' }),
     ]);
 
     expect(response.executionServer).toEqual(ExecutionServer.API);
@@ -1692,17 +1714,17 @@ describe('deliver', () => {
             },
             response: {
               insertion: [
-                toInsertion(newProduct('3'), {
+                toFullInsertion(newProduct('3'), {
                   insertionId: 'uuid2',
                   requestId: 'uuid1',
                   position: 0,
                 }),
-                toInsertion(newProduct('2'), {
+                toFullInsertion(newProduct('2'), {
                   insertionId: 'uuid3',
                   requestId: 'uuid1',
                   position: 1,
                 }),
-                toInsertion(newProduct('1'), {
+                toFullInsertion(newProduct('1'), {
                   insertionId: 'uuid4',
                   requestId: 'uuid1',
                   position: 2,
@@ -1735,7 +1757,7 @@ describe('deliver', () => {
 
       const response = await promotedClient.deliver({
         request: newBaseRequest(),
-        fullInsertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+        fullInsertion: toFullInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
         experiment: {
           cohortId: 'HOLD_OUT',
           arm: 'TREATMENT',
@@ -1747,17 +1769,17 @@ describe('deliver', () => {
 
       // SDK-provided positions
       expect(response.insertion).toEqual([
-        toInsertion(newProduct('3'), {
+        toFullInsertion(newProduct('3'), {
           insertionId: 'uuid2',
           requestId: 'uuid1',
           position: 0,
         }),
-        toInsertion(newProduct('2'), {
+        toFullInsertion(newProduct('2'), {
           insertionId: 'uuid3',
           requestId: 'uuid1',
           position: 1,
         }),
-        toInsertion(newProduct('1'), {
+        toFullInsertion(newProduct('1'), {
           insertionId: 'uuid4',
           requestId: 'uuid1',
           position: 2,
@@ -1784,15 +1806,15 @@ describe('deliver', () => {
           timing: {
             clientLogTimestamp: 12345678,
           },
-          insertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+          insertion: toFullInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
           clientInfo: DEFAULT_SDK_CLIENT_INFO,
           clientRequestId: 'uuid0',
         });
         return Promise.resolve({
           insertion: [
-            toInsertion(newProduct('1'), { insertionId: 'uuid2' }),
-            toInsertion(newProduct('2'), { insertionId: 'uuid3' }),
-            toInsertion(newProduct('3'), { insertionId: 'uuid4' }),
+            toFullInsertion(newProduct('1'), { insertionId: 'uuid2' }),
+            toFullInsertion(newProduct('2'), { insertionId: 'uuid3' }),
+            toFullInsertion(newProduct('3'), { insertionId: 'uuid4' }),
           ],
         });
       });
@@ -1839,7 +1861,7 @@ describe('deliver', () => {
 
       const deliveryReq: DeliveryRequest = {
         request: newBaseRequest(),
-        fullInsertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+        fullInsertion: toFullInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
         experiment: {
           cohortId: 'HOLD_OUT',
           arm: 'TREATMENT',
@@ -1851,9 +1873,9 @@ describe('deliver', () => {
       expect(metricsClient.mock.calls.length).toBe(0);
 
       expect(response.insertion).toEqual([
-        toInsertion(newProduct('1'), { insertionId: 'uuid2' }),
-        toInsertion(newProduct('2'), { insertionId: 'uuid3' }),
-        toInsertion(newProduct('3'), { insertionId: 'uuid4' }),
+        toFullInsertion(newProduct('1'), { insertionId: 'uuid2' }),
+        toFullInsertion(newProduct('2'), { insertionId: 'uuid3' }),
+        toFullInsertion(newProduct('3'), { insertionId: 'uuid4' }),
       ]);
 
       expect(response.logRequest).toEqual(expectedLogReq);
@@ -1876,7 +1898,7 @@ describe('deliver', () => {
             ...newBaseRequest(),
             requestId: 'uuid0',
           },
-          fullInsertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+          fullInsertion: toFullInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
           insertionPageType: InsertionPageType.Unpaged,
         })
       ).rejects.toEqual(new Error('Request.requestId should not be set'));
@@ -1888,9 +1910,9 @@ describe('deliver', () => {
         promotedClient.deliver({
           request: {
             ...newBaseRequest(),
-            insertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+            insertion: toFullInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
           },
-          fullInsertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+          fullInsertion: toFullInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
           insertionPageType: InsertionPageType.Unpaged,
         })
       ).rejects.toEqual(new Error('Do not set Request.insertion.  Set fullInsertion.'));
@@ -1903,11 +1925,11 @@ describe('deliver', () => {
           request: newBaseRequest(),
           fullInsertion: [
             {
-              ...toInsertion(newProduct('3')),
+              ...toFullInsertion(newProduct('3')),
               requestId: 'uuid0',
             },
-            toInsertion(newProduct('2')),
-            toInsertion(newProduct('1')),
+            toFullInsertion(newProduct('2')),
+            toFullInsertion(newProduct('1')),
           ],
           insertionPageType: InsertionPageType.Unpaged,
         })
@@ -1921,11 +1943,11 @@ describe('deliver', () => {
           request: newBaseRequest(),
           fullInsertion: [
             {
-              ...toInsertion(newProduct('3')),
+              ...toFullInsertion(newProduct('3')),
               insertionId: 'uuid0',
             },
-            toInsertion(newProduct('2')),
-            toInsertion(newProduct('1')),
+            toFullInsertion(newProduct('2')),
+            toFullInsertion(newProduct('1')),
           ],
           insertionPageType: InsertionPageType.Unpaged,
         })
@@ -1937,7 +1959,7 @@ describe('deliver', () => {
       await expect(
         promotedClient.deliver({
           request: newBaseRequest(),
-          fullInsertion: [{}, toInsertion(newProduct('2')), toInsertion(newProduct('1'))],
+          fullInsertion: [{}, toFullInsertion(newProduct('2')), toFullInsertion(newProduct('1'))],
           insertionPageType: InsertionPageType.Unpaged,
         })
       ).rejects.toEqual(new Error('Insertion.contentId should be set'));
@@ -1988,17 +2010,17 @@ describe('metrics', () => {
           },
           response: {
             insertion: [
-              toInsertion(newProduct('3'), {
+              toFullInsertion(newProduct('3'), {
                 insertionId: 'uuid2',
                 requestId: 'uuid1',
                 position: 0,
               }),
-              toInsertion(newProduct('2'), {
+              toFullInsertion(newProduct('2'), {
                 insertionId: 'uuid3',
                 requestId: 'uuid1',
                 position: 1,
               }),
-              toInsertion(newProduct('1'), {
+              toFullInsertion(newProduct('1'), {
                 insertionId: 'uuid4',
                 requestId: 'uuid1',
                 position: 2,
@@ -2023,24 +2045,24 @@ describe('metrics', () => {
     const products = [newProduct('3'), newProduct('2'), newProduct('1')];
     const response = promotedClient.prepareForLogging({
       request: newBaseRequest(),
-      fullInsertion: toInsertions(products),
+      fullInsertion: toFullInsertions(products),
       insertionPageType: InsertionPageType.Unpaged,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
 
     expect(response.insertion).toEqual([
-      toInsertion(newProduct('3'), {
+      toFullInsertion(newProduct('3'), {
         insertionId: 'uuid2',
         requestId: 'uuid1',
         position: 0,
       }),
-      toInsertion(newProduct('2'), {
+      toFullInsertion(newProduct('2'), {
         insertionId: 'uuid3',
         requestId: 'uuid1',
         position: 1,
       }),
-      toInsertion(newProduct('1'), {
+      toFullInsertion(newProduct('1'), {
         insertionId: 'uuid4',
         requestId: 'uuid1',
         position: 2,
@@ -2142,7 +2164,7 @@ describe('metrics', () => {
           },
           response: {
             insertion: [
-              toInsertion(newProduct('3'), {
+              toFullInsertion(newProduct('3'), {
                 insertionId: 'uuid2',
                 requestId: 'uuid1',
                 position: 0,
@@ -2172,14 +2194,14 @@ describe('metrics', () => {
           size: 1,
         },
       },
-      fullInsertion: toInsertions(products),
+      fullInsertion: toFullInsertions(products),
       insertionPageType: InsertionPageType.Unpaged,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
 
     expect(response.insertion).toEqual([
-      toInsertion(newProduct('3'), {
+      toFullInsertion(newProduct('3'), {
         insertionId: 'uuid2',
         requestId: 'uuid1',
         position: 0,
@@ -2224,7 +2246,7 @@ describe('metrics', () => {
           },
           response: {
             insertion: [
-              toInsertion(newProduct('3'), {
+              toFullInsertion(newProduct('3'), {
                 insertionId: 'uuid2',
                 requestId: 'uuid1',
                 position: 100,
@@ -2255,13 +2277,13 @@ describe('metrics', () => {
           offset: 100,
         },
       },
-      fullInsertion: toInsertions(products),
+      fullInsertion: toFullInsertions(products),
       insertionPageType: InsertionPageType.PrePaged,
     };
 
     const response = promotedClient.prepareForLogging(metricsRequest);
     expect(response.insertion).toEqual([
-      toInsertion(newProduct('3'), {
+      toFullInsertion(newProduct('3'), {
         insertionId: 'uuid2',
         requestId: 'uuid1',
         position: 100, // the offset
@@ -2301,7 +2323,7 @@ describe('metrics', () => {
           },
           response: {
             insertion: [
-              toInsertion(newProduct('2'), {
+              toFullInsertion(newProduct('2'), {
                 insertionId: 'uuid2',
                 requestId: 'uuid1',
                 position: 1, // the offset
@@ -2332,14 +2354,14 @@ describe('metrics', () => {
           offset: 1,
         },
       },
-      fullInsertion: toInsertions(products),
+      fullInsertion: toFullInsertions(products),
       insertionPageType: InsertionPageType.Unpaged,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
 
     expect(response.insertion).toEqual([
-      toInsertion(newProduct('2'), {
+      toFullInsertion(newProduct('2'), {
         insertionId: 'uuid2',
         requestId: 'uuid1',
         position: 1, // the offset
@@ -2381,21 +2403,21 @@ describe('metrics', () => {
           },
           response: {
             insertion: [
-              toInsertion(newProduct('3'), {
+              toFullInsertion(newProduct('3'), {
                 insertionId: 'uuid2',
                 requestId: 'uuid1',
                 sessionId: 'uuid10',
                 viewId: 'uuid11',
                 position: 0,
               }),
-              toInsertion(newProduct('2'), {
+              toFullInsertion(newProduct('2'), {
                 insertionId: 'uuid3',
                 requestId: 'uuid1',
                 sessionId: 'uuid10',
                 viewId: 'uuid11',
                 position: 1,
               }),
-              toInsertion(newProduct('1'), {
+              toFullInsertion(newProduct('1'), {
                 insertionId: 'uuid4',
                 requestId: 'uuid1',
                 sessionId: 'uuid10',
@@ -2426,28 +2448,28 @@ describe('metrics', () => {
         sessionId: 'uuid10',
         viewId: 'uuid11',
       },
-      fullInsertion: toInsertions(products),
+      fullInsertion: toFullInsertions(products),
       insertionPageType: InsertionPageType.Unpaged,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
 
     expect(response.insertion).toEqual([
-      toInsertion(newProduct('3'), {
+      toFullInsertion(newProduct('3'), {
         insertionId: 'uuid2',
         requestId: 'uuid1',
         sessionId: 'uuid10',
         viewId: 'uuid11',
         position: 0,
       }),
-      toInsertion(newProduct('2'), {
+      toFullInsertion(newProduct('2'), {
         insertionId: 'uuid3',
         requestId: 'uuid1',
         sessionId: 'uuid10',
         viewId: 'uuid11',
         position: 1,
       }),
-      toInsertion(newProduct('1'), {
+      toFullInsertion(newProduct('1'), {
         insertionId: 'uuid4',
         requestId: 'uuid1',
         sessionId: 'uuid10',
@@ -2476,7 +2498,7 @@ describe('metrics', () => {
             ...newBaseRequest(),
             requestId: 'uuid0',
           },
-          fullInsertion: toInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+          fullInsertion: toFullInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
           insertionPageType: InsertionPageType.Unpaged,
         })
       ).toThrow(new Error('Request.requestId should not be set'));
@@ -2488,16 +2510,19 @@ describe('shadow requests in prepareForLogging', () => {
   async function runShadowRequestSamplingTest(
     samplingReturn: boolean,
     shouldCallDelivery: boolean,
-    shadowTrafficDeliveryPercent: number
+    shadowTrafficDeliveryPercent: number,
+    compactInsertions: boolean
   ) {
     let deliveryClient: any = jest.fn(failFunction('Delivery should not be called when shadow is not selected'));
     if (shouldCallDelivery) {
+      const products = [newProduct('3')];
+      const requestInsertions = compactInsertions ? toInsertionsOnlyContentId(products) : toFullInsertions(products);
       const expectedDeliveryReq = {
         ...newBaseRequest(),
         timing: {
           clientLogTimestamp: 12345678,
         },
-        insertion: toInsertions([newProduct('3')]),
+        insertion: requestInsertions,
         clientInfo: {
           clientType: ClientType_PLATFORM_SERVER,
           trafficType: TrafficType_SHADOW,
@@ -2533,7 +2558,7 @@ describe('shadow requests in prepareForLogging', () => {
           },
           response: {
             insertion: [
-              toInsertion(newProduct('3'), {
+              toFullInsertion(newProduct('3'), {
                 insertionId: 'uuid2',
                 requestId: 'uuid1',
                 position: 0,
@@ -2565,20 +2590,25 @@ describe('shadow requests in prepareForLogging', () => {
     });
 
     const products = [newProduct('3')];
-    const response = promotedClient.prepareForLogging({
+    const metricsRequest: MetricsRequest = {
       request: {
         ...newBaseRequest(),
         clientInfo: DEFAULT_SDK_CLIENT_INFO,
       },
-      fullInsertion: toInsertions(products),
+      fullInsertion: toFullInsertions(products),
       insertionPageType: InsertionPageType.Unpaged,
-    });
+    };
+    if (compactInsertions) {
+      // Clear out the properties.
+      metricsRequest.toCompactDeliveryProperties = () => undefined;
+    }
+    const response = promotedClient.prepareForLogging(metricsRequest);
     const deliveryCallCount = shouldCallDelivery ? 1 : 0;
     expect(deliveryClient.mock.calls.length).toBe(deliveryCallCount); // here lies the shadow request
     expect(metricsClient.mock.calls.length).toBe(0);
 
     expect(response.insertion).toEqual([
-      toInsertion(newProduct('3'), {
+      toFullInsertion(newProduct('3'), {
         insertionId: 'uuid2',
         requestId: 'uuid1',
         position: 0,
@@ -2612,21 +2642,25 @@ describe('shadow requests in prepareForLogging', () => {
         ...newBaseRequest(),
         clientInfo: DEFAULT_SDK_CLIENT_INFO,
       },
-      fullInsertion: toInsertions(products),
+      fullInsertion: toFullInsertions(products),
       insertionPageType: insertionPagingType,
     });
   }
 
   it('makes a shadow request', async () => {
-    await runShadowRequestSamplingTest(true, true, 0.5);
+    await runShadowRequestSamplingTest(true, true, 0.5, false);
   });
 
   it('does not make a shadow request - not sampled in', async () => {
-    await runShadowRequestSamplingTest(false, false, 0.5);
+    await runShadowRequestSamplingTest(false, false, 0.5, false);
   });
 
   it('does not make a shadow request - sampling not turned on', async () => {
-    await runShadowRequestSamplingTest(true, false, 0);
+    await runShadowRequestSamplingTest(true, false, 0, false);
+  });
+
+  it('makes a shadow request w/ compact insertion properties', async () => {
+    await runShadowRequestSamplingTest(true, true, 0.5, true);
   });
 
   it('throws an error with the wrong paging type', async () => {
@@ -2642,9 +2676,9 @@ describe('log helper method', () => {
     log({
       log: () => Promise.resolve(undefined),
       insertion: [
-        toInsertion(newProduct('3'), { insertionId: 'uuid1' }),
-        toInsertion(newProduct('2'), { insertionId: 'uuid2' }),
-        toInsertion(newProduct('1'), { insertionId: 'uuid3' }),
+        toFullInsertion(newProduct('3'), { insertionId: 'uuid1' }),
+        toFullInsertion(newProduct('2'), { insertionId: 'uuid2' }),
+        toFullInsertion(newProduct('1'), { insertionId: 'uuid3' }),
       ],
     });
   });
