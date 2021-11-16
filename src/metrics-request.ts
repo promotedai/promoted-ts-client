@@ -6,7 +6,10 @@ import { Insertion, Request } from './types/delivery';
  * Represents a single call for logging content.
  */
 export interface MetricsRequest {
-  /** A function to shrink the Properties on Metrics API. */
+  /** Removes unnecessary fields on Insertions for Delivery API shadow traffic calls. */
+  toCompactDeliveryProperties?: PropertiesMapFn;
+
+  /** Removes unnecessary fields on Insertions for Metrics API. */
   toCompactMetricsProperties?: PropertiesMapFn;
 
   /**

@@ -209,7 +209,11 @@ export class PromotedClientImpl implements PromotedClient {
     // Send shadow traffic if necessary.
     if (this.shouldSendAsShadowTraffic()) {
       // Fire and forget.
-      this.deliverShadowTraffic(metricsRequest.request, metricsRequest.fullInsertion);
+      this.deliverShadowTraffic(
+        metricsRequest.toCompactDeliveryProperties,
+        metricsRequest.request,
+        metricsRequest.fullInsertion
+      );
     }
 
     // If defined, log the Request to Metrics API.
@@ -288,7 +292,11 @@ export class PromotedClientImpl implements PromotedClient {
             deliveryRequest.fullInsertion
           );
         } else if (this.sendShadowTrafficForControl) {
-          this.deliverShadowTraffic(deliveryRequest.request, deliveryRequest.fullInsertion);
+          this.deliverShadowTraffic(
+            deliveryRequest.toCompactDeliveryProperties,
+            deliveryRequest.request,
+            deliveryRequest.fullInsertion
+          );
         }
       } catch (error) {
         this.handleError(error);
@@ -339,10 +347,17 @@ export class PromotedClientImpl implements PromotedClient {
    * @param request the underlying request.
    * @param fullInsertion the set of full insertions.
    */
-  private deliverShadowTraffic(request: Request, fullInsertion: Insertion[]) {
+  private deliverShadowTraffic(
+    toCompactDeliveryProperties: PropertiesMapFn | undefined,
+    request: Request,
+    fullInsertion: Insertion[]
+  ) {
+    const toCompactDeliveryRequestInsertion = toCompactInsertionFn(
+      toCompactDeliveryProperties ?? this.defaultRequestValues.toCompactMetricsProperties
+    );
     const singleRequest: Request = {
       ...request,
-      insertion: fullInsertion, // CONSIDER: Whether to copy and/or compact this at some point.
+      insertion: fullInsertion.map(toCompactDeliveryRequestInsertion),
       clientInfo: {
         ...request.clientInfo,
         trafficType: TrafficType_SHADOW,
