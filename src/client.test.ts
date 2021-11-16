@@ -41,7 +41,7 @@ const newProduct = (id: string): Product => ({
 // Response insertions should always have position assigned.
 const toResponseInsertions = (products: Product[]): Insertion[] =>
   products.map((product, idx) => {
-    // TODO - we'll change these to just have contentId soon.
+    // TODO - we'll change these to have contentId and position.
     return toFullInsertion(product, { position: idx });
   });
 
