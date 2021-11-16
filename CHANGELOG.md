@@ -1,3 +1,10 @@
+## [7.2.1](https://github.com/promotedai/promoted-ts-client/compare/v7.2.0...v7.2.1) (2021-11-16)
+
+
+### Bug Fixes
+
+* how shadow traffic impacts with compact insertions fn ([#48](https://github.com/promotedai/promoted-ts-client/issues/48)) ([6e41c40](https://github.com/promotedai/promoted-ts-client/commit/6e41c405b3f8f607c8f190336ebac62ea11e9b73))
+
 # [7.2.0](https://github.com/promotedai/promoted-ts-client/compare/v7.1.0...v7.2.0) (2021-10-07)
 
 
