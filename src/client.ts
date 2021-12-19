@@ -13,6 +13,10 @@ import type { CohortMembership, LogRequest, LogResponse } from './types/event';
 import { Pager } from './pager';
 import { ExecutionServer } from './execution-server';
 
+// Version number that semver will generate for the package.
+// Must be manually maintained.
+export const SERVER_VERSION = 'ts.7.2.2';
+
 /**
  * Design-wise
  *
@@ -399,6 +403,7 @@ export class PromotedClientImpl implements PromotedClient {
           },
           execution: {
             executionServer: ExecutionServer.SDK,
+            serverVersion: SERVER_VERSION,
           },
         },
       ];
