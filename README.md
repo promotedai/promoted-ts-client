@@ -171,6 +171,8 @@ When you want to undo, run `npm run unlink` in this directory and `npm unlink pr
 
 ## Deploy
 
+Based on the anticipated semantic-version, update the `SERVER_VERSION` constant in `client.ts`.
+
 We use a GitHub action that runs semantic-release to determine how to update versions. Just do a normal code review and this should work. Depending on the message prefixes (e.g. `feat: `, `fix: `, `clean: `, `docs: `), it'll update the version appropriately.
 
 # Resources

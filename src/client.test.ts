@@ -1,6 +1,6 @@
 import { log, newPromotedClient, noopFn, NoopPromotedClient, throwOnError } from '.';
 import type { Insertion, Request } from './types/delivery';
-import { ClientType_PLATFORM_SERVER, TrafficType_PRODUCTION, TrafficType_SHADOW } from './client';
+import { ClientType_PLATFORM_SERVER, TrafficType_PRODUCTION, TrafficType_SHADOW, SERVER_VERSION } from './client';
 import { PromotedClientArguments } from './client-args';
 import { InsertionPageType } from './insertion-page-type';
 import { DeliveryRequest } from './delivery-request';
@@ -528,6 +528,7 @@ describe('deliver', () => {
             },
             execution: {
               executionServer: 2,
+              serverVersion: SERVER_VERSION,
             },
           },
         ],
@@ -660,6 +661,7 @@ describe('deliver', () => {
             },
             execution: {
               executionServer: 2,
+              serverVersion: SERVER_VERSION,
             },
           },
         ],
@@ -851,6 +853,7 @@ describe('deliver', () => {
             },
             execution: {
               executionServer: 2,
+              serverVersion: SERVER_VERSION,
             },
           },
         ],
@@ -970,6 +973,7 @@ describe('deliver', () => {
             },
             execution: {
               executionServer: 2,
+              serverVersion: SERVER_VERSION,
             },
           },
         ],
@@ -1084,6 +1088,7 @@ describe('deliver', () => {
             },
             execution: {
               executionServer: 2,
+              serverVersion: SERVER_VERSION,
             },
           },
         ],
@@ -1359,6 +1364,7 @@ describe('deliver', () => {
           },
           execution: {
             executionServer: 2,
+            serverVersion: SERVER_VERSION,
           },
         },
       ],
@@ -1451,6 +1457,7 @@ describe('deliver', () => {
           },
           execution: {
             executionServer: 2,
+            serverVersion: SERVER_VERSION,
           },
         },
       ],
@@ -1560,6 +1567,7 @@ describe('deliver', () => {
           },
           execution: {
             executionServer: 2,
+            serverVersion: SERVER_VERSION,
           },
         },
       ],
@@ -1733,6 +1741,7 @@ describe('deliver', () => {
             },
             execution: {
               executionServer: 2,
+              serverVersion: SERVER_VERSION,
             },
           },
         ],
@@ -2029,6 +2038,7 @@ describe('metrics', () => {
           },
           execution: {
             executionServer: 2,
+            serverVersion: SERVER_VERSION,
           },
         },
       ],
@@ -2106,6 +2116,7 @@ describe('metrics', () => {
           },
           execution: {
             executionServer: 2,
+            serverVersion: SERVER_VERSION,
           },
         },
       ],
@@ -2173,6 +2184,7 @@ describe('metrics', () => {
           },
           execution: {
             executionServer: 2,
+            serverVersion: SERVER_VERSION,
           },
         },
       ],
@@ -2255,6 +2267,7 @@ describe('metrics', () => {
           },
           execution: {
             executionServer: 2,
+            serverVersion: SERVER_VERSION,
           },
         },
       ],
@@ -2332,6 +2345,7 @@ describe('metrics', () => {
           },
           execution: {
             executionServer: 2,
+            serverVersion: SERVER_VERSION,
           },
         },
       ],
@@ -2428,6 +2442,7 @@ describe('metrics', () => {
           },
           execution: {
             executionServer: 2,
+            serverVersion: SERVER_VERSION,
           },
         },
       ],
@@ -2567,6 +2582,7 @@ describe('shadow requests in prepareForLogging', () => {
           },
           execution: {
             executionServer: 2,
+            serverVersion: SERVER_VERSION,
           },
         },
       ],

@@ -46,6 +46,7 @@ export interface Response {
 
 export interface DeliveryExecution {
   executionServer?: ExecutionServerMap[keyof ExecutionServerMap] | ExecutionServerString;
+  serverVersion?: string;
 }
 
 export interface ExecutionServerMap {

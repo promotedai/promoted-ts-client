@@ -73,4 +73,5 @@ typings/
 .idea
 dist/
 .vscode/
+.history/
 promoted-ts-client.code-workspace
