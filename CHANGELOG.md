@@ -1,3 +1,10 @@
+# [7.3.0](https://github.com/promotedai/promoted-ts-client/compare/v7.2.1...v7.3.0) (2021-12-20)
+
+
+### Features
+
+* Fill in DeliveryExecution.serverVersion\rTESTING=unit ([#49](https://github.com/promotedai/promoted-ts-client/issues/49)) ([a9d849f](https://github.com/promotedai/promoted-ts-client/commit/a9d849ff3dc129a3cc265b9eee4f760da4609b9a))
+
 ## [7.2.1](https://github.com/promotedai/promoted-ts-client/compare/v7.2.0...v7.2.1) (2021-11-16)
 
 
