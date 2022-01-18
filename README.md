@@ -8,13 +8,19 @@ Client logging libraries:
 - [promoted-snowplow-logger](https://github.com/promotedai/promoted-snowplow-logger) - for logging events from a browser.
 - [ios-metrics-sdk](https://github.com/promotedai/ios-metrics-sdk) - for iOS logging.
 
+## Features
+
+- Demonstrates and implements the recommended practices and data types for calling Promoted's Metrics and Delivery APIs.
+- Shadow traffic and an only-log option for ramping up a Promoted integration.
+- Client-side position assignment and paging when not using results from Delivery API.
+
 ## Creating a PromotedClient
 
 We recommend creating a PromotedClient in a separate file so it can be reused.
 
-PromotedClient avoids having direct dependencies so customer's have more options for customization and can keep dependencies smaller.
+PromotedClient avoids having direct dependencies so customers have more options for customization and can keep dependencies smaller.
 
-promotedClient.js
+### `promotedClient.js`
 
 ```typescript
 import { logOnError, newPromotedClient, throwOnError } from 'promoted-ts-client';
@@ -33,7 +39,7 @@ const axiosApiClient = <Req, Res>(url: string, apiKey: string, timeout: number) 
       timeout,
     });
 
-// These values will vary depending on dev vs prod.
+// These values will vary depending on whether you are integrating with Promote's dev or prod environment.
 const deliveryApi = 'https://....com/...';
 const deliveryApiKey = 'AbCSomeRLongString1';
 const deliveryTimeoutMillis = 250;
@@ -58,11 +64,250 @@ export const promotedClient = newPromotedClient({
 });
 ```
 
-## Calling our Delivery API
+### Client Configuration Parameters
+
+| Name                           | Type                                                           | Description                                                                                                                                                                                                                                                                               |
+| ------------------------------ | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `deliveryClient`               | ApiClient                                                      | API client to make a POST request to the Delivery API endpoint including the `x-api-key` header, endpoint and header value obtained from Promoted                                                                                                                                         |
+| `metricsClient`                | ApiClient                                                      | API client to make a POST request to the Delivery API endpoint including the `x-api-key` header, endpoint and header value obtained from Promoted                                                                                                                                         |
+| `performChecks`                | Boolean                                                        | Whether or not to perform detailed input validation, defaults to true but may be disabled for performance                                                                                                                                                                                 |
+| `shadowTrafficDeliveryPercent` | Number between 0 and 1                                         | % of `prepareForLogging` traffic that gets directed to Delivery API as "shadow traffic". Defaults to 0 (no shadow traffic).                                                                                                                                                               |
+| `sendShadowTrafficForControl`  | Boolean                                                        | If true, the `deliver` method will send shadow traffic for users in the CONTROL arm of an experiment. Defaults to true.                                                                                                                                                                   |
+| `defaultRequestValues`         | BaseRequest                                                    | Default values to use on every request. Most useful for setting `onlyLog` or the compaction functions `toCompactDeliveryProperties` and `toCompactMetricsProperties`.                                                                                                                     |
+| `deliveryTimeoutMillis`        | Number                                                         | Timeout on the Delivery API call. Defaults to 250.                                                                                                                                                                                                                                        |
+| `metricsTimeoutMillis`         | Number                                                         | Timeout on the Metrics API call. Defaults to 3000.                                                                                                                                                                                                                                        |
+| `shouldApplyTreatment`         | `(cohortMembership: CohortMembership \| undefined) => boolean` | Called during delivery, accepts an experiment and returns a Boolean indicating whether the request should be considered part of the control group (false) or in the treatment arm of an experiment (true). If not set, the default behavior of checking the experiement `arm` is applied. |
+
+## Data Types
+
+### ApiClient
+
+Wrapper for API clients used to make Delivery and Metrics API calls to Promoted.
+
+```typescript
+export interface ApiClient<Req, Res> {
+  (request: Req): Promise<Res>;
+}
+```
+
+### UserInfo
+
+Basic information about the request user.
+Field Name | Type | Optional? | Description
+---------- | ---- | --------- | -----------
+`userId` | String | Yes | The platform user id, cleared from Promoted logs.
+`logUserId` | String | Yes | A different user id (presumably a UUID) disconnected from the platform user id, good for working with unauthenticated users or implementing right-to-be-forgotten.
+`isInternalUser` | Boolean | Yes | If this user is a test user or not, defaults to false.
+
+---
+
+### CohortMembership
+
+Useful fields for experimentation during the delivery phase.
+Field Name | Type | Optional? | Description
+---------- | ---- | --------- | -----------
+`userInfo` | UserInfo | Yes | The user info structure.
+`arm` | String | Yes | 'CONTROL' or one of the TREATMENT values ('TREATMENT', 'TREATMENT1', etc.).
+
+---
+
+### Properties
+
+Properties bag. Has the structure:
+
+```typescript
+  "struct": {
+    "product": {
+      "id": "product3",
+      "title": "Product 3",
+      "url": "www.mymarket.com/p/3"
+      // other key-value pairs...
+    }
+  }
+```
+
+---
+
+### Insertion
+
+Content being served at a certain position.
+Field Name | Type | Optional? | Description
+---------- | ---- | --------- | -----------
+`userInfo` | UserInfo | Yes | The user info structure.
+`insertionId` | String | Yes | Generated by the SDK (_do not set_)
+`requestId` | String | Yes | Generated by the SDK when needed (_do not set_)
+`contentId` | String | No | Identifier for the content to be ranked, must be set.
+`retrievalRank` | Number | Yes | Optional original ranking of this content item.
+`retrievalScore` | Number | Yes | Optional original quality score of this content item.
+`properties` | Properties | Yes | Any additional custom properties to associate. For v1 integrations, it is fine not to fill in all the properties.
+
+---
+
+### Size
+
+User's screen dimensions.
+Field Name | Type | Optional? | Description
+---------- | ---- | --------- | -----------
+`width` | Integer | No | Screen width
+`height` | Integer | No | Screen height
+
+---
+
+### Screen
+
+State of the screen including scaling.
+Field Name | Type | Optional? | Description
+---------- | ---- | --------- | -----------
+`size` | Size | Yes | Screen size
+`scale` | Float | Yes | Current screen scaling factor
+
+---
+
+### ClientHints
+
+Alternative to user-agent strings. See https://raw.githubusercontent.com/snowplow/iglu-central/master/schemas/org.ietf/http_client_hints/jsonschema/1-0-0
+Field Name | Type | Optional? | Description
+---------- | ---- | --------- | -----------
+`isMobile` | Boolean | Yes | Mobile flag
+`brand` | Array of ClientBrandHint | Yes |
+`architecture` | String | Yes |
+`model` | String | Yes |
+`platform` | String | Yes |
+`platformVersion` | String | Yes |
+`uaFullVersion` | String | Yes |
+
+---
+
+### ClientBrandHint
+
+See https://raw.githubusercontent.com/snowplow/iglu-central/master/schemas/org.ietf/http_client_hints/jsonschema/1-0-0
+Field Name | Type | Optional? | Description
+---------- | ---- | --------- | -----------
+`brand` | String | Yes | Mobile flag
+`version` | String | Yes |
+
+---
+
+### Location
+
+Information about the user's location.
+Field Name | Type | Optional? | Description
+---------- | ---- | --------- | -----------
+`latitude` | Float | No | Location latitude
+`longitude` | Float | No | Location longitude
+`accuracyInMeters` | Integer | Yes | Location accuracy if available
+
+---
+
+### Browser
+
+Information about the user's browser.
+Field Name | Type | Optional? | Description
+---------- | ---- | --------- | -----------
+`user_agent` | String | Yes | Browser user agent string
+`viewportSize` | Size | Yes | Size of the browser viewport
+`clientHints` | ClientHints | Yes | HTTP client hints structure
+
+---
+
+### Device
+
+Information about the user's device.
+Field Name | Type | Optional? | Description
+---------- | ---- | --------- | -----------
+`deviceType` | one of (`UNKNOWN_DEVICE_TYPE`, `DESKTOP`, `MOBILE`, `TABLET`) | Yes | Type of device
+`brand` | String | Yes | "Apple, "google", Samsung", etc.
+`manufacturer` | String | Yes | "Apple", "HTC", Motorola", "HUAWEI", etc.
+`identifier` | String | Yes | Android: android.os.Build.MODEL; iOS: iPhoneXX,YY, etc.
+`screen` | Screen | Yes | Screen dimensions
+`ipAddress` | String | Yes | Originating IP address
+`location` | Location | Yes | Location information
+`browser` | Browser | Yes | Browser information
+
+---
+
+### Paging
+
+Describes a page of insertions
+Field Name | Type | Optional? | Description
+---------- | ---- | --------- | -----------
+`size` | Number | Yes | Size of the page being requested
+`offset` | Number | Yes | Page offset
+
+---
+
+### Request
+
+A request for content insertions.
+Field Name | Type | Optional? | Description
+---------- | ---- | --------- | -----------
+`userInfo` | UserInfo | Yes | The user info structure.
+`requestId` | String | Yes | Generated by the SDK when needed (_do not set_)
+`useCase` | String | Yes | One of the use case enum values or strings, i.e. 'FEED', 'SEARCH', etc.
+`properties` | Properties | Yes | Any additional custom properties to associate.
+`paging` | Paging | Yes | Paging parameters
+`device` | Device | Yes | Device information (as available)
+
+---
+
+### MetricsRequest
+
+Input to `prepareForLogging`
+Field Name | Type | Optional? | Description
+---------- | ---- | --------- | -----------
+`request` | Request | No | The underlying request for content.
+`fullInsertion` | [] of Insertion | No | The proposed list of insertions.
+
+---
+
+### DeliveryRequest
+
+Input to `deliver`, returns ranked insertions for display.
+Field Name | Type | Optional? | Description
+---------- | ---- | --------- | -----------
+`experiment` | CohortMembership | Yes | A cohort to evaluation in experimentation.
+`request` | Request | No | The underlying request for content.
+`fullInsertion` | [] of Insertion | No | The proposed list of insertions with all metadata, will be compacted before forwarding to Promoted.
+`onlyLog` | Boolean | Yes | Defaults to false. Set to true to log the request as the CONTROL arm of an experiment.
+
+---
+
+### LogRequest
+
+Part of a `ClientResponse`, input to the Promoted Metrics API.
+Field Name | Type | Optional? | Description
+---------- | ---- | --------- | -----------
+`request` | Request | No | The underlying request for content to log.
+`insertion` | [] of Insertion | No | The insertions, which are either the original request insertions or the insertions resulting from a call to `deliver` if such call occurred.
+
+---
+
+### ClientResponse
+
+Output of `deliver` and `prepareeForLogging`, includes the insertions as well as a suitable `LogRequest` for forwarding to Metrics API.
+Field Name | Type | Optional? | Description
+---------- | ---- | --------- | -----------
+`insertion` | [] of Insertion | No | The insertions, which are from Delivery API (when `deliver` was called, i.e. we weren't either only-log or part of an experiment) or the input insertions (when the other conditions don't hold).
+`logRequest` | LogRequest | Yes | A message suitable for logging to Metrics API via a follow-up call to the `log()` method. If a call to `deliver` was made (i.e. the request was not part of the CONTROL arm of an experiment or marked to only log), `:logRequest` will not be set, as you can assume logging was performed on the server-side by Promoted.
+`clientRequestId` | String | Yes | Client-generated request id sent to Delivery API and may be useful for logging and debugging. You may fill this in yourself if you have a suitable id, otherwise the SDK will generate one.
+`executionServer` | one of 'API' or 'SDK' | Yes | Indicates if response insertions on a delivery request came from the API or the SDK.
+
+---
+
+### PromotedClient
+
+| Method              | Input           | Output         | Description                                                                                                                                                                                                                                                                                                                                 |
+| ------------------- | --------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prepareForLogging` | MetricsRequest  | ClientResponse | Builds a request suitable for logging locally and/or to Promoted, either via a subsequent call to `ClientResponse.log()` in the SDK client or by using this structure to make the call yourself. Optionally, based on client configuration may send a random subset of requests to Delivery API as shadow traffic for integration purposes. |
+| `deliver`           | DeliveryRequest | ClientResponse | Makes a request (subject to experimentation) to Delivery API for insertions, which are then returned along with a LogRequest.                                                                                                                                                                                                               |
+
+---
+
+## Calling the Delivery API
 
 Let's say the previous code looks like this:
 
-```
+```typescript
 static async getProducts(req: any, res: Response) {
   const products = ...; // Logic to get products from DB, apply filtering, etc.
   sendSuccessToClient(res, { products });
@@ -71,7 +316,7 @@ static async getProducts(req: any, res: Response) {
 
 We would modify to something like this:
 
-```
+```typescript
 static async getProducts(req: any, res: Response) {
   const products = ...;
   const response = await promotedClient.deliver({
@@ -79,9 +324,7 @@ static async getProducts(req: any, res: Response) {
       userInfo: {
         logUserId: req.logUserId,
       },
-      useCase: 'FEED',
-      sessionId: req.sessionId,
-      viewId: req.viewId,
+      useCase: 'FEED'
     },
     fullInsertions: products.map(product => ({
       // Must be filled in.
@@ -89,7 +332,7 @@ static async getProducts(req: any, res: Response) {
       // You can set custom properties here.
       properties: {
         struct: {
-          product,
+          "product": product
         },
       },
     })),
@@ -98,17 +341,37 @@ static async getProducts(req: any, res: Response) {
   sendSuccessToClient(res, {
     products: response.insertion.map(insertion => insertion.properties.struct.product),
   });
-  await response.log();
 }
 ```
 
-There are other optional options.
+## Compaction
 
-| Argument                     | Type                     | Default Value        | Description                                                    |
-| ---------------------------- | ------------------------ | -------------------- | -------------------------------------------------------------- |
-| `onlyLog`                    | `boolean`                | `false`              | Can be used to conditionally disable deliver per request       |
-| `toCompactDeliveryInsertion` | `Insertion => Insertion` | Returns the argument | Can be used to strip out fields being passed into Delivery API |
-| `toCompactMetricsInsertion`  | `Insertion => Insertion` | Returns the argument | Can be used to strip out fields being passed into Metrics API  |
+To save bandwidth and simplify your requests, you may not want to send a full set of properties for each insertion for calls to Delivery, Metrics, or both. To implement this when calling `deliver` or `prepareForLogging`, you may pass a function to compact insertion properties:
+
+- `toCompactDeliveryProperties`
+- `toCompactMetricsProperties`
+  with the signature `(Properties) => Properties`
+
+A typical implementation might look like:
+
+```typescript
+/**
+ * Returns a copy of Insertion.Properties with only a subset of fields.
+ */
+const copyAndCompactProperties = (properties: Properties) => {
+  // Strip out all properties other than lat and lng.
+  const { struct } = properties;
+  const loc = struct?.location;
+  return {
+    struct: {
+      location: {
+        lat: loc.lat,
+        lng: loc.lng,
+      },
+    },
+  };
+};
+```
 
 ## Logging only
 
