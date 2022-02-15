@@ -103,11 +103,12 @@ Field Name | Type | Optional? | Description
 
 ### CohortMembership
 
-Useful fields for experimentation during the delivery phase.
+Assigns a user to a group.  This SDK uses it to assign users to experiment groups.  Useful fields for experimentation during the delivery phase.
 Field Name | Type | Optional? | Description
 ---------- | ---- | --------- | -----------
 `userInfo` | UserInfo | Yes | The user info structure.
-`arm` | String | Yes | 'CONTROL' or one of the TREATMENT values ('TREATMENT', 'TREATMENT1', etc.).
+`cohortId` | String | No | The experiment name.
+`arm` | String | No | 'CONTROL' or one of the TREATMENT values ('TREATMENT', 'TREATMENT1', etc.).
 
 ---
 
@@ -396,6 +397,54 @@ There are two ways of doing this with `PromotedClient`:
 - When logging only via `prepareForLogging`, the `position` field is not set by the SDK on the log request insertions.
 
 The `prepareForLogging` call assumes the client has already handled pagination. It needs a `Request.paging.offset` to be passed in for the number of items deep that the page is.
+
+### Experiments
+
+Promoted supports the ability to run Promoted-side experiments.  Sometimes it is useful to run an experiment in your where `promoted-ts-client` is integrated (e.g. you want arm assignments to match your own internal experiment arm assignments).
+
+```typescript
+// Create a small config indicating the experiment is a 50-50 experiment where 10% of the users are activated.
+const experimentConfig = twoArmExperimentConfig5050("promoted-v1", 5, 5);
+
+static async getProducts(req: any, res: Response) {
+  const products = ...;
+
+  // This gets the anonymous user id from the request.
+  const logUserId = getLogUserId(req);
+  const experimentMembership = twoArmExperimentMembership(logUserId, experimentConfig);
+
+  const response = await promotedClient.deliver({
+    ...
+    // If experimentActivated can be false (e.g. only 5% of users get put into an experiment) and
+    // you want the non-activated behavior to not call Delivery API, then you need to specify onlyLog to false.
+    // This is common during ramp up.  `onlyLog` can be dropped if it's always false.
+    //
+    // Example:
+    // `onlyLog: experimentMembership == undefined`
+    experiment: experimentMembership,
+    ...
+  });
+  ...
+}
+```
+
+Here's an example using custom arm assignment logic (not using `twoArmExperimentConfig5050`).
+
+```typescript
+  // If you already use an experiment framework, it'll have the ability to return
+  // (1) if a user is activated into an experiment and
+  // (2) which arm to perform.
+  //
+  // [boolean, boolean]
+  const [experimentActivated, inTreatment] = getExperimentActivationAndArm(experimentName, logUserId);
+
+  // Only log if the user is activated into the experiment.
+  const experimentMembership = experimentActivated ? {
+    cohortId: experimentName,
+    arm: inTreatment ? 'TREATMENT' : 'CONTROL'
+  } : null;
+```
+
 
 # Improving this library
 
