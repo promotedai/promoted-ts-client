@@ -38,8 +38,10 @@ export interface ProcessedTwoArmExperimentConfig extends TwoArmExperimentConfig 
 }
 
 /**
- * Create a simple Experiment config using 100 userId buckets.
- * Percents are specified using [0,100].
+ * Create a simple 50-50 Experiment config using 100 userId buckets.
+ * @param cohortId name of the experiment
+ * @param controlPercent percent of total to activate into the control arm. Range=[0,50]
+ * @param treatmentPercent percent of total to activate into the treatment arm. Range=[0,50]
  */
 export const twoArmExperimentConfig5050 = (cohortId: string, controlPercent: number, treatmentPercent: number) => {
   return prepareTwoArmExperimentConfig({
