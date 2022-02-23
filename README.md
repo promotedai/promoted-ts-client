@@ -77,6 +77,7 @@ export const promotedClient = newPromotedClient({
 | `deliveryTimeoutMillis`        | Number                                                         | Timeout on the Delivery API call. Defaults to 250.                                                                                                                                                                                                                                        |
 | `metricsTimeoutMillis`         | Number                                                         | Timeout on the Metrics API call. Defaults to 3000.                                                                                                                                                                                                                                        |
 | `shouldApplyTreatment`         | `(cohortMembership: CohortMembership \| undefined) => boolean` | Called during delivery, accepts an experiment and returns a Boolean indicating whether the request should be considered part of the control group (false) or in the treatment arm of an experiment (true). If not set, the default behavior of checking the experiement `arm` is applied. |
+| `maxRequestInsertions`         | Number                                                         | Maximum number of request insertions that will be passed to (and returned from) Delivery API. Defaults to 1000.                                                                                                                                                                           |
 
 ## Data Types
 
@@ -103,7 +104,7 @@ Field Name | Type | Optional? | Description
 
 ### CohortMembership
 
-Assigns a user to a group.  This SDK uses it to assign users to experiment groups.  Useful fields for experimentation during the delivery phase.
+Assigns a user to a group. This SDK uses it to assign users to experiment groups. Useful fields for experimentation during the delivery phase.
 Field Name | Type | Optional? | Description
 ---------- | ---- | --------- | -----------
 `userInfo` | UserInfo | Yes | The user info structure.
@@ -400,7 +401,7 @@ The `prepareForLogging` call assumes the client has already handled pagination. 
 
 ### Experiments
 
-Promoted supports the ability to run Promoted-side experiments.  Sometimes it is useful to run an experiment in your where `promoted-ts-client` is integrated (e.g. you want arm assignments to match your own internal experiment arm assignments).
+Promoted supports the ability to run Promoted-side experiments. Sometimes it is useful to run an experiment in your where `promoted-ts-client` is integrated (e.g. you want arm assignments to match your own internal experiment arm assignments).
 
 ```typescript
 // Create a small config indicating the experiment is a 50-50 experiment where 10% of the users are activated.
@@ -431,20 +432,21 @@ static async getProducts(req: any, res: Response) {
 Here's an example using custom arm assignment logic (not using `twoArmExperimentConfig5050`).
 
 ```typescript
-  // If you already use an experiment framework, it'll have the ability to return
-  // (1) if a user is activated into an experiment and
-  // (2) which arm to perform.
-  //
-  // [boolean, boolean]
-  const [experimentActivated, inTreatment] = getExperimentActivationAndArm(experimentName, logUserId);
+// If you already use an experiment framework, it'll have the ability to return
+// (1) if a user is activated into an experiment and
+// (2) which arm to perform.
+//
+// [boolean, boolean]
+const [experimentActivated, inTreatment] = getExperimentActivationAndArm(experimentName, logUserId);
 
-  // Only log if the user is activated into the experiment.
-  const experimentMembership = experimentActivated ? {
-    cohortId: experimentName,
-    arm: inTreatment ? 'TREATMENT' : 'CONTROL'
-  } : null;
+// Only log if the user is activated into the experiment.
+const experimentMembership = experimentActivated
+  ? {
+      cohortId: experimentName,
+      arm: inTreatment ? 'TREATMENT' : 'CONTROL',
+    }
+  : null;
 ```
-
 
 # Improving this library
 

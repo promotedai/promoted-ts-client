@@ -432,6 +432,55 @@ describe('deliver', () => {
     expect(metricsClient.mock.calls.length).toBe(0);
   });
 
+  it('simple has more than max request insertions', async () => {
+    const deliveryClient = jest.fn((request) => {
+      expect(request).toEqual({
+        ...newBaseRequest(),
+        timing: {
+          clientLogTimestamp: 12345678,
+        },
+        clientInfo: DEFAULT_SDK_CLIENT_INFO,
+        clientRequestId: 'uuid0',
+        insertion: toFullInsertions([newProduct('1'), newProduct('2')]),
+      });
+      return Promise.resolve({
+        insertion: [
+          toFullInsertion(newProduct('1'), { insertionId: 'uuid1' }),
+          toFullInsertion(newProduct('2'), { insertionId: 'uuid2' }),
+        ],
+      });
+    });
+    const metricsClient = jest.fn(failFunction('All data should be logged in Delivery API'));
+
+    const promotedClient = newFakePromotedClient({
+      deliveryClient,
+      metricsClient,
+      maxRequestInsertions: 2,
+    });
+
+    const products = [newProduct('1'), newProduct('2'), newProduct('3')];
+    const response = await promotedClient.deliver({
+      request: newBaseRequest(),
+      fullInsertion: toFullInsertions(products),
+      insertionPageType: InsertionPageType.Unpaged,
+    });
+    expect(deliveryClient.mock.calls.length).toBe(1);
+    expect(metricsClient.mock.calls.length).toBe(0);
+
+    expect(response.insertion).toEqual([
+      toFullInsertion(newProduct('1'), { insertionId: 'uuid1' }),
+      toFullInsertion(newProduct('2'), { insertionId: 'uuid2' }),
+    ]);
+
+    expect(response.executionServer).toEqual(ExecutionServer.API);
+    expect(response.clientRequestId).toEqual('uuid0');
+
+    // Here is where clients will return their response.
+    await response.log();
+    expect(deliveryClient.mock.calls.length).toBe(1);
+    expect(metricsClient.mock.calls.length).toBe(0);
+  });
+
   it('no request insertions', async () => {
     const deliveryClient = jest.fn((request) => {
       expect(request).toEqual({
