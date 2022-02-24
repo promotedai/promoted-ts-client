@@ -102,4 +102,10 @@ export interface PromotedClientArguments {
    * For testing. Used by unit tests to swap out timeout functionality.
    */
   metricsTimeoutWrapper?: <T>(promise: Promise<T>, timeoutMillis: number) => Promise<T>;
+
+  /**
+   * The maximum number of request insertions that will be passed to (and returned from)
+   * Delivery API.
+   */
+  maxRequestInsertions?: number;
 }

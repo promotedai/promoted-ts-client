@@ -28,6 +28,8 @@ export const SERVER_VERSION = 'ts.7.2.2';
 const DEFAULT_DELIVERY_TIMEOUT_MILLIS = 250;
 const DEFAULT_METRICS_TIMEOUT_MILLIS = 3000;
 
+const DEFAULT_MAX_REQUEST_INSERTIONS = 1000;
+
 /**
  * Traffic types
  * TODO: Ideally these should come from common.d.ts but that needs a more
@@ -146,6 +148,7 @@ export class PromotedClientImpl implements PromotedClient {
   private shouldApplyTreatment: (cohortMembership: CohortMembership | undefined) => boolean;
   private sampler: Sampler;
   private pager: Pager;
+  private maxRequestInsertions: number;
 
   // For testing.
   private nowMillis: () => number;
@@ -155,13 +158,14 @@ export class PromotedClientImpl implements PromotedClient {
   // TODO - how to handle timeout?
 
   /**
-   * @params {DeliveryClientArguments} args The arguments for the logger.
+   * @params {DeliveryClientArguments} args The arguments for Promoted client creation.
    */
   public constructor(args: PromotedClientArguments) {
     this.pager = new Pager();
     this.deliveryClient = args.deliveryClient;
     this.metricsClient = args.metricsClient;
     this.performChecks = args.performChecks ?? true;
+    this.maxRequestInsertions = args.maxRequestInsertions ?? DEFAULT_MAX_REQUEST_INSERTIONS;
 
     this.shadowTrafficDeliveryPercent = args.shadowTrafficDeliveryPercent ?? 0;
     if (this.shadowTrafficDeliveryPercent < 0 || this.shadowTrafficDeliveryPercent > 1) {
@@ -267,6 +271,12 @@ export class PromotedClientImpl implements PromotedClient {
     let responseInsertions: Insertion[] | undefined = undefined;
     // If defined, log the CohortMembership to Metrics API.
     let cohortMembershipToLog: CohortMembership | undefined = undefined;
+
+    // Trim any request insertions over the maximum allowed.
+    if (deliveryRequest.fullInsertion.length > this.maxRequestInsertions) {
+      console.warn('Exceeded max request insertions, trimming');
+      deliveryRequest.fullInsertion = deliveryRequest.fullInsertion.slice(0, this.maxRequestInsertions);
+    }
 
     let insertionsFromPromoted = false;
     if (!onlyLog) {
