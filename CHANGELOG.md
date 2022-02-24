@@ -1,3 +1,10 @@
+# [7.4.0](https://github.com/promotedai/promoted-ts-client/compare/v7.3.0...v7.4.0) (2022-02-24)
+
+
+### Features
+
+* Max request insertions\rTESTING=unit ([#53](https://github.com/promotedai/promoted-ts-client/issues/53)) ([f147946](https://github.com/promotedai/promoted-ts-client/commit/f147946037afcdfde5356212a92a397a3fda8121))
+
 # [7.3.0](https://github.com/promotedai/promoted-ts-client/compare/v7.2.1...v7.3.0) (2021-12-20)
 
 
