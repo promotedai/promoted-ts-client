@@ -40,10 +40,11 @@ export class Pager {
     const insertionPage: Insertion[] = new Array(finalInsertionSize);
     for (let i = 0; i < finalInsertionSize; i++) {
       const requestInsertion = requestInsertions[index];
+      // Convert the Request Insertion to a Response Insertion.
+      // InsertionId is filled in by the caller.
       insertionPage[i] = {
         contentId: requestInsertion.contentId,
         position: requestInsertion.position ?? offset,
-        // insertionId is set somewhere else.
       };
       index++;
       offset++;
