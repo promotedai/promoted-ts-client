@@ -1075,7 +1075,7 @@ describe('deliver', () => {
   describe('check input fields should be undefined', () => {
     it('Request.requestId', async () => {
       const promotedClient = newFakePromotedClient({});
-      await expect(
+      return expect(
         promotedClient.deliver({
           request: {
             ...expectedRequest(),
@@ -1088,7 +1088,7 @@ describe('deliver', () => {
 
     it('Insertion.requestId', async () => {
       const promotedClient = newFakePromotedClient({});
-      await expect(
+      return expect(
         promotedClient.deliver({
           request: {
             ...request(),
@@ -1108,7 +1108,7 @@ describe('deliver', () => {
 
     it('Insertion.insertionId', async () => {
       const promotedClient = newFakePromotedClient({});
-      await expect(
+      return expect(
         promotedClient.deliver({
           request: {
             ...request(),
@@ -1128,7 +1128,7 @@ describe('deliver', () => {
 
     it('Insertion.contentId', async () => {
       const promotedClient = newFakePromotedClient({});
-      await expect(
+      return expect(
         promotedClient.deliver({
           request: {
             ...request(),
@@ -1137,6 +1137,45 @@ describe('deliver', () => {
           insertionPageType: InsertionPageType.Unpaged,
         })
       ).rejects.toEqual(new Error('Insertion.contentId should be set'));
+    });
+
+    it('Experiment.platformId', async () => {
+      const promotedClient = newFakePromotedClient({});
+      return expect(
+        promotedClient.deliver({
+          request: request(),
+          experiment: {
+            platformId: 1,
+          },
+          insertionPageType: InsertionPageType.Unpaged,
+        })
+      ).rejects.toEqual(new Error('Experiment.platformId should not be set'));
+    });
+
+    it('Experiment.userInfo', async () => {
+      const promotedClient = newFakePromotedClient({});
+      return expect(
+        promotedClient.deliver({
+          request: request(),
+          experiment: {
+            userInfo: {},
+          },
+          insertionPageType: InsertionPageType.Unpaged,
+        })
+      ).rejects.toEqual(new Error('Experiment.userInfo should not be set'));
+    });
+
+    it('Experiment.timing', async () => {
+      const promotedClient = newFakePromotedClient({});
+      return expect(
+        promotedClient.deliver({
+          request: request(),
+          experiment: {
+            timing: {},
+          },
+          insertionPageType: InsertionPageType.Unpaged,
+        })
+      ).rejects.toEqual(new Error('Experiment.timing should not be set'));
     });
   });
 });
@@ -1618,7 +1657,7 @@ describe('shadow requests in prepareForLogging', () => {
   }
 
   it('throws an error with the wrong paging type', async () => {
-    await expect(runPagingTypeErrorTest(InsertionPageType.PrePaged)).rejects.toThrow(
+    return expect(runPagingTypeErrorTest(InsertionPageType.PrePaged)).rejects.toThrow(
       'Insertions must be unpaged when shadow traffic is on'
     );
   });
