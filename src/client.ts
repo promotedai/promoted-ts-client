@@ -1,17 +1,17 @@
 import { ApiClient } from './api-client';
-import { PropertiesMapFn, RequiredBaseRequest } from './base-request';
+import { RequiredBaseRequest } from './base-request';
 import { PromotedClientArguments } from './client-args';
 import { ClientResponse } from './client-response';
 import { DeliveryRequest } from './delivery-request';
 import { InsertionPageType } from './insertion-page-type';
-import { MetricsRequest } from './metrics-request';
 import { Sampler, SamplerImpl } from './sampler';
 import { timeoutWrapper } from './timeout';
 import type { ErrorHandler } from './error-handler';
-import type { Insertion, Request, Response } from './types/delivery';
+import type { DeliveryLog, Insertion, Request, Response } from './types/delivery';
 import type { CohortMembership, LogRequest, LogResponse } from './types/event';
 import { Pager } from './pager';
 import { ExecutionServer } from './execution-server';
+import { ClientInfo, Timing, UserInfo } from './types/common';
 
 // Version number that semver will generate for the package.
 // Must be manually maintained.
@@ -49,15 +49,10 @@ export const ClientType_PLATFORM_CLIENT = 2;
  */
 export interface PromotedClient {
   /**
-   * Used to call Delivery API.  Takes the inputted list of Content and
+   * Used to call Delivery API or Metrics API.  Takes the inputted list of Content and
    * ranks it.  Supports running conditionally.
    */
   deliver(deliveryRequest: DeliveryRequest): Promise<ClientResponse>;
-
-  /**
-   * Used to only log Requests and Insertions.
-   */
-  prepareForLogging(metricsRequest: MetricsRequest): ClientResponse;
 
   /**
    * Indicates whether this is client is performing actions or not.
@@ -100,26 +95,16 @@ export class NoopPromotedClient implements PromotedClient {
     this.pager = new Pager();
   }
 
-  public prepareForLogging(metricsRequest: MetricsRequest): ClientResponse {
-    const { request, fullInsertion } = metricsRequest;
-    const responseInsertions = this.pager.applyPaging(fullInsertion, metricsRequest.insertionPageType, request?.paging);
-    return {
-      log: () => Promise.resolve(undefined),
-      insertion: responseInsertions,
-      executionServer: ExecutionServer.SDK,
-    };
-  }
-
   public async deliver(deliveryRequest: DeliveryRequest): Promise<ClientResponse> {
-    const { request, fullInsertion } = deliveryRequest;
+    const { request } = deliveryRequest;
     const responseInsertions = this.pager.applyPaging(
-      fullInsertion,
+      request.insertion ?? [],
       deliveryRequest.insertionPageType,
       request?.paging
     );
     return Promise.resolve({
       log: () => Promise.resolve(undefined),
-      insertion: responseInsertions,
+      responseInsertions,
       executionServer: ExecutionServer.SDK,
     });
   }
@@ -138,8 +123,7 @@ export class PromotedClientImpl implements PromotedClient {
   private deliveryClient: ApiClient<Request, Response>;
   private metricsClient: ApiClient<LogRequest, LogResponse>;
   private performChecks: boolean;
-  private shadowTrafficDeliveryPercent: number;
-  private sendShadowTrafficForControl: boolean;
+  private shadowTrafficDeliveryRate: number;
   private defaultRequestValues: RequiredBaseRequest;
   private handleError: ErrorHandler;
   private uuid: () => string;
@@ -167,19 +151,15 @@ export class PromotedClientImpl implements PromotedClient {
     this.performChecks = args.performChecks ?? true;
     this.maxRequestInsertions = args.maxRequestInsertions ?? DEFAULT_MAX_REQUEST_INSERTIONS;
 
-    this.shadowTrafficDeliveryPercent = args.shadowTrafficDeliveryPercent ?? 0;
-    if (this.shadowTrafficDeliveryPercent < 0 || this.shadowTrafficDeliveryPercent > 1) {
-      throw new RangeError('shadowTrafficDeliveryPercent must be between 0 and 1');
+    this.shadowTrafficDeliveryRate = args.shadowTrafficDeliveryRate ?? 0;
+    if (this.shadowTrafficDeliveryRate < 0 || this.shadowTrafficDeliveryRate > 1) {
+      throw new RangeError('shadowTrafficDeliveryRate must be between 0 and 1');
     }
 
     this.sampler = args.sampler ?? new SamplerImpl();
-    const { defaultRequestValues: { onlyLog, toCompactDeliveryProperties, toCompactMetricsProperties } = {} } = args;
+    const { defaultRequestValues: { onlyLog } = {} } = args;
     this.defaultRequestValues = {
       onlyLog: onlyLog === undefined ? false : onlyLog,
-      toCompactDeliveryProperties:
-        toCompactDeliveryProperties === undefined ? (properties) => properties : toCompactDeliveryProperties,
-      toCompactMetricsProperties:
-        toCompactMetricsProperties === undefined ? (properties) => properties : toCompactMetricsProperties,
     };
     this.handleError = args.handleError;
     this.uuid = args.uuid;
@@ -189,7 +169,6 @@ export class PromotedClientImpl implements PromotedClient {
     this.shouldApplyTreatment = args.shouldApplyTreatment ?? defaultShouldApplyTreatment;
     this.deliveryTimeoutWrapper = args.deliveryTimeoutWrapper ?? timeoutWrapper;
     this.metricsTimeoutWrapper = args.metricsTimeoutWrapper ?? timeoutWrapper;
-    this.sendShadowTrafficForControl = args.sendShadowTrafficForControl ?? true;
   }
 
   // Returns whether or not the client is taking actions at this time.
@@ -198,54 +177,12 @@ export class PromotedClientImpl implements PromotedClient {
     return true;
   }
 
-  // Instead of reusing `deliver`, we copy/paste most of the functionality here.
-  // On a dev setup, Node.js seems to add 0.25 milliseconds of latency for
-  // having an extra layer of async/await.
-  public prepareForLogging(metricsRequest: MetricsRequest): ClientResponse {
-    if (this.performChecks) {
-      const error = checkThatLogIdsNotSet(metricsRequest);
-      if (error) {
-        this.handleError(error);
-      }
-
-      if (this.shadowTrafficDeliveryPercent > 0 && metricsRequest.insertionPageType != InsertionPageType.Unpaged) {
-        this.handleError(new Error('Insertions must be unpaged when shadow traffic is on'));
-      }
-    }
-    this.preDeliveryFillInFields(metricsRequest);
-
-    // Send shadow traffic if necessary.
-    if (this.shouldSendAsShadowTraffic()) {
-      // Fire and forget.
-      this.deliverShadowTraffic(
-        metricsRequest.toCompactDeliveryProperties,
-        metricsRequest.request,
-        metricsRequest.fullInsertion
-      );
-    }
-
-    // If defined, log the Request to Metrics API.
-    const { fullInsertion, request } = metricsRequest;
-    const responseInsertions = this.pager.applyPaging(fullInsertion, metricsRequest.insertionPageType, request?.paging);
-
-    if (request !== undefined) {
-      this.addMissingRequestId(request);
-      this.addMissingIdsOnInsertions(request, responseInsertions);
-    }
-
-    const logRequest = this.createLogRequest(metricsRequest, responseInsertions, request);
-    return {
-      log: this.createLogFn(logRequest),
-      insertion: responseInsertions,
-      clientRequestId: request?.clientRequestId,
-      logRequest,
-    };
-  }
-
   /**
    * Used to optimize a list of content.  This function modifies deliveryRequest.
    */
   public async deliver(deliveryRequest: DeliveryRequest): Promise<ClientResponse> {
+    let { insertionPageType, onlyLog, request } = deliveryRequest;
+    onlyLog = onlyLog ?? this.defaultRequestValues.onlyLog;
     if (this.performChecks) {
       const error = checkThatLogIdsNotSet(deliveryRequest);
       if (error) {
@@ -254,15 +191,19 @@ export class PromotedClientImpl implements PromotedClient {
 
       // Delivery requires unpaged insertions.
       if (deliveryRequest.insertionPageType === InsertionPageType.PrePaged) {
-        this.handleError(new Error('Delivery expects unpaged insertions'));
+        if (!onlyLog) {
+          this.handleError(new Error('Delivery expects unpaged insertions'));
+        } else if (this.shadowTrafficDeliveryRate > 0) {
+          this.handleError(new Error('Insertions must be unpaged when shadow traffic is on'));
+        }
       }
     }
-
     // Delivery requests should always use unpaged insertions.
-    deliveryRequest.insertionPageType = InsertionPageType.Unpaged;
+    if (!onlyLog) {
+      insertionPageType = InsertionPageType.Unpaged;
+    }
 
-    this.preDeliveryFillInFields(deliveryRequest);
-    const onlyLog = deliveryRequest.onlyLog ?? this.defaultRequestValues.onlyLog;
+    request = this.fillInRequestFields(request);
 
     // TODO - if response only passes back IDs that are passed in, then we can
     // return just IDs back.
@@ -272,78 +213,74 @@ export class PromotedClientImpl implements PromotedClient {
     // If defined, log the CohortMembership to Metrics API.
     let cohortMembershipToLog: CohortMembership | undefined = undefined;
 
+    // Set to empty to simplify some of the checks.
+    let requestInsertions = request.insertion ?? [];
+
     // Trim any request insertions over the maximum allowed.
-    if (deliveryRequest.fullInsertion.length > this.maxRequestInsertions) {
+    if (requestInsertions.length > this.maxRequestInsertions) {
       console.warn('Exceeded max request insertions, trimming');
-      deliveryRequest.fullInsertion = deliveryRequest.fullInsertion.slice(0, this.maxRequestInsertions);
+      requestInsertions = requestInsertions.slice(0, this.maxRequestInsertions);
+      request.insertion = requestInsertions;
     }
 
-    let insertionsFromPromoted = false;
+    let attemptedDeliveryApi = false;
+    let insertionsFromDeliveryApi = false;
     if (!onlyLog) {
       try {
-        cohortMembershipToLog = newCohortMembershipToLog(deliveryRequest);
+        cohortMembershipToLog = deliveryRequest.experiment;
         if (this.shouldApplyTreatment(cohortMembershipToLog)) {
-          const toCompactDeliveryRequestInsertion = toCompactInsertionFn(
-            deliveryRequest.toCompactDeliveryProperties ?? this.defaultRequestValues.toCompactDeliveryProperties
-          );
           const singleRequest: Request = {
-            ...deliveryRequest.request,
+            ...request,
             clientInfo: {
-              ...deliveryRequest.request.clientInfo,
+              ...request.clientInfo,
               trafficType: TrafficType_PRODUCTION,
               clientType: ClientType_PLATFORM_SERVER,
             },
-            insertion: deliveryRequest.fullInsertion.map(toCompactDeliveryRequestInsertion),
           };
 
+          attemptedDeliveryApi = true;
           const response = await this.deliveryTimeoutWrapper(
             this.deliveryClient(singleRequest),
             this.deliveryTimeoutMillis
           );
-          insertionsFromPromoted = true;
-          responseInsertions = fillInDetails(
-            response.insertion === undefined ? [] : response.insertion,
-            deliveryRequest.fullInsertion
-          );
-        } else if (this.sendShadowTrafficForControl) {
-          this.deliverShadowTraffic(
-            deliveryRequest.toCompactDeliveryProperties,
-            deliveryRequest.request,
-            deliveryRequest.fullInsertion
-          );
+          insertionsFromDeliveryApi = true;
+          responseInsertions = response.insertion ?? [];
         }
       } catch (error) {
         this.handleError(error);
       }
     }
+    if (!attemptedDeliveryApi && this.shouldSendAsShadowTraffic()) {
+      this.deliverShadowTraffic(request);
+    }
     // If defined, log the Request to Metrics API.
-    let requestToLog: Request | undefined = undefined;
-    if (!insertionsFromPromoted) {
+    let deliveryLogToLog: DeliveryLog | undefined = undefined;
+    if (!insertionsFromDeliveryApi) {
+      const requestToLog = {
+        ...request,
+        requestId: this.uuid(),
+        insertion: requestInsertions,
+      };
       // Insertions from Promoted are paged on the API side.
       // If we did not call the API for any reason, apply the expected
       // paging to the full insertions here.
       // If you update this, update the no-op version too.
-      requestToLog = deliveryRequest.request;
-      const { fullInsertion } = deliveryRequest;
-      responseInsertions = this.pager.applyPaging(
-        fullInsertion,
-        deliveryRequest.insertionPageType,
-        requestToLog?.paging
-      );
+      responseInsertions = this.pager.applyPaging(requestInsertions, insertionPageType, request.paging);
+      addInsertionIds(responseInsertions, this.uuid);
+      const responseToLog = {
+        insertion: responseInsertions,
+      };
+      deliveryLogToLog = this.createSdkDeliveryLog(requestToLog, responseToLog);
     }
 
     responseInsertions = responseInsertions || [];
-    if (requestToLog !== undefined) {
-      this.addMissingRequestId(requestToLog);
-      this.addMissingIdsOnInsertions(requestToLog, responseInsertions);
-    }
 
-    const logRequest = this.createLogRequest(deliveryRequest, responseInsertions, requestToLog, cohortMembershipToLog);
+    const logRequest = this.createLogRequest(request, deliveryLogToLog, cohortMembershipToLog);
     return {
       log: this.createLogFn(logRequest),
-      insertion: responseInsertions,
-      executionServer: insertionsFromPromoted ? ExecutionServer.API : ExecutionServer.SDK,
-      clientRequestId: deliveryRequest.request.clientRequestId,
+      responseInsertions,
+      executionServer: insertionsFromDeliveryApi ? ExecutionServer.API : ExecutionServer.SDK,
+      clientRequestId: request.clientRequestId,
       logRequest,
     };
   }
@@ -354,24 +291,15 @@ export class PromotedClientImpl implements PromotedClient {
    * @returns true if we should forward, false otherwise.
    */
   private shouldSendAsShadowTraffic = () =>
-    this.shadowTrafficDeliveryPercent && this.sampler.sampleRandom(this.shadowTrafficDeliveryPercent);
+    this.shadowTrafficDeliveryRate && this.sampler.sampleRandom(this.shadowTrafficDeliveryRate);
 
   /**
    * Creates a shadow traffic request to delivery.
    * @param request the underlying request.
-   * @param fullInsertion the set of full insertions.
    */
-  private deliverShadowTraffic(
-    toCompactDeliveryProperties: PropertiesMapFn | undefined,
-    request: Request,
-    fullInsertion: Insertion[]
-  ) {
-    const toCompactDeliveryRequestInsertion = toCompactInsertionFn(
-      toCompactDeliveryProperties ?? this.defaultRequestValues.toCompactMetricsProperties
-    );
+  private deliverShadowTraffic(request: Request) {
     const singleRequest: Request = {
       ...request,
-      insertion: fullInsertion.map(toCompactDeliveryRequestInsertion),
       clientInfo: {
         ...request.clientInfo,
         trafficType: TrafficType_SHADOW,
@@ -388,58 +316,51 @@ export class PromotedClientImpl implements PromotedClient {
 
   /**
    * On-demand creation of a LogRequest suitable for sending to the metrics client.
+   * @param request used to get common fields from.
    * @returns a function to create a LogRequest on demand.
    */
   private createLogRequest(
-    sdkRequest: DeliveryRequest | MetricsRequest,
-    responseInsertions: Insertion[],
-    requestToLog?: Request,
+    request: Request,
+    deliveryLogToLog?: DeliveryLog,
     cohortMembershipToLog?: CohortMembership
   ): LogRequest | undefined {
-    if (requestToLog === undefined && cohortMembershipToLog === undefined) {
+    if (deliveryLogToLog === undefined && cohortMembershipToLog === undefined) {
       return undefined;
     }
 
     const logRequest: LogRequest = {};
-    const toCompactMetricsResponseInsertion = toCompactInsertionFn(
-      sdkRequest.toCompactMetricsProperties ?? this.defaultRequestValues.toCompactMetricsProperties
-    );
-    if (requestToLog) {
-      logRequest.deliveryLog = [
-        {
-          request: this.createLogRequestRequestToLog(requestToLog),
-          response: {
-            insertion: responseInsertions.map(toCompactMetricsResponseInsertion),
-          },
-          execution: {
-            executionServer: ExecutionServer.SDK,
-            serverVersion: SERVER_VERSION,
-          },
-        },
-      ];
+    // Try to use the Request fields.
+    mergeCommonFields(logRequest, request);
+    if (deliveryLogToLog) {
+      logRequest.deliveryLog = [deliveryLogToLog];
+      if (deliveryLogToLog.request) {
+        // Remove DeliveryLog.request common fields to optimize the size of the request.
+        deleteCommonFields(deliveryLogToLog.request);
+      }
     }
     if (cohortMembershipToLog) {
       logRequest.cohortMembership = [cohortMembershipToLog];
+      // Ignore any common fields set on CohortMembership.
     }
 
-    const {
-      request: { platformId, userInfo, timing, clientInfo },
-    } = sdkRequest;
-    if (platformId) {
-      logRequest.platformId = platformId;
-    }
-    if (userInfo) {
-      logRequest.userInfo = userInfo;
-    }
-    if (timing) {
-      logRequest.timing = timing;
-    }
-
-    logRequest.clientInfo = clientInfo ?? {};
+    logRequest.clientInfo = { ...logRequest.clientInfo };
     logRequest.clientInfo.clientType = ClientType_PLATFORM_SERVER;
     logRequest.clientInfo.trafficType = TrafficType_PRODUCTION;
 
+    // TODO - strip redundant fields off of child records.
+
     return logRequest;
+  }
+
+  private createSdkDeliveryLog(request: Request, response: Response): DeliveryLog {
+    return {
+      request,
+      response,
+      execution: {
+        executionServer: ExecutionServer.SDK,
+        serverVersion: SERVER_VERSION,
+      },
+    };
   }
 
   /**
@@ -461,27 +382,9 @@ export class PromotedClientImpl implements PromotedClient {
     };
   }
 
-  /**
-   * Creates a slimmed-down copy of the request for inclusion in a LogRequest.
-   * @param requestToLog the request to attach to the log request
-   * @returns a copy of the request suitable to be attached to a LogRequest.
-   */
-  private createLogRequestRequestToLog = (requestToLog: Request): Request => {
-    const copyRequest = {
-      ...requestToLog,
-    };
-
-    // Clear the field in case it is set.
-    delete copyRequest['insertion'];
-
-    // Clear the userInfo since we already copied it to the LogRequest.
-    delete copyRequest['userInfo'];
-
-    return copyRequest;
-  };
-
-  private preDeliveryFillInFields = (deliveryRequest: DeliveryRequest | MetricsRequest) => {
-    const { request } = deliveryRequest;
+  private fillInRequestFields = (request: Request): Request => {
+    // Create a copy so we do not modify the input.
+    request = { ...request };
     let { timing } = request;
     if (!timing) {
       timing = {};
@@ -490,63 +393,21 @@ export class PromotedClientImpl implements PromotedClient {
     if (!timing.clientLogTimestamp) {
       timing.clientLogTimestamp = this.nowMillis();
     }
-
     if (!request.clientRequestId) {
       request.clientRequestId = this.uuid();
     }
-  };
-
-  /**
-   * Called after potential Delivery.  Fill in fields
-   */
-  private addMissingRequestId = (logRequest: Request) => {
-    if (!logRequest.requestId) {
-      logRequest.requestId = this.uuid();
-    }
-  };
-
-  private addMissingIdsOnInsertions = (request: Request, responseInsertions: Insertion[]) => {
-    // platformId, userInfo and timing are copied onto LogRequest.
-    const { sessionId, viewId, requestId } = request;
-    responseInsertions.forEach((responseInsertion) => {
-      if (!responseInsertion.insertionId) {
-        responseInsertion.insertionId = this.uuid();
-      }
-      if (sessionId) {
-        responseInsertion.sessionId = sessionId;
-      }
-      if (viewId) {
-        responseInsertion.viewId = viewId;
-      }
-      if (requestId) {
-        responseInsertion.requestId = requestId;
-      }
-    });
+    return request;
   };
 }
 
-const toCompactInsertionFn = (compactFn: PropertiesMapFn) => (fullInsertion: Insertion) =>
-  compactPropertiesOnFullInsertion(fullInsertion, compactFn);
+const addInsertionIds = (responseInsertions: Insertion[], uuid: () => string) => {
+  for (const responseInsertion of responseInsertions) {
+    addInsertionId(responseInsertion, uuid);
+  }
+};
 
-const compactPropertiesOnFullInsertion = (fullInsertion: Insertion, compactFn: PropertiesMapFn) => {
-  const { properties } = fullInsertion;
-  if (!properties) {
-    return fullInsertion;
-  }
-  const newProperties = compactFn(properties);
-  // If the same memory reference, do not copy.
-  if (newProperties === properties) {
-    return fullInsertion;
-  }
-  const copy = {
-    ...fullInsertion,
-  };
-  if (newProperties) {
-    copy.properties = newProperties;
-  } else {
-    delete copy['properties'];
-  }
-  return copy;
+const addInsertionId = (responseInsertion: Insertion, uuid: () => string) => {
+  responseInsertion.insertionId = uuid();
 };
 
 /**
@@ -557,68 +418,67 @@ const defaultShouldApplyTreatment = (cohortMembership: CohortMembership) => {
   return arm === undefined || arm !== 'CONTROL';
 };
 
-const newCohortMembershipToLog = (deliveryRequest: DeliveryRequest): CohortMembership | undefined => {
-  if (deliveryRequest.experiment === undefined) {
-    return undefined;
-  }
-  const { request } = deliveryRequest;
-  const cohortMembership = { ...deliveryRequest.experiment };
-  if (!cohortMembership.platformId && request.platformId) {
-    cohortMembership.platformId = request.platformId;
-  }
-  if (!cohortMembership.userInfo && request.userInfo) {
-    cohortMembership.userInfo = request.userInfo;
-  }
-  if (!cohortMembership.timing && request.timing) {
-    cohortMembership.timing = request.timing;
-  }
-  return cohortMembership;
-};
-
-const checkThatLogIdsNotSet = (deliveryRequest: DeliveryRequest | MetricsRequest): Error | undefined => {
-  const { request, fullInsertion } = deliveryRequest;
+const checkThatLogIdsNotSet = (deliveryRequest: DeliveryRequest): Error | undefined => {
+  const { experiment, request } = deliveryRequest;
   if (request.requestId) {
     return new Error('Request.requestId should not be set');
   }
-  if (request.insertion) {
-    return new Error('Do not set Request.insertion.  Set fullInsertion.');
-  }
 
-  for (const insertion of fullInsertion) {
-    if (insertion.requestId) {
+  const { insertion } = request;
+  for (const ins of insertion ?? []) {
+    if (ins.requestId) {
       return new Error('Insertion.requestId should not be set');
     }
-    if (insertion.insertionId) {
+    if (ins.insertionId) {
       return new Error('Insertion.insertionId should not be set');
     }
-    if (!insertion.contentId) {
+    if (!ins.contentId) {
       return new Error('Insertion.contentId should be set');
+    }
+  }
+  if (experiment) {
+    // TODO - change the types to limit this.
+    if (experiment.platformId) {
+      return new Error('Experiment.platformId should not be set');
+    }
+    if (experiment.userInfo) {
+      return new Error('Experiment.userInfo should not be set');
+    }
+    if (experiment.timing) {
+      return new Error('Experiment.timing should not be set');
     }
   }
   return undefined;
 };
 
-/**
- * Fills in responseInsertion details using fullInsertion.  It un-compacts
- * the response.
- */
-const fillInDetails = (responseInsertions: Insertion[], fullInsertion: Insertion[]): Insertion[] => {
-  const contentIdToInputInsertion = fullInsertion.reduce((map: { [contentId: string]: Insertion }, insertion) => {
-    if (insertion.contentId !== undefined) {
-      map[insertion.contentId] = insertion;
-    }
-    return map;
-  }, {});
+interface Record {
+  platformId?: number;
+  userInfo?: UserInfo;
+  timing?: Timing;
+  clientInfo?: ClientInfo;
+}
 
-  return responseInsertions?.map((responseInsertion) => {
-    if (responseInsertion.contentId === undefined) {
-      return responseInsertion;
-    }
-    const copy = { ...responseInsertion };
-    const inputInsertion = contentIdToInputInsertion[responseInsertion.contentId];
-    if (inputInsertion) {
-      copy.properties = inputInsertion.properties;
-    }
-    return copy;
-  });
+const mergeCommonFields = (logRequest: LogRequest, record: Record) => {
+  const { platformId, userInfo, timing, clientInfo } = record;
+  if (platformId && !logRequest.platformId) {
+    logRequest.platformId = platformId;
+  }
+  if (userInfo && !logRequest.userInfo) {
+    logRequest.userInfo = userInfo;
+  }
+  if (timing && !logRequest.timing) {
+    logRequest.timing = timing;
+  }
+  if (clientInfo && !logRequest.clientInfo) {
+    logRequest.clientInfo = clientInfo;
+  }
 };
+
+const deleteCommonFields = (record: Record) => {
+  delete record['platformId'];
+  delete record['userInfo'];
+  delete record['timing'];
+  delete record['clientInfo'];
+};
+
+// TODO - copy over toContentArray.

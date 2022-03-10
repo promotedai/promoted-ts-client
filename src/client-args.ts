@@ -32,16 +32,12 @@ export interface PromotedClientArguments {
   performChecks?: boolean;
 
   /**
-   * Percentage (in the range 0.0-1.0) of logging traffic to forward to
+   * Rate (in the range 0.0-1.0) of logging traffic to forward to
    * the Delivery API for use as shadow traffic. 0.0 does no forwarding,
-   * and 1.0 forwards every request.
+   * and 1.0 forwards every request.  Does not happen if a Delivery API
+   * call is attempted.
    */
-  shadowTrafficDeliveryPercent?: number;
-
-  /**
-   * If true (the default), will send shadow traffic during delivery for the CONTROL arm of an experiment.
-   */
-  sendShadowTrafficForControl?: boolean;
+  shadowTrafficDeliveryRate?: number;
 
   /**
    * Default values to use on DeliveryRequests.

@@ -4,13 +4,17 @@ import { Insertion, Paging } from './types/delivery';
 export class Pager {
   /**
    * Sets the position field on each assertion based on paging parameters and takes
-   * a page of full insertions (if necessary).
-   * @param insertions the full set of insertions
+   * a page of request insertions (if necessary).
+   * @param requestInsertions the request insertions
    * @param insertionPageType the type of paging the client wants
    * @param paging paging info, may be nil
    * @returns the modified page of insertions
    */
-  applyPaging = (insertions: Insertion[], insertionPageType: InsertionPageType, paging?: Paging): Insertion[] => {
+  applyPaging = (
+    requestInsertions: Insertion[],
+    insertionPageType: InsertionPageType,
+    paging?: Paging
+  ): Insertion[] => {
     let offset = paging?.offset ?? 0;
     if (offset <= 0) {
       offset = 0;
@@ -26,20 +30,21 @@ export class Pager {
 
     let size = paging?.size ?? -1;
     if (size <= 0) {
-      size = insertions.length;
+      size = requestInsertions.length;
     }
 
-    const finalInsertionSize = Math.min(size, insertions.length - index);
+    const finalInsertionSize = Math.min(size, requestInsertions.length - index);
     if (finalInsertionSize <= 0) {
       return [];
     }
     const insertionPage: Insertion[] = new Array(finalInsertionSize);
     for (let i = 0; i < finalInsertionSize; i++) {
-      const insertion = insertions[index];
-      if (insertion.position === undefined) {
-        insertion.position = offset;
-      }
-      insertionPage[i] = insertion;
+      const requestInsertion = requestInsertions[index];
+      insertionPage[i] = {
+        contentId: requestInsertion.contentId,
+        position: requestInsertion.position ?? offset,
+        // insertionId is set somewhere else.
+      };
       index++;
       offset++;
     }
