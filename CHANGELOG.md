@@ -1,3 +1,17 @@
+# [8.0.0](https://github.com/promotedai/promoted-ts-client/compare/v7.5.0...v8.0.0) (2022-03-10)
+
+
+### Features
+
+* a commit to force a breaking change ([#56](https://github.com/promotedai/promoted-ts-client/issues/56)) ([b2f256f](https://github.com/promotedai/promoted-ts-client/commit/b2f256ffe1416c724e604c97f500d79263bdf9e6))
+
+
+### BREAKING CHANGES
+
+* see commit 6eae974200351d564e52b49aa163eae6fb19a41d for multiple breaking changes
+
+TESTING=none
+
 # [7.5.0](https://github.com/promotedai/promoted-ts-client/compare/v7.4.0...v7.5.0) (2022-03-10)
 
 
