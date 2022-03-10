@@ -1,5 +1,5 @@
 import type { Insertion } from './types/delivery';
-import { toContentArray, toContentArrayWithoutInsertionId } from './map-response';
+import { toContents, toContentsWithoutInsertionId } from './map-response';
 
 const insertion = (contentId: string, insertionId: string): Insertion => ({
   contentId,
@@ -11,18 +11,18 @@ type Content = {
   insertionId?: string;
 };
 
-describe('toContentArray', () => {
+describe('toContents', () => {
   it('empty', () => {
-    expect(toContentArray([], {})).toEqual([]);
+    expect(toContents([], {})).toEqual([]);
   });
 
   it('empty array', () => {
     const contentLookup: Record<string, Content> = { a: { name: 'a' } };
-    expect(toContentArray<Content>([], contentLookup)).toEqual([]);
+    expect(toContents<Content>([], contentLookup)).toEqual([]);
   });
 
   it('empty contentLookup', () => {
-    expect(toContentArray<Content>([insertion('content1', 'uuid1')], {})).toEqual([]);
+    expect(toContents<Content>([insertion('content1', 'uuid1')], {})).toEqual([]);
   });
 
   it('empty array', () => {
@@ -32,7 +32,7 @@ describe('toContentArray', () => {
       '3': { name: 'c' },
     };
     const insertions: Insertion[] = [insertion('2', 'uuid1'), insertion('4', 'uuid2'), insertion('3', 'uuid3')];
-    expect(toContentArray<Content>(insertions, contentLookup)).toEqual([
+    expect(toContents<Content>(insertions, contentLookup)).toEqual([
       {
         name: 'b',
         insertionId: 'uuid1',
@@ -45,18 +45,18 @@ describe('toContentArray', () => {
   });
 });
 
-describe('toContentArrayWithoutInsertionId', () => {
+describe('toContentsWithoutInsertionId', () => {
   it('empty', () => {
-    expect(toContentArrayWithoutInsertionId([], {})).toEqual([]);
+    expect(toContentsWithoutInsertionId([], {})).toEqual([]);
   });
 
   it('empty array', () => {
     const contentLookup: Record<string, Content> = { a: { name: 'a' } };
-    expect(toContentArrayWithoutInsertionId<Content>([], contentLookup)).toEqual([]);
+    expect(toContentsWithoutInsertionId<Content>([], contentLookup)).toEqual([]);
   });
 
   it('empty contentLookup', () => {
-    expect(toContentArrayWithoutInsertionId<Content>([insertion('content1', 'uuid1')], {})).toEqual([]);
+    expect(toContentsWithoutInsertionId<Content>([insertion('content1', 'uuid1')], {})).toEqual([]);
   });
 
   it('empty array', () => {
@@ -66,7 +66,7 @@ describe('toContentArrayWithoutInsertionId', () => {
       '3': { name: 'c' },
     };
     const insertions: Insertion[] = [insertion('2', 'uuid1'), insertion('4', 'uuid2'), insertion('3', 'uuid3')];
-    expect(toContentArrayWithoutInsertionId<Content>(insertions, contentLookup)).toEqual([
+    expect(toContentsWithoutInsertionId<Content>(insertions, contentLookup)).toEqual([
       {
         name: 'b',
       },

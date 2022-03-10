@@ -339,7 +339,7 @@ static async promotedDeliver(req: any, products: Product[], res: Response) {
   const clientResponse = await responsePromise;
   // Do not block.  Log asynchronously.
   clientResponse.log().catch(handleError);
-  const responseProducts = toContentArray<Product>(
+  const responseProducts = toContents<Product>(
       clientResponse.insertion,
       productIdToProduct
   );

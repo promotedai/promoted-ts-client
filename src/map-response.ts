@@ -8,7 +8,7 @@ interface HasInsertionId {
  * Returns a list of Content by mapping responseInsertions.content using
  * contentLookup.  Skips missing contentIds and logs a warning.
  */
-export const toContentArray = <T extends HasInsertionId>(
+export const toContents = <T extends HasInsertionId>(
   responseInsertions: Insertion[],
   contentLookup: Record<string, T>
 ): T[] => {
@@ -37,7 +37,7 @@ export const toContentArray = <T extends HasInsertionId>(
  * Returns a list of Content by mapping responseInsertions.content using
  * contentLookup.  Skips missing contentIds and logs a warning.
  */
-export const toContentArrayWithoutInsertionId = <T>(
+export const toContentsWithoutInsertionId = <T>(
   responseInsertions: Insertion[],
   contentLookup: Record<string, any>
 ): T[] => {
