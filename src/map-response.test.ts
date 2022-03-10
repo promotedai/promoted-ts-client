@@ -8,7 +8,7 @@ const insertion = (contentId: string, insertionId: string): Insertion => ({
 
 type Content = {
   name: string;
-  insertionId?: string;
+  insertionId: string | undefined | null;
 };
 
 describe('toContents', () => {
@@ -17,7 +17,7 @@ describe('toContents', () => {
   });
 
   it('empty array', () => {
-    const contentLookup: Record<string, Content> = { a: { name: 'a' } };
+    const contentLookup: Record<string, Content> = { a: { name: 'a', insertionId: undefined } };
     expect(toContents<Content>([], contentLookup)).toEqual([]);
   });
 
@@ -27,9 +27,9 @@ describe('toContents', () => {
 
   it('empty array', () => {
     const contentLookup: Record<string, Content> = {
-      '1': { name: 'a' },
-      '2': { name: 'b' },
-      '3': { name: 'c' },
+      '1': { name: 'a', insertionId: undefined },
+      '2': { name: 'b', insertionId: undefined },
+      '3': { name: 'c', insertionId: undefined },
     };
     const insertions: Insertion[] = [
       insertion('2', 'uuid1'),
@@ -50,22 +50,26 @@ describe('toContents', () => {
   });
 });
 
+type ContentWithoutInsertion = {
+  name: string;
+};
+
 describe('toContentsWithoutInsertionId', () => {
   it('empty', () => {
     expect(toContentsWithoutInsertionId([], {})).toEqual([]);
   });
 
   it('empty array', () => {
-    const contentLookup: Record<string, Content> = { a: { name: 'a' } };
-    expect(toContentsWithoutInsertionId<Content>([], contentLookup)).toEqual([]);
+    const contentLookup: Record<string, ContentWithoutInsertion> = { a: { name: 'a' } };
+    expect(toContentsWithoutInsertionId<ContentWithoutInsertion>([], contentLookup)).toEqual([]);
   });
 
   it('empty contentLookup', () => {
-    expect(toContentsWithoutInsertionId<Content>([insertion('content1', 'uuid1')], {})).toEqual([]);
+    expect(toContentsWithoutInsertionId<ContentWithoutInsertion>([insertion('content1', 'uuid1')], {})).toEqual([]);
   });
 
   it('empty array', () => {
-    const contentLookup: Record<string, Content> = {
+    const contentLookup: Record<string, ContentWithoutInsertion> = {
       '1': { name: 'a' },
       '2': { name: 'b' },
       '3': { name: 'c' },
@@ -76,7 +80,7 @@ describe('toContentsWithoutInsertionId', () => {
       insertion('3', 'uuid3'),
       insertion('', 'uuid4'),
     ];
-    expect(toContentsWithoutInsertionId<Content>(insertions, contentLookup)).toEqual([
+    expect(toContentsWithoutInsertionId<ContentWithoutInsertion>(insertions, contentLookup)).toEqual([
       {
         name: 'b',
       },

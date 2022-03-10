@@ -14,7 +14,7 @@ import { ExecutionServer } from './execution-server';
 
 // Version number that semver will generate for the package.
 // Must be manually maintained.
-export const SERVER_VERSION = 'ts.8.0.0';
+export const SERVER_VERSION = 'ts.8.1.0';
 
 /**
  * Design-wise
