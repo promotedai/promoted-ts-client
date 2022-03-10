@@ -305,29 +305,48 @@ static async getProducts(req: any, res: Response) {
 We would modify to something like this:
 
 ```typescript
-static async getProducts(req: any, res: Response) {
-  const products = ...;
-  const response = await promotedClient.deliver({
+static async promotedDeliver(req: any, products: Product[], res: Response) {
+  const responsePromise = promotedClient.deliver({
     // onlyLog: true - if you want to only log to Promoted.
     request: {
       userInfo: {
         logUserId: req.logUserId,
       },
       useCase: 'FEED',
+      // TODO - add `query` for the search query.
+      properties: {
+        struct: {
+          // TODO - Add user, request and context features.
+          // TODO - Add request filters.  The properties are used to generate a paging key that is used for caching.
+        }
+      },
       insertion: products.map(product => ({
         contentId: product.id,
-        // You can set custom user-item features here.
         properties: {
           struct: {
-            "numReviews": product.numReviews,
+            // TODO - add user-item features here.
+            // Example: "numReviews": product.numReviews,
           },
         },
       })),
     },
   });
+  // Construct the map while the RPC is happening.
+  const productIdToProduct = products.reduce((map, product) => {
+      map[product.id] = product;
+      return map;
+  }, {});
+  const clientResponse = await responsePromise;
+  // Do not block.  Log asynchronously.
+  clientResponse.log().catch(handleError);
+  const responseProducts = toContentArray<Product>(
+      clientResponse.insertion,
+      productIdToProduct
+  );
+
   // Change the response Product list to use the values in the returned Insertions.
   sendSuccessToClient(res, {
-    products: response.insertion.map(insertion => insertion.properties.struct.product),
+    products: responseProducts),
   });
 }
 ```
