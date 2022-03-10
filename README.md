@@ -465,6 +465,5 @@ We use a GitHub action that runs semantic-release to determine how to update ver
 # Resources
 
 The base of this repository is a combination of the following repos:
-
 - https://github.com/DenysVuika/react-lib
 - https://github.com/Alexandrshy/como-north and https://dev.to/alexandrshy/creating-a-template-repository-in-github-1d05
