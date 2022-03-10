@@ -23,19 +23,6 @@ interface Product {
   reviews: number;
 }
 
-const TEST_DEVICE: Device = {
-  browser: {
-    userAgent:
-      'Mozilla/5.0 (iPhone; CPU iPhone OS 12_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.0 Mobile/15E148 Safari/604.1',
-  },
-  ipAddress: '127.0.0.1',
-};
-
-const newProduct = (id: string): Product => ({
-  id: `product${id}`,
-  reviews: 10,
-});
-
 // Response insertions should always have position assigned.
 const toResponseInsertion = (contentId: string, insertionId: string, position: number): Insertion => ({
   contentId,
@@ -50,32 +37,6 @@ const toRequestInsertion = (product: Product): Insertion => ({
   properties: {
     struct: {
       reviews: product.reviews,
-    },
-  },
-});
-
-// Creates a new request.
-const newBaseRequest = (): Partial<Request> => ({
-  userInfo: {
-    logUserId: 'logUserId1',
-  },
-  device: TEST_DEVICE,
-  useCase: 'FEED',
-  // TODO - sessionId: .
-  // TODO - viewId: .
-  properties: {
-    struct: {
-      query: 'fakequery',
-    },
-  },
-});
-
-// Creates a  new request passed through the LogRequest, for which the client will strip userInfo.
-const newLogRequestRequest = (): Partial<Request> => ({
-  useCase: 'FEED',
-  properties: {
-    struct: {
-      query: 'fakequery',
     },
   },
 });
@@ -113,7 +74,76 @@ const failFunction = (errorMessage: string) => () => {
   throw errorMessage;
 };
 
+const TEST_DEVICE: Device = {
+  browser: {
+    userAgent:
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 12_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.0 Mobile/15E148 Safari/604.1',
+  },
+  ipAddress: '127.0.0.1',
+};
+
+const newProduct = (id: string): Product => ({
+  id: `product${id}`,
+  reviews: 10,
+});
+
+// Common test data.
+
 const products3 = (): Product[] => [newProduct('3'), newProduct('2'), newProduct('1')];
+
+const expectedResponseInsertions = (): Insertion[] => [
+  toResponseInsertion('product3', 'uuid1', 0),
+  toResponseInsertion('product2', 'uuid2', 1),
+  toResponseInsertion('product1', 'uuid3', 2),
+];
+
+// Creates a new request.
+const newBaseRequest = (): Partial<Request> => ({
+  device: TEST_DEVICE,
+  useCase: 'FEED',
+  // TODO - sessionId: .
+  // TODO - viewId: .
+  properties: {
+    struct: {
+      query: 'fakequery',
+    },
+  },
+});
+
+const request = (): Request => ({
+  ...newBaseRequest(),
+  userInfo: {
+    logUserId: 'logUserId1',
+  },
+  insertion: toRequestInsertions(products3()),
+});
+
+const expectedRequestWithoutCommonFields = (): Request => ({
+  ...newBaseRequest(),
+  clientRequestId: 'uuid0',
+  insertion: toRequestInsertions(products3()),
+});
+
+const expectedRequest = (): Request => ({
+  ...expectedRequestWithoutCommonFields(),
+  userInfo: {
+    logUserId: 'logUserId1',
+  },
+  timing: {
+    clientLogTimestamp: 12345678,
+  },
+  clientInfo: DEFAULT_SDK_CLIENT_INFO,
+});
+
+// Creates a  new request passed through the LogRequest, for which the client will strip userInfo.
+const newLogRequestRequest = (): Partial<Request> => ({
+  useCase: 'FEED',
+  properties: {
+    struct: {
+      query: 'fakequery',
+    },
+  },
+});
 
 describe('factory enabled', () => {
   it('creates a non-enabled client', () => {
@@ -147,7 +177,7 @@ describe('no-op', () => {
       });
       const response = await promotedClient.deliver({
         request: {
-          ...newBaseRequest(),
+          ...expectedRequest(),
           insertion: toRequestInsertions(products3()),
         },
         insertionPageType: InsertionPageType.Unpaged,
@@ -269,21 +299,9 @@ describe('deliver', () => {
 
   it('simple good case', async () => {
     const deliveryClient = jest.fn((request) => {
-      expect(request).toEqual({
-        ...newBaseRequest(),
-        timing: {
-          clientLogTimestamp: 12345678,
-        },
-        clientInfo: DEFAULT_SDK_CLIENT_INFO,
-        clientRequestId: 'uuid0',
-        insertion: toRequestInsertions(products3()),
-      });
+      expect(request).toEqual(expectedRequest());
       return Promise.resolve({
-        insertion: [
-          toResponseInsertion('product1', 'uuid1', 0),
-          toResponseInsertion('product2', 'uuid2', 1),
-          toResponseInsertion('product3', 'uuid3', 2),
-        ],
+        insertion: expectedResponseInsertions(),
       });
     });
     const metricsClient = jest.fn(failFunction('All data should be logged in Delivery API'));
@@ -294,21 +312,13 @@ describe('deliver', () => {
     });
 
     const response = await promotedClient.deliver({
-      request: {
-        ...newBaseRequest(),
-        insertion: toRequestInsertions(products3()),
-      },
+      request: request(),
       insertionPageType: InsertionPageType.Unpaged,
     });
     expect(deliveryClient.mock.calls.length).toBe(1);
     expect(metricsClient.mock.calls.length).toBe(0);
 
-    expect(response.responseInsertions).toEqual([
-      toResponseInsertion('product1', 'uuid1', 0),
-      toResponseInsertion('product2', 'uuid2', 1),
-      toResponseInsertion('product3', 'uuid3', 2),
-    ]);
-
+    expect(response.responseInsertions).toEqual(expectedResponseInsertions());
     expect(response.executionServer).toEqual(ExecutionServer.API);
     expect(response.clientRequestId).toEqual('uuid0');
 
@@ -319,18 +329,17 @@ describe('deliver', () => {
   });
 
   it('simple has more than max request insertions', async () => {
+    const responseInsertions = [
+      toResponseInsertion('product3', 'uuid1', 0),
+      toResponseInsertion('product2', 'uuid2', 1),
+    ];
     const deliveryClient = jest.fn((request) => {
       expect(request).toEqual({
-        ...newBaseRequest(),
-        timing: {
-          clientLogTimestamp: 12345678,
-        },
-        clientInfo: DEFAULT_SDK_CLIENT_INFO,
-        clientRequestId: 'uuid0',
+        ...expectedRequest(),
         insertion: toRequestInsertions([newProduct('3'), newProduct('2')]),
       });
       return Promise.resolve({
-        insertion: [toResponseInsertion('product3', 'uuid1', 0), toResponseInsertion('product2', 'uuid2', 1)],
+        insertion: responseInsertions,
       });
     });
     const metricsClient = jest.fn(failFunction('All data should be logged in Delivery API'));
@@ -342,20 +351,13 @@ describe('deliver', () => {
     });
 
     const response = await promotedClient.deliver({
-      request: {
-        ...newBaseRequest(),
-        insertion: toRequestInsertions(products3()),
-      },
+      request: request(),
       insertionPageType: InsertionPageType.Unpaged,
     });
     expect(deliveryClient.mock.calls.length).toBe(1);
     expect(metricsClient.mock.calls.length).toBe(0);
 
-    expect(response.responseInsertions).toEqual([
-      toResponseInsertion('product3', 'uuid1', 0),
-      toResponseInsertion('product2', 'uuid2', 1),
-    ]);
-
+    expect(response.responseInsertions).toEqual(responseInsertions);
     expect(response.executionServer).toEqual(ExecutionServer.API);
     expect(response.clientRequestId).toEqual('uuid0');
 
@@ -368,12 +370,7 @@ describe('deliver', () => {
   it('no request insertions', async () => {
     const deliveryClient = jest.fn((request) => {
       expect(request).toEqual({
-        ...newBaseRequest(),
-        timing: {
-          clientLogTimestamp: 12345678,
-        },
-        clientInfo: DEFAULT_SDK_CLIENT_INFO,
-        clientRequestId: 'uuid0',
+        ...expectedRequest(),
         insertion: [],
       });
       return Promise.resolve({
@@ -389,7 +386,7 @@ describe('deliver', () => {
 
     const response = await promotedClient.deliver({
       request: {
-        ...newBaseRequest(),
+        ...request(),
         insertion: [],
       },
       insertionPageType: InsertionPageType.Unpaged,
@@ -428,7 +425,7 @@ describe('deliver', () => {
         deliveryLog: [
           {
             request: {
-              ...newLogRequestRequest(),
+              ...expectedRequestWithoutCommonFields(),
               requestId: 'uuid1',
               clientRequestId: 'uuid0',
               insertion: toRequestInsertions(products3()),
@@ -459,7 +456,7 @@ describe('deliver', () => {
 
       const response = await promotedClient.deliver({
         request: {
-          ...newBaseRequest(),
+          ...request(),
           insertion: toRequestInsertions(products3()),
         },
         experiment: {
@@ -492,10 +489,7 @@ describe('deliver', () => {
       // Delivery gets called as shadow traffic in CONTROL.
       const deliveryClient: any = jest.fn((request) => {
         expect(request).toEqual({
-          ...newBaseRequest(),
-          timing: {
-            clientLogTimestamp: 12345678,
-          },
+          ...expectedRequest(),
           clientInfo: {
             trafficType: TrafficType_SHADOW, // !!!
             clientType: ClientType_PLATFORM_SERVER,
@@ -528,7 +522,7 @@ describe('deliver', () => {
         deliveryLog: [
           {
             request: {
-              ...newLogRequestRequest(),
+              ...expectedRequestWithoutCommonFields(),
               requestId: 'uuid1',
               clientRequestId: 'uuid0',
               insertion: toRequestInsertions(products3()),
@@ -560,7 +554,7 @@ describe('deliver', () => {
 
       const response = await promotedClient.deliver({
         request: {
-          ...newBaseRequest(),
+          ...request(),
           insertion: toRequestInsertions(products3()),
         },
         experiment: {
@@ -592,7 +586,7 @@ describe('deliver', () => {
     it('arm=TREATMENT', async () => {
       const deliveryClient: any = jest.fn((request) => {
         expect(request).toEqual({
-          ...newBaseRequest(),
+          ...expectedRequest(),
           timing: {
             clientLogTimestamp: 12345678,
           },
@@ -636,7 +630,7 @@ describe('deliver', () => {
 
       const response = await promotedClient.deliver({
         request: {
-          ...newBaseRequest(),
+          ...request(),
           insertion: toRequestInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
         },
         experiment: {
@@ -684,7 +678,7 @@ describe('deliver', () => {
         deliveryLog: [
           {
             request: {
-              ...newLogRequestRequest(),
+              ...expectedRequestWithoutCommonFields(),
               requestId: 'uuid1',
               clientRequestId: 'uuid0',
               insertion: toRequestInsertions(products3()),
@@ -718,7 +712,7 @@ describe('deliver', () => {
 
       const response = await promotedClient.deliver({
         request: {
-          ...newBaseRequest(),
+          ...request(),
           insertion: toRequestInsertions(products3()),
         },
         experiment: {
@@ -769,7 +763,7 @@ describe('deliver', () => {
       deliveryLog: [
         {
           request: {
-            ...newLogRequestRequest(),
+            ...expectedRequestWithoutCommonFields(),
             requestId: 'uuid1',
             paging: {
               size: 1,
@@ -799,7 +793,7 @@ describe('deliver', () => {
 
     const response = await promotedClient.deliver({
       request: {
-        ...newBaseRequest(),
+        ...request(),
         insertion: toRequestInsertions(products),
         paging: {
           size: 1,
@@ -840,7 +834,7 @@ describe('deliver', () => {
       deliveryLog: [
         {
           request: {
-            ...newLogRequestRequest(),
+            ...expectedRequestWithoutCommonFields(),
             requestId: 'uuid1',
             clientRequestId: 'uuid0',
             insertion: toRequestInsertions(products3()),
@@ -872,7 +866,7 @@ describe('deliver', () => {
     const response = await promotedClient.deliver({
       onlyLog: true,
       request: {
-        ...newBaseRequest(),
+        ...request(),
         insertion: toRequestInsertions(products3()),
       },
       insertionPageType: InsertionPageType.Unpaged,
@@ -917,7 +911,7 @@ describe('deliver', () => {
       deliveryLog: [
         {
           request: {
-            ...newLogRequestRequest(),
+            ...expectedRequestWithoutCommonFields(),
             requestId: 'uuid1',
             clientRequestId: 'uuid0',
             insertion: toRequestInsertions(products3()),
@@ -948,7 +942,7 @@ describe('deliver', () => {
 
     const response = await promotedClient.deliver({
       request: {
-        ...newBaseRequest(),
+        ...request(),
         platformId: 1,
         timing: {
           clientLogTimestamp: 87654321,
@@ -1061,7 +1055,7 @@ describe('deliver', () => {
         deliveryLog: [
           {
             request: {
-              ...newLogRequestRequest(),
+              ...expectedRequestWithoutCommonFields(),
               requestId: 'uuid1',
               clientRequestId: 'uuid0',
               insertion: toRequestInsertions(products3()),
@@ -1101,7 +1095,7 @@ describe('deliver', () => {
 
       const response = await promotedClient.deliver({
         request: {
-          ...newBaseRequest(),
+          ...request(),
           insertion: toRequestInsertions(products3()),
         },
         experiment: {
@@ -1136,7 +1130,7 @@ describe('deliver', () => {
     it('metrics timeout', async () => {
       const deliveryClient: any = jest.fn((request) => {
         expect(request).toEqual({
-          ...newBaseRequest(),
+          ...expectedRequest(),
           timing: {
             clientLogTimestamp: 12345678,
           },
@@ -1146,9 +1140,9 @@ describe('deliver', () => {
         });
         return Promise.resolve({
           insertion: [
-            toResponseInsertion('product1', 'uuid2', 0),
+            toResponseInsertion('product3', 'uuid2', 0),
             toResponseInsertion('product2', 'uuid3', 1),
-            toResponseInsertion('product3', 'uuid4', 2),
+            toResponseInsertion('product1', 'uuid4', 2),
           ],
         });
       });
@@ -1189,7 +1183,7 @@ describe('deliver', () => {
 
       const deliveryReq: DeliveryRequest = {
         request: {
-          ...newBaseRequest(),
+          ...request(),
           insertion: toRequestInsertions(products3()),
         },
         experiment: {
@@ -1203,9 +1197,9 @@ describe('deliver', () => {
       expect(metricsClient.mock.calls.length).toBe(0);
 
       expect(response.responseInsertions).toEqual([
-        toResponseInsertion('product1', 'uuid2', 0),
+        toResponseInsertion('product3', 'uuid2', 0),
         toResponseInsertion('product2', 'uuid3', 1),
-        toResponseInsertion('product3', 'uuid4', 2),
+        toResponseInsertion('product1', 'uuid4', 2),
       ]);
 
       expect(response.logRequest).toEqual(expectedLogReq);
@@ -1322,7 +1316,7 @@ describe('deliver with onlyLog=true', () => {
       deliveryLog: [
         {
           request: {
-            ...newLogRequestRequest(),
+            ...expectedRequestWithoutCommonFields(),
             requestId: 'uuid1',
             clientRequestId: 'uuid0',
             insertion: toRequestInsertions(products3()),
@@ -1354,7 +1348,7 @@ describe('deliver with onlyLog=true', () => {
     const response = await promotedClient.deliver({
       onlyLog: true,
       request: {
-        ...newBaseRequest(),
+        ...request(),
         insertion: toRequestInsertions(products3()),
       },
       insertionPageType: InsertionPageType.Unpaged,
@@ -1392,7 +1386,7 @@ describe('deliver with onlyLog=true', () => {
       deliveryLog: [
         {
           request: {
-            ...newLogRequestRequest(),
+            ...expectedRequestWithoutCommonFields(),
             requestId: 'uuid1',
             clientRequestId: 'uuid0',
             device: TEST_DEVICE,
@@ -1420,7 +1414,7 @@ describe('deliver with onlyLog=true', () => {
     const response = await promotedClient.deliver({
       onlyLog: true,
       request: {
-        ...newBaseRequest(),
+        ...request(),
         insertion: [],
       },
       insertionPageType: InsertionPageType.Unpaged,
@@ -1452,7 +1446,7 @@ describe('deliver with onlyLog=true', () => {
       deliveryLog: [
         {
           request: {
-            ...newLogRequestRequest(),
+            ...expectedRequestWithoutCommonFields(),
             requestId: 'uuid1',
             paging: {
               size: 1,
@@ -1483,7 +1477,7 @@ describe('deliver with onlyLog=true', () => {
     const response = await promotedClient.deliver({
       onlyLog: true,
       request: {
-        ...newBaseRequest(),
+        ...request(),
         insertion: toRequestInsertions(products3()),
         paging: {
           size: 1,
@@ -1519,7 +1513,7 @@ describe('deliver with onlyLog=true', () => {
       deliveryLog: [
         {
           request: {
-            ...newLogRequestRequest(),
+            ...expectedRequestWithoutCommonFields(),
             requestId: 'uuid1',
             paging: {
               size: 1,
@@ -1551,7 +1545,7 @@ describe('deliver with onlyLog=true', () => {
     const response = await promotedClient.deliver({
       onlyLog: true,
       request: {
-        ...newBaseRequest(),
+        ...request(),
         insertion: toRequestInsertions(products3()),
         paging: {
           size: 1,
@@ -1581,7 +1575,7 @@ describe('deliver with onlyLog=true', () => {
       deliveryLog: [
         {
           request: {
-            ...newLogRequestRequest(),
+            ...expectedRequestWithoutCommonFields(),
             requestId: 'uuid1',
             paging: {
               size: 1,
@@ -1613,7 +1607,7 @@ describe('deliver with onlyLog=true', () => {
     const response = await promotedClient.deliver({
       onlyLog: true,
       request: {
-        ...newBaseRequest(),
+        ...request(),
         insertion: toRequestInsertions(products3()),
         paging: {
           size: 1,
@@ -1650,7 +1644,7 @@ describe('deliver with onlyLog=true', () => {
       deliveryLog: [
         {
           request: {
-            ...newLogRequestRequest(),
+            ...expectedRequestWithoutCommonFields(),
             requestId: 'uuid1',
             sessionId: 'uuid10',
             viewId: 'uuid11',
@@ -1684,7 +1678,7 @@ describe('deliver with onlyLog=true', () => {
     const response = await promotedClient.deliver({
       onlyLog: true,
       request: {
-        ...newBaseRequest(),
+        ...request(),
         sessionId: 'uuid10',
         viewId: 'uuid11',
         insertion: toRequestInsertions(products3()),
@@ -1740,7 +1734,7 @@ describe('shadow requests in prepareForLogging', () => {
     const requestInsertions = toRequestInsertions(products);
     if (shouldCallDelivery) {
       const expectedDeliveryReq = {
-        ...newBaseRequest(),
+        ...expectedRequest(),
         timing: {
           clientLogTimestamp: 12345678,
         },
@@ -1806,8 +1800,7 @@ describe('shadow requests in prepareForLogging', () => {
     const deliveryRequest: DeliveryRequest = {
       onlyLog: true,
       request: {
-        ...newBaseRequest(),
-        clientInfo: DEFAULT_SDK_CLIENT_INFO,
+        ...request(),
         insertion: toRequestInsertions(products),
       },
       insertionPageType: InsertionPageType.Unpaged,
