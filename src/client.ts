@@ -213,14 +213,15 @@ export class PromotedClientImpl implements PromotedClient {
     let cohortMembershipToLog: CohortMembership | undefined = undefined;
 
     // Set to empty to simplify some of the checks.
-    let requestInsertions = request.insertion ?? [];
+    if (!request.insertion) {
+      request.insertion = [];
+    }
 
     // Trim any request insertions over the maximum allowed.
-    if (requestInsertions.length > this.maxRequestInsertions) {
+    if (request.insertion.length > this.maxRequestInsertions) {
       console.warn('Exceeded max request insertions, trimming');
-      requestInsertions = requestInsertions.slice(0, this.maxRequestInsertions);
+      request.insertion = request.insertion.slice(0, this.maxRequestInsertions);
     }
-    request.insertion = requestInsertions;
 
     let attemptedDeliveryApi = false;
     let insertionsFromDeliveryApi = false;
@@ -258,13 +259,12 @@ export class PromotedClientImpl implements PromotedClient {
       const requestToLog = {
         ...request,
         requestId: this.uuid(),
-        insertion: requestInsertions,
       };
       // Insertions from Promoted are paged on the API side.
       // If we did not call the API for any reason, apply the expected
       // paging to the full insertions here.
       // If you update this, update the no-op version too.
-      responseInsertions = this.pager.applyPaging(requestInsertions, insertionPageType, request.paging);
+      responseInsertions = this.pager.applyPaging(request.insertion, insertionPageType, request.paging);
       addInsertionIds(responseInsertions, this.uuid);
       const responseToLog = {
         insertion: responseInsertions,
