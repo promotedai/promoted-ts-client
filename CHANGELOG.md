@@ -1,3 +1,10 @@
+# [7.5.0](https://github.com/promotedai/promoted-ts-client/compare/v7.4.0...v7.5.0) (2022-03-10)
+
+
+### Features
+
+* simplify interface ([#55](https://github.com/promotedai/promoted-ts-client/issues/55)) ([6eae974](https://github.com/promotedai/promoted-ts-client/commit/6eae974200351d564e52b49aa163eae6fb19a41d))
+
 # [7.4.0](https://github.com/promotedai/promoted-ts-client/compare/v7.3.0...v7.4.0) (2022-02-24)
 
 
