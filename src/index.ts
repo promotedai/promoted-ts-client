@@ -9,7 +9,7 @@ export * from './execution-server';
 export * from './experiment';
 export * from './hash';
 export * from './insertion-page-type';
-export * from './metrics-request';
+export * from './map-response';
 
 // Updated manually.
 export type { ClientInfo, Properties, Timing, TrafficType, UserInfo } from './types/common';

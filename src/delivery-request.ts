@@ -1,28 +1,15 @@
-import { PropertiesMapFn } from './base-request';
 import { InsertionPageType } from './insertion-page-type';
-import { Insertion, Request } from './types/delivery';
+import { Request } from './types/delivery';
 import { CohortMembership } from './types/event';
 
 /**
  * Represents a single call for retrieving and ranking content.
  */
 export interface DeliveryRequest {
-  /** Removes unnecessary fields on Insertions for Delivery API. */
-  toCompactDeliveryProperties?: PropertiesMapFn;
-
-  /** Removes unnecessary fields on Insertions for Metrics API. */
-  toCompactMetricsProperties?: PropertiesMapFn;
-
   /**
    * The Request for content.
    */
   request: Request;
-
-  /**
-   * Insertions with all metadata.  The `toCompact` functions are used to
-   * transform the fullInsertion to Insertions on each of the requests.
-   */
-  fullInsertion: Insertion[];
 
   /**
    * A way to customize when `deliver` should not run an experiment and just log

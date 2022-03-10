@@ -10,19 +10,13 @@ describe('apply paging', () => {
   beforeEach(() => {
     insertions = [
       {
-        insertionId: 'uuid0-0',
-        requestId: 'uuid0-1',
-        viewId: 'uuid0-2',
+        contentId: '0',
       },
       {
-        insertionId: 'uuid1-0',
-        requestId: 'uuid1-1',
-        viewId: 'uuid1-2',
+        contentId: '1',
       },
       {
-        insertionId: 'uuid2-0',
-        requestId: 'uuid2-1',
-        viewId: 'uuid2-2',
+        contentId: '2',
       },
     ];
   });
@@ -36,8 +30,8 @@ describe('apply paging', () => {
     expect(resIns.length).toEqual(insertions.length - 1);
 
     // We take a page size of 2 starting at offset 1.
-    expect(resIns[0].insertionId).toEqual(insertions[1].insertionId);
-    expect(resIns[1].insertionId).toEqual(insertions[2].insertionId);
+    expect(resIns[0].contentId).toEqual(insertions[1].contentId);
+    expect(resIns[1].contentId).toEqual(insertions[2].contentId);
 
     // Positions start at offset when Unpaged.
     expect(resIns[0].position).toEqual(1);
@@ -53,8 +47,8 @@ describe('apply paging', () => {
     expect(resIns.length).toEqual(insertions.length - 1);
 
     // We take a page size of 2 since the 3rd would be off the end, starting at offset 1
-    expect(resIns[0].insertionId).toEqual(insertions[1].insertionId);
-    expect(resIns[1].insertionId).toEqual(insertions[2].insertionId);
+    expect(resIns[0].contentId).toEqual(insertions[1].contentId);
+    expect(resIns[1].contentId).toEqual(insertions[2].contentId);
 
     // Positions start at offset when Unpaged.
     expect(resIns[0].position).toEqual(1);
@@ -70,8 +64,8 @@ describe('apply paging', () => {
     expect(resIns.length).toEqual(insertions.length - 1);
 
     // We take a page size of 2 starting at the beginning since prepaged.
-    expect(resIns[0].insertionId).toEqual(insertions[0].insertionId);
-    expect(resIns[1].insertionId).toEqual(insertions[1].insertionId);
+    expect(resIns[0].contentId).toEqual(insertions[0].contentId);
+    expect(resIns[1].contentId).toEqual(insertions[1].contentId);
 
     // Positions start at offset.
     expect(resIns[0].position).toEqual(1);

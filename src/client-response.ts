@@ -32,7 +32,7 @@ export interface ClientResponse {
    * items than any optionally provided Paging.size parameter on the
    * request, at most page size insertions will be forwarded on.
    */
-  insertion: Insertion[];
+  responseInsertions: Insertion[];
 
   /**
    * Where the response insertions  were generated (i.e. by the API or
