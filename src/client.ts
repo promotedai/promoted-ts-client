@@ -11,7 +11,6 @@ import type { DeliveryLog, Insertion, Request, Response } from './types/delivery
 import type { CohortMembership, LogRequest, LogResponse } from './types/event';
 import { Pager } from './pager';
 import { ExecutionServer } from './execution-server';
-import { ClientInfo, Timing, UserInfo } from './types/common';
 
 // Version number that semver will generate for the package.
 // Must be manually maintained.
