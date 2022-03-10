@@ -1,7 +1,7 @@
 import { Insertion } from './types/delivery';
 
 interface HasInsertionId {
-  insertionId?: string;
+  insertionId: string | undefined | null;
 }
 
 /**
