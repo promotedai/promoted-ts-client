@@ -31,7 +31,12 @@ describe('toContents', () => {
       '2': { name: 'b' },
       '3': { name: 'c' },
     };
-    const insertions: Insertion[] = [insertion('2', 'uuid1'), insertion('4', 'uuid2'), insertion('3', 'uuid3')];
+    const insertions: Insertion[] = [
+      insertion('2', 'uuid1'),
+      insertion('4', 'uuid2'),
+      insertion('3', 'uuid3'),
+      insertion('', 'uuid4'),
+    ];
     expect(toContents<Content>(insertions, contentLookup)).toEqual([
       {
         name: 'b',
@@ -65,7 +70,12 @@ describe('toContentsWithoutInsertionId', () => {
       '2': { name: 'b' },
       '3': { name: 'c' },
     };
-    const insertions: Insertion[] = [insertion('2', 'uuid1'), insertion('4', 'uuid2'), insertion('3', 'uuid3')];
+    const insertions: Insertion[] = [
+      insertion('2', 'uuid1'),
+      insertion('4', 'uuid2'),
+      insertion('3', 'uuid3'),
+      insertion('', 'uuid4'),
+    ];
     expect(toContentsWithoutInsertionId<Content>(insertions, contentLookup)).toEqual([
       {
         name: 'b',
