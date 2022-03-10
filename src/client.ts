@@ -451,15 +451,8 @@ const checkThatLogIdsNotSet = (deliveryRequest: DeliveryRequest): Error | undefi
   return undefined;
 };
 
-interface Record {
-  platformId?: number;
-  userInfo?: UserInfo;
-  timing?: Timing;
-  clientInfo?: ClientInfo;
-}
-
-const mergeCommonFields = (logRequest: LogRequest, record: Record) => {
-  const { platformId, userInfo, timing, clientInfo } = record;
+const mergeCommonFields = (logRequest: LogRequest, request: Request) => {
+  const { platformId, userInfo, timing, clientInfo } = request;
   if (platformId && !logRequest.platformId) {
     logRequest.platformId = platformId;
   }
@@ -474,11 +467,9 @@ const mergeCommonFields = (logRequest: LogRequest, record: Record) => {
   }
 };
 
-const deleteCommonFields = (record: Record) => {
-  delete record['platformId'];
-  delete record['userInfo'];
-  delete record['timing'];
-  delete record['clientInfo'];
+const deleteCommonFields = (request: Request) => {
+  delete request['platformId'];
+  delete request['userInfo'];
+  delete request['timing'];
+  delete request['clientInfo'];
 };
-
-// TODO - copy over toContentArray.
