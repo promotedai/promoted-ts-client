@@ -6,31 +6,28 @@ interface HasInsertionId {
 
 /**
  * Returns a list of Content by mapping responseInsertions.content using
- * contentLookup.  Skips missing contentIds and logs a warning.
+ * contentLookup.  Skips content not found in contentLookup.
  */
 export const toContents = <T extends HasInsertionId>(
   responseInsertions: Insertion[],
   contentLookup: Record<string, T>
 ): T[] => {
-  const results: T[] = [];
-  responseInsertions.forEach((insertion) => {
+  return responseInsertions.reduce((results: T[], insertion: Insertion): T[] => {
     const { contentId } = insertion;
     if (!contentId) {
       console.warn('Encounter missing Insertion.contentId');
-      return;
-    }
-    const content = contentLookup[contentId];
-    // Do not include results if the contentId details cannot be found.
-    if (content) {
-      results.push({
-        ...content,
-        insertionId: insertion.insertionId,
-      });
     } else {
-      console.warn(`Dropping content ${insertion.contentId} from Promoted ranking.`);
+      const content = contentLookup[contentId];
+      // Do not include results if the contentId details cannot be found.
+      if (content) {
+        results.push({
+          ...content,
+          insertionId: insertion.insertionId,
+        });
+      }
     }
-  });
-  return results;
+    return results;
+  }, []);
 };
 
 /**
@@ -41,20 +38,17 @@ export const toContentsWithoutInsertionId = <T>(
   responseInsertions: Insertion[],
   contentLookup: Record<string, any>
 ): T[] => {
-  const results: T[] = [];
-  responseInsertions.forEach((insertion) => {
+  return responseInsertions.reduce((results: T[], insertion: Insertion): T[] => {
     const { contentId } = insertion;
     if (!contentId) {
       console.warn('Encounter missing Insertion.contentId');
-      return;
-    }
-    const content = contentLookup[contentId];
-    // Do not include results if the contentId details cannot be found.
-    if (content) {
-      results.push(content);
     } else {
-      console.warn(`Dropping content ${insertion.contentId} from Promoted ranking.`);
+      const content = contentLookup[contentId];
+      // Do not include results if the contentId details cannot be found.
+      if (content) {
+        results.push(content);
+      }
     }
-  });
-  return results;
+    return results;
+  }, []);
 };

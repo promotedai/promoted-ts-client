@@ -208,7 +208,7 @@ export class PromotedClientImpl implements PromotedClient {
     // return just IDs back.
 
     // We default to returning the input insertions with all the original details (i.e. properties).
-    let responseInsertions: Insertion[] | undefined = undefined;
+    let responseInsertions: Insertion[] = [];
     // If defined, log the CohortMembership to Metrics API.
     let cohortMembershipToLog: CohortMembership | undefined = undefined;
 
@@ -219,8 +219,8 @@ export class PromotedClientImpl implements PromotedClient {
     if (requestInsertions.length > this.maxRequestInsertions) {
       console.warn('Exceeded max request insertions, trimming');
       requestInsertions = requestInsertions.slice(0, this.maxRequestInsertions);
-      request.insertion = requestInsertions;
     }
+    request.insertion = requestInsertions;
 
     let attemptedDeliveryApi = false;
     let insertionsFromDeliveryApi = false;
@@ -271,8 +271,6 @@ export class PromotedClientImpl implements PromotedClient {
       };
       deliveryLogToLog = this.createSdkDeliveryLog(requestToLog, responseToLog);
     }
-
-    responseInsertions = responseInsertions || [];
 
     const logRequest = this.createLogRequest(request, deliveryLogToLog, cohortMembershipToLog);
     return {
@@ -383,12 +381,11 @@ export class PromotedClientImpl implements PromotedClient {
 
   private fillInRequestFields = (request: Request): Request => {
     // Create a copy so we do not modify the input.
-    request = { ...request };
-    let { timing } = request;
-    if (!timing) {
-      timing = {};
-      request.timing = timing;
-    }
+    const timing = { ...request.timing };
+    request = {
+      ...request,
+      timing,
+    };
     if (!timing.clientLogTimestamp) {
       timing.clientLogTimestamp = this.nowMillis();
     }
@@ -400,13 +397,7 @@ export class PromotedClientImpl implements PromotedClient {
 }
 
 const addInsertionIds = (responseInsertions: Insertion[], uuid: () => string) => {
-  for (const responseInsertion of responseInsertions) {
-    addInsertionId(responseInsertion, uuid);
-  }
-};
-
-const addInsertionId = (responseInsertion: Insertion, uuid: () => string) => {
-  responseInsertion.insertionId = uuid();
+  responseInsertions.forEach((insertion) => (insertion.insertionId = uuid()));
 };
 
 /**
