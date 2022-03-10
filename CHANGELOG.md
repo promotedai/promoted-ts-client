@@ -1,3 +1,10 @@
+# [8.1.0](https://github.com/promotedai/promoted-ts-client/compare/v8.0.0...v8.1.0) (2022-03-10)
+
+
+### Features
+
+* hasinsertionid requires insertionid field ([#57](https://github.com/promotedai/promoted-ts-client/issues/57)) ([90efea6](https://github.com/promotedai/promoted-ts-client/commit/90efea6877ce7c4262e69603ca530d5548573d2a))
+
 # [8.0.0](https://github.com/promotedai/promoted-ts-client/compare/v7.5.0...v8.0.0) (2022-03-10)
 
 
