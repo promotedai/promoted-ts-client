@@ -113,7 +113,6 @@ const failFunction = (errorMessage: string) => () => {
   throw errorMessage;
 };
 
-/*
 describe('factory enabled', () => {
   it('creates a non-enabled client', () => {
     const promotedClient = newFakePromotedClient({
@@ -154,9 +153,9 @@ describe('no-op', () => {
       });
 
       const expectedRespInsertions = [
-        toResponseInsertion('product3', '', 0),
-        toResponseInsertion('product2', '', 1),
-        toResponseInsertion('product1', '', 2),
+        { contentId: 'product3', position: 0 },
+        { contentId: 'product2', position: 1 },
+        { contentId: 'product1', position: 2 },
       ];
       expect(response.responseInsertions).toEqual(expectedRespInsertions);
       expect(response.executionServer).toEqual(ExecutionServer.SDK);
@@ -202,7 +201,7 @@ describe('no-op', () => {
         insertionPageType: InsertionPageType.Unpaged,
       });
 
-      const expectedRespInsertions = [toResponseInsertion('product3', '', 0)];
+      const expectedRespInsertions = [{ contentId: 'product3', position: 0 }];
       expect(response.responseInsertions).toEqual(expectedRespInsertions);
       expect(response.executionServer).toEqual(ExecutionServer.SDK);
       expect(response.clientRequestId).toBeUndefined();
@@ -210,7 +209,6 @@ describe('no-op', () => {
     });
   });
 });
-*/
 
 describe('deliver', () => {
   it('allows you to set unpaged', async () => {
