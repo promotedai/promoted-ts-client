@@ -113,6 +113,8 @@ const failFunction = (errorMessage: string) => () => {
   throw errorMessage;
 };
 
+const products3 = (): Product[] => [newProduct('3'), newProduct('2'), newProduct('1')];
+
 describe('factory enabled', () => {
   it('creates a non-enabled client', () => {
     const promotedClient = newFakePromotedClient({
@@ -143,11 +145,10 @@ describe('no-op', () => {
         deliveryClient: jest.fn(failFunction('Delivery should not be called in CONTROL')),
         metricsClient: jest.fn(failFunction('Metrics should not be called in CONTROL')),
       });
-      const products = [newProduct('3'), newProduct('2'), newProduct('1')];
       const response = await promotedClient.deliver({
         request: {
           ...newBaseRequest(),
-          insertion: toRequestInsertions(products),
+          insertion: toRequestInsertions(products3()),
         },
         insertionPageType: InsertionPageType.Unpaged,
       });
@@ -189,11 +190,10 @@ describe('no-op', () => {
         deliveryClient: jest.fn(failFunction('Delivery should not be called in CONTROL')),
         metricsClient: jest.fn(failFunction('Metrics should not be called in CONTROL')),
       });
-      const products = [newProduct('3'), newProduct('2'), newProduct('1')];
       const response = await promotedClient.deliver({
         request: {
           ...newBaseRequest(),
-          insertion: toRequestInsertions(products),
+          insertion: toRequestInsertions(products3()),
           paging: {
             size: 1,
           },
@@ -226,11 +226,10 @@ describe('deliver', () => {
       },
     });
 
-    const products = [newProduct('3'), newProduct('2'), newProduct('1')];
     const deliveryReq: DeliveryRequest = {
       request: {
         ...newBaseRequest(),
-        insertion: toRequestInsertions(products),
+        insertion: toRequestInsertions(products3()),
       },
       insertionPageType: InsertionPageType.Unpaged,
     };
@@ -255,11 +254,10 @@ describe('deliver', () => {
       },
     });
 
-    const products = [newProduct('3'), newProduct('2'), newProduct('1')];
     const deliveryReq: DeliveryRequest = {
       request: {
         ...newBaseRequest(),
-        insertion: toRequestInsertions(products),
+        insertion: toRequestInsertions(products3()),
       },
       insertionPageType: InsertionPageType.PrePaged,
     };
@@ -278,7 +276,7 @@ describe('deliver', () => {
         },
         clientInfo: DEFAULT_SDK_CLIENT_INFO,
         clientRequestId: 'uuid0',
-        insertion: toRequestInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+        insertion: toRequestInsertions(products3()),
       });
       return Promise.resolve({
         insertion: [
@@ -295,11 +293,10 @@ describe('deliver', () => {
       metricsClient,
     });
 
-    const products = [newProduct('3'), newProduct('2'), newProduct('1')];
     const response = await promotedClient.deliver({
       request: {
         ...newBaseRequest(),
-        insertion: toRequestInsertions(products),
+        insertion: toRequestInsertions(products3()),
       },
       insertionPageType: InsertionPageType.Unpaged,
     });
@@ -330,10 +327,10 @@ describe('deliver', () => {
         },
         clientInfo: DEFAULT_SDK_CLIENT_INFO,
         clientRequestId: 'uuid0',
-        insertion: toRequestInsertions([newProduct('1'), newProduct('2')]),
+        insertion: toRequestInsertions([newProduct('3'), newProduct('2')]),
       });
       return Promise.resolve({
-        insertion: [toResponseInsertion('product1', 'uuid1', 0), toResponseInsertion('product2', 'uuid2', 1)],
+        insertion: [toResponseInsertion('product3', 'uuid1', 0), toResponseInsertion('product2', 'uuid2', 1)],
       });
     });
     const metricsClient = jest.fn(failFunction('All data should be logged in Delivery API'));
@@ -344,11 +341,10 @@ describe('deliver', () => {
       maxRequestInsertions: 2,
     });
 
-    const products = [newProduct('1'), newProduct('2'), newProduct('3')];
     const response = await promotedClient.deliver({
       request: {
         ...newBaseRequest(),
-        insertion: toRequestInsertions(products),
+        insertion: toRequestInsertions(products3()),
       },
       insertionPageType: InsertionPageType.Unpaged,
     });
@@ -356,7 +352,7 @@ describe('deliver', () => {
     expect(metricsClient.mock.calls.length).toBe(0);
 
     expect(response.responseInsertions).toEqual([
-      toResponseInsertion('product1', 'uuid1', 0),
+      toResponseInsertion('product3', 'uuid1', 0),
       toResponseInsertion('product2', 'uuid2', 1),
     ]);
 
@@ -415,7 +411,6 @@ describe('deliver', () => {
   describe('using cohorts', () => {
     it('arm=CONTROL', async () => {
       const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
-      const products = [newProduct('3'), newProduct('2'), newProduct('1')];
       const expectedLogReq: LogRequest = {
         userInfo: {
           logUserId: 'logUserId1',
@@ -436,7 +431,7 @@ describe('deliver', () => {
               ...newLogRequestRequest(),
               requestId: 'uuid1',
               clientRequestId: 'uuid0',
-              insertion: toRequestInsertions(products),
+              insertion: toRequestInsertions(products3()),
               device: TEST_DEVICE,
             },
             response: {
@@ -465,7 +460,7 @@ describe('deliver', () => {
       const response = await promotedClient.deliver({
         request: {
           ...newBaseRequest(),
-          insertion: toRequestInsertions(products),
+          insertion: toRequestInsertions(products3()),
         },
         experiment: {
           cohortId: 'HOLD_OUT',
@@ -495,9 +490,7 @@ describe('deliver', () => {
 
     it('arm=CONTROL sends shadow traffic', async () => {
       // Delivery gets called as shadow traffic in CONTROL.
-      const products = [newProduct('3'), newProduct('2'), newProduct('1')];
       const deliveryClient: any = jest.fn((request) => {
-        const products = [newProduct('3'), newProduct('2'), newProduct('1')];
         expect(request).toEqual({
           ...newBaseRequest(),
           timing: {
@@ -508,7 +501,7 @@ describe('deliver', () => {
             clientType: ClientType_PLATFORM_SERVER,
           },
           clientRequestId: 'uuid0',
-          insertion: toRequestInsertions(products),
+          insertion: toRequestInsertions(products3()),
         });
         return Promise.resolve({
           insertion: [
@@ -538,7 +531,7 @@ describe('deliver', () => {
               ...newLogRequestRequest(),
               requestId: 'uuid1',
               clientRequestId: 'uuid0',
-              insertion: toRequestInsertions(products),
+              insertion: toRequestInsertions(products3()),
               device: TEST_DEVICE,
             },
             response: {
@@ -568,7 +561,7 @@ describe('deliver', () => {
       const response = await promotedClient.deliver({
         request: {
           ...newBaseRequest(),
-          insertion: toRequestInsertions(products),
+          insertion: toRequestInsertions(products3()),
         },
         experiment: {
           cohortId: 'HOLD_OUT',
@@ -674,7 +667,6 @@ describe('deliver', () => {
     // If Delivery fails and we silently handle it, we log like everything.
     it('arm=TREATMENT - Delivery failed', async () => {
       const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
-      const products = [newProduct('3'), newProduct('2'), newProduct('1')];
       const expectedLogReq: LogRequest = {
         userInfo: {
           logUserId: 'logUserId1',
@@ -695,7 +687,7 @@ describe('deliver', () => {
               ...newLogRequestRequest(),
               requestId: 'uuid1',
               clientRequestId: 'uuid0',
-              insertion: toRequestInsertions(products),
+              insertion: toRequestInsertions(products3()),
               device: TEST_DEVICE,
             },
             response: {
@@ -727,7 +719,7 @@ describe('deliver', () => {
       const response = await promotedClient.deliver({
         request: {
           ...newBaseRequest(),
-          insertion: toRequestInsertions(products),
+          insertion: toRequestInsertions(products3()),
         },
         experiment: {
           cohortId: 'HOLD_OUT',
@@ -837,7 +829,6 @@ describe('deliver', () => {
 
   it('onlyLog override', async () => {
     const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in onlyLog'));
-    const products = [newProduct('3'), newProduct('2'), newProduct('1')];
     const expectedLogReq: LogRequest = {
       userInfo: {
         logUserId: 'logUserId1',
@@ -852,7 +843,7 @@ describe('deliver', () => {
             ...newLogRequestRequest(),
             requestId: 'uuid1',
             clientRequestId: 'uuid0',
-            insertion: toRequestInsertions(products),
+            insertion: toRequestInsertions(products3()),
             device: TEST_DEVICE,
           },
           response: {
@@ -882,7 +873,7 @@ describe('deliver', () => {
       onlyLog: true,
       request: {
         ...newBaseRequest(),
-        insertion: toRequestInsertions(products),
+        insertion: toRequestInsertions(products3()),
       },
       insertionPageType: InsertionPageType.Unpaged,
     });
@@ -908,7 +899,6 @@ describe('deliver', () => {
 
   it('with optional Request fields', async () => {
     const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
-    const products = [newProduct('3'), newProduct('2'), newProduct('1')];
     const expectedLogReq: LogRequest = {
       platformId: 1,
       userInfo: {
@@ -930,7 +920,7 @@ describe('deliver', () => {
             ...newLogRequestRequest(),
             requestId: 'uuid1',
             clientRequestId: 'uuid0',
-            insertion: toRequestInsertions(products),
+            insertion: toRequestInsertions(products3()),
             device: TEST_DEVICE,
           },
           response: {
@@ -963,7 +953,7 @@ describe('deliver', () => {
         timing: {
           clientLogTimestamp: 87654321,
         },
-        insertion: toRequestInsertions(products),
+        insertion: toRequestInsertions(products3()),
       },
       experiment: {
         cohortId: 'HOLD_OUT',
@@ -998,7 +988,7 @@ describe('deliver', () => {
         timing: {
           clientLogTimestamp: 12345678,
         },
-        insertion: toRequestInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+        insertion: toRequestInsertions(products3()),
         clientInfo: DEFAULT_SDK_CLIENT_INFO,
         clientRequestId: 'uuid0',
       });
@@ -1020,11 +1010,10 @@ describe('deliver', () => {
       metricsClient,
     });
 
-    const products = [newProduct('3'), newProduct('2'), newProduct('1')];
     const response = await promotedClient.deliver({
       request: {
         ...newBaseRequest(),
-        insertion: toRequestInsertions(products),
+        insertion: toRequestInsertions(products3()),
       },
       insertionPageType: InsertionPageType.Unpaged,
     });
@@ -1055,7 +1044,6 @@ describe('deliver', () => {
     // API call.
     it('delivery timeout', async () => {
       const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in timeout'));
-      const products = [newProduct('3'), newProduct('2'), newProduct('1')];
       const expectedLogReq: LogRequest = {
         userInfo: {
           logUserId: 'logUserId1',
@@ -1076,7 +1064,7 @@ describe('deliver', () => {
               ...newLogRequestRequest(),
               requestId: 'uuid1',
               clientRequestId: 'uuid0',
-              insertion: toRequestInsertions(products),
+              insertion: toRequestInsertions(products3()),
               device: TEST_DEVICE,
             },
             response: {
@@ -1114,7 +1102,7 @@ describe('deliver', () => {
       const response = await promotedClient.deliver({
         request: {
           ...newBaseRequest(),
-          insertion: toRequestInsertions(products),
+          insertion: toRequestInsertions(products3()),
         },
         experiment: {
           cohortId: 'HOLD_OUT',
@@ -1152,7 +1140,7 @@ describe('deliver', () => {
           timing: {
             clientLogTimestamp: 12345678,
           },
-          insertion: toRequestInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+          insertion: toRequestInsertions(products3()),
           clientInfo: DEFAULT_SDK_CLIENT_INFO,
           clientRequestId: 'uuid0',
         });
@@ -1202,7 +1190,7 @@ describe('deliver', () => {
       const deliveryReq: DeliveryRequest = {
         request: {
           ...newBaseRequest(),
-          insertion: toRequestInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+          insertion: toRequestInsertions(products3()),
         },
         experiment: {
           cohortId: 'HOLD_OUT',
@@ -1239,7 +1227,7 @@ describe('deliver', () => {
           request: {
             ...newBaseRequest(),
             requestId: 'uuid0',
-            insertion: toRequestInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+            insertion: toRequestInsertions(products3()),
           },
           insertionPageType: InsertionPageType.Unpaged,
         })
@@ -1323,7 +1311,6 @@ describe('deliver with onlyLog=true', () => {
   it('good case', async () => {
     const deliveryClient: any = jest.fn(failFunction('Delivery should not be called when logging only'));
     // Log request doesn't set position.
-    const products = [newProduct('3'), newProduct('2'), newProduct('1')];
     const expectedLogReq: LogRequest = {
       userInfo: {
         logUserId: 'logUserId1',
@@ -1338,7 +1325,7 @@ describe('deliver with onlyLog=true', () => {
             ...newLogRequestRequest(),
             requestId: 'uuid1',
             clientRequestId: 'uuid0',
-            insertion: toRequestInsertions(products),
+            insertion: toRequestInsertions(products3()),
             device: TEST_DEVICE,
           },
           response: {
@@ -1368,7 +1355,7 @@ describe('deliver with onlyLog=true', () => {
       onlyLog: true,
       request: {
         ...newBaseRequest(),
-        insertion: toRequestInsertions(products),
+        insertion: toRequestInsertions(products3()),
       },
       insertionPageType: InsertionPageType.Unpaged,
     });
@@ -1454,7 +1441,6 @@ describe('deliver with onlyLog=true', () => {
 
   it('page size 1', async () => {
     const deliveryClient: any = jest.fn(failFunction('Delivery should not be called when logging only'));
-    const products = [newProduct('3'), newProduct('2'), newProduct('1')];
     const expectedLogReq: LogRequest = {
       userInfo: {
         logUserId: 'logUserId1',
@@ -1472,7 +1458,7 @@ describe('deliver with onlyLog=true', () => {
               size: 1,
             },
             clientRequestId: 'uuid0',
-            insertion: toRequestInsertions(products),
+            insertion: toRequestInsertions(products3()),
             device: TEST_DEVICE,
           },
           response: {
@@ -1498,7 +1484,7 @@ describe('deliver with onlyLog=true', () => {
       onlyLog: true,
       request: {
         ...newBaseRequest(),
-        insertion: toRequestInsertions(products),
+        insertion: toRequestInsertions(products3()),
         paging: {
           size: 1,
         },
@@ -1522,7 +1508,6 @@ describe('deliver with onlyLog=true', () => {
 
   it('offsets position starting at the first insertion for prepaged insertions', async () => {
     const deliveryClient: any = jest.fn(failFunction('Delivery should not be called when logging only'));
-    const products = [newProduct('3'), newProduct('2'), newProduct('1')];
     const expectedLogReq: LogRequest = {
       userInfo: {
         logUserId: 'logUserId1',
@@ -1542,7 +1527,7 @@ describe('deliver with onlyLog=true', () => {
             },
             clientRequestId: 'uuid0',
             device: TEST_DEVICE,
-            insertion: toRequestInsertions(products),
+            insertion: toRequestInsertions(products3()),
           },
           response: {
             insertion: [toResponseInsertion('product3', 'uuid2', 100)],
@@ -1567,7 +1552,7 @@ describe('deliver with onlyLog=true', () => {
       onlyLog: true,
       request: {
         ...newBaseRequest(),
-        insertion: toRequestInsertions(products),
+        insertion: toRequestInsertions(products3()),
         paging: {
           size: 1,
           offset: 100,
@@ -1585,7 +1570,6 @@ describe('deliver with onlyLog=true', () => {
   it('non-zero page offset', async () => {
     const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in logging test'));
     // Paging parameters advance to the second insertion.
-    const products = [newProduct('3'), newProduct('2'), newProduct('1')];
     const expectedLogReq: LogRequest = {
       userInfo: {
         logUserId: 'logUserId1',
@@ -1605,7 +1589,7 @@ describe('deliver with onlyLog=true', () => {
             },
             clientRequestId: 'uuid0',
             device: TEST_DEVICE,
-            insertion: toRequestInsertions(products),
+            insertion: toRequestInsertions(products3()),
           },
           response: {
             insertion: [toResponseInsertion('product2', 'uuid2', 1)],
@@ -1630,7 +1614,7 @@ describe('deliver with onlyLog=true', () => {
       onlyLog: true,
       request: {
         ...newBaseRequest(),
-        insertion: toRequestInsertions(products),
+        insertion: toRequestInsertions(products3()),
         paging: {
           size: 1,
           offset: 1,
@@ -1655,7 +1639,6 @@ describe('deliver with onlyLog=true', () => {
 
   it('extra fields', async () => {
     const deliveryClient: any = jest.fn(failFunction('Delivery should not be called when logging only'));
-    const products = [newProduct('3'), newProduct('2'), newProduct('1')];
     const expectedLogReq: LogRequest = {
       userInfo: {
         logUserId: 'logUserId1',
@@ -1673,7 +1656,7 @@ describe('deliver with onlyLog=true', () => {
             viewId: 'uuid11',
             clientRequestId: 'uuid0',
             device: TEST_DEVICE,
-            insertion: toRequestInsertions(products),
+            insertion: toRequestInsertions(products3()),
           },
           response: {
             insertion: [
@@ -1704,7 +1687,7 @@ describe('deliver with onlyLog=true', () => {
         ...newBaseRequest(),
         sessionId: 'uuid10',
         viewId: 'uuid11',
-        insertion: toRequestInsertions(products),
+        insertion: toRequestInsertions(products3()),
       },
       insertionPageType: InsertionPageType.Unpaged,
     });
@@ -1737,7 +1720,7 @@ describe('deliver with onlyLog=true', () => {
           request: {
             ...newBaseRequest(),
             requestId: 'uuid0',
-            insertion: toRequestInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
+            insertion: toRequestInsertions(products3()),
           },
           insertionPageType: InsertionPageType.Unpaged,
         })
