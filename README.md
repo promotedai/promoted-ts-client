@@ -320,8 +320,9 @@ static async promotedDeliver(req: any, products: Product[], res: Response) {
           // TODO - Add request filters.  The properties are used to generate a paging key that is used for caching.
         }
       },
-      insertion: products.map(product => ({
+      insertion: products.map((product, retrievalRank) => ({
         contentId: product.id,
+        retrievalRank,
         properties: {
           struct: {
             // TODO - add user-item features here.
