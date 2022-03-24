@@ -27,17 +27,20 @@ import { logOnError, newPromotedClient, throwOnError } from 'promoted-ts-client'
 import { v5 as uuid } from 'uuid';
 import axios from 'axios';
 
-// Client can choose their preferred RPC client.
-const axiosApiClient = <Req, Res>(url: string, apiKey: string, timeout: number) => (request: Req): Promise<Res> =>
-  axios.post(
-    url,
-    request,
-    {
-      headers: {
-        "x-api-key": apiKey,
-      },
-      timeout,
+const axiosApiClient = <Req, Res>(
+    url: string,
+    apiKey: string,
+    timeout: number
+) => async (request: Req): Promise<Res> => {
+    const response = await axios.post(url, request, {
+        headers: {
+            "Content-Type": "application/json",
+            "x-api-key": apiKey
+        },
+        timeout
     });
+    return response.data;
+};
 
 // These values will vary depending on whether you are integrating with Promote's dev or prod environment.
 const deliveryApi = 'https://....com/...';
