@@ -55,6 +55,7 @@ export interface Browser {
   userAgent?: string;
   viewportSize?: Size;
   clientHints?: ClientHints;
+  referrer?: string;
 }
 
 export enum DeviceType {

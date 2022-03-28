@@ -69,17 +69,17 @@ export const promotedClient = newPromotedClient({
 
 ### Client Configuration Parameters
 
-| Name                           | Type                                                           | Description                                                                                                                                                                                                                                                                               |
-| ------------------------------ | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `deliveryClient`               | ApiClient                                                      | API client to make a POST request to the Delivery API endpoint including the `x-api-key` header, endpoint and header value obtained from Promoted                                                                                                                                         |
-| `metricsClient`                | ApiClient                                                      | API client to make a POST request to the Delivery API endpoint including the `x-api-key` header, endpoint and header value obtained from Promoted                                                                                                                                         |
-| `performChecks`                | Boolean                                                        | Whether or not to perform detailed input validation, defaults to true but may be disabled for performance                                                                                                                                                                                 |
-| `shadowTrafficDeliveryRate`    | Number between 0 and 1                                         | % of traffic that gets directed to Delivery API as "shadow traffic". Only applies to cases where Delivery API is not called. Defaults to 0 (no shadow traffic).                                                                                                                                                               |
-| `defaultRequestValues`         | BaseRequest                                                    | Default values to use on every request. Only supports `onlyLog` setting.
-| `deliveryTimeoutMillis`        | Number                                                         | Timeout on the Delivery API call. Defaults to 250.                                                                                                                                                                                                                                        |
-| `metricsTimeoutMillis`         | Number                                                         | Timeout on the Metrics API call. Defaults to 3000.                                                                                                                                                                                                                                        |
-| `shouldApplyTreatment`         | `(cohortMembership: CohortMembership \| undefined) => boolean` | Called during delivery, accepts an experiment and returns a Boolean indicating whether the request should be considered part of the control group (false) or in the treatment arm of an experiment (true). If not set, the default behavior of checking the experiement `arm` is applied. |
-| `maxRequestInsertions`         | Number                                                         | Maximum number of request insertions that will be passed to Delivery API on a single request (any more will be truncated by the SDK). Defaults to 1000.                                                                                                                                   |
+| Name                        | Type                                                           | Description                                                                                                                                                                                                                                                                               |
+| --------------------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `deliveryClient`            | ApiClient                                                      | API client to make a POST request to the Delivery API endpoint including the `x-api-key` header, endpoint and header value obtained from Promoted                                                                                                                                         |
+| `metricsClient`             | ApiClient                                                      | API client to make a POST request to the Delivery API endpoint including the `x-api-key` header, endpoint and header value obtained from Promoted                                                                                                                                         |
+| `performChecks`             | Boolean                                                        | Whether or not to perform detailed input validation, defaults to true but may be disabled for performance                                                                                                                                                                                 |
+| `shadowTrafficDeliveryRate` | Number between 0 and 1                                         | % of traffic that gets directed to Delivery API as "shadow traffic". Only applies to cases where Delivery API is not called. Defaults to 0 (no shadow traffic).                                                                                                                           |
+| `defaultRequestValues`      | BaseRequest                                                    | Default values to use on every request. Only supports `onlyLog` setting.                                                                                                                                                                                                                  |
+| `deliveryTimeoutMillis`     | Number                                                         | Timeout on the Delivery API call. Defaults to 250.                                                                                                                                                                                                                                        |
+| `metricsTimeoutMillis`      | Number                                                         | Timeout on the Metrics API call. Defaults to 3000.                                                                                                                                                                                                                                        |
+| `shouldApplyTreatment`      | `(cohortMembership: CohortMembership \| undefined) => boolean` | Called during delivery, accepts an experiment and returns a Boolean indicating whether the request should be considered part of the control group (false) or in the treatment arm of an experiment (true). If not set, the default behavior of checking the experiement `arm` is applied. |
+| `maxRequestInsertions`      | Number                                                         | Maximum number of request insertions that will be passed to Delivery API on a single request (any more will be truncated by the SDK). Defaults to 1000.                                                                                                                                   |
 
 ## Data Types
 
@@ -211,6 +211,7 @@ Field Name | Type | Optional? | Description
 `user_agent` | String | Yes | Browser user agent string
 `viewportSize` | Size | Yes | Size of the browser viewport
 `clientHints` | ClientHints | Yes | HTTP client hints structure
+`referrer` | String | Yes | Request referrer
 
 ---
 
@@ -260,7 +261,7 @@ Input to `deliver`, returns ranked insertions for display.
 Field Name | Type | Optional? | Description
 ---------- | ---- | --------- | -----------
 `experiment` | CohortMembership | Yes | A cohort to evaluation in experimentation.
-`request` | Request | No | The underlying request for content.  Request insertions need to be set on `request`.
+`request` | Request | No | The underlying request for content. Request insertions need to be set on `request`.
 `onlyLog` | Boolean | Yes | Defaults to false. Set to true to log the request as the CONTROL arm of an experiment.
 
 ---
@@ -289,9 +290,10 @@ Field Name | Type | Optional? | Description
 
 ### PromotedClient
 
-| Method              | Input           | Output         | Description                                                                                                                                                                                                                                                                                                                                 |
-| ------------------- | --------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `deliver`           | DeliveryRequest | ClientResponse | Can be used to (1) `onlyLog` Requests to Metrics API or (2) call Delivery API.  Supports calling as shadow traffic, as an experiment or 100% launched.  Clients must call `ClientResponse.log()` after calling `deliever` to log remaining records.
+| Method    | Input           | Output         | Description                                                                                                                                                                                                                                       |
+| --------- | --------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `deliver` | DeliveryRequest | ClientResponse | Can be used to (1) `onlyLog` Requests to Metrics API or (2) call Delivery API. Supports calling as shadow traffic, as an experiment or 100% launched. Clients must call `ClientResponse.log()` after calling `deliever` to log remaining records. |
+
 ---
 
 ## Calling the Delivery API
@@ -374,7 +376,8 @@ Do not set the insertion `position` field in client code. The SDK and Delivery A
 
 Clients are responsible for setting `retrievalRank`.
 
-If you want to log using paginated data, you can use `insertionPageType=PrePaged` to log a page of data.  When calling using shadow traffic or blocking to Delivery API, `deliver` needs as many request insertions as can be sent (probably max of 1,000).
+If you want to log using paginated data, you can use `insertionPageType=PrePaged` to log a page of data. When calling using shadow traffic or blocking to Delivery API, `deliver` needs as many request insertions as can be sent (probably max of 1,000).
+
 ### Experiments
 
 Promoted supports the ability to run Promoted-side experiments. Sometimes it is useful to run an experiment in your where `promoted-ts-client` is integrated (e.g. you want arm assignments to match your own internal experiment arm assignments).
@@ -468,5 +471,6 @@ We use a GitHub action that runs semantic-release to determine how to update ver
 # Resources
 
 The base of this repository is a combination of the following repos:
+
 - https://github.com/DenysVuika/react-lib
 - https://github.com/Alexandrshy/como-north and https://dev.to/alexandrshy/creating-a-template-repository-in-github-1d05
