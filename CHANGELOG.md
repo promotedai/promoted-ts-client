@@ -1,3 +1,10 @@
+# [8.2.0](https://github.com/promotedai/promoted-ts-client/compare/v8.1.0...v8.2.0) (2022-03-30)
+
+
+### Features
+
+* Bump version for Browser.referrer field\rTESTING=unit ([#61](https://github.com/promotedai/promoted-ts-client/issues/61)) ([5bf8760](https://github.com/promotedai/promoted-ts-client/commit/5bf876029ef68d081490142b67578a2fed00df4c))
+
 # [8.1.0](https://github.com/promotedai/promoted-ts-client/compare/v8.0.0...v8.1.0) (2022-03-10)
 
 
