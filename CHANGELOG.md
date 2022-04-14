@@ -1,3 +1,10 @@
+## [8.3.1](https://github.com/promotedai/promoted-ts-client/compare/v8.3.0...v8.3.1) (2022-04-14)
+
+
+### Bug Fixes
+
+* the patch version ([#63](https://github.com/promotedai/promoted-ts-client/issues/63)) ([bafa655](https://github.com/promotedai/promoted-ts-client/commit/bafa655b0afc9ed42044c125b07f876f699f6d9e))
+
 # [8.3.0](https://github.com/promotedai/promoted-ts-client/compare/v8.2.0...v8.3.0) (2022-04-14)
 
 
