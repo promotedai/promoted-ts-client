@@ -135,6 +135,7 @@ export class PromotedClientImpl implements PromotedClient {
 
   // For testing.
   private nowMillis: () => number;
+  // The built in Axios timeout is just response timeout.
   private deliveryTimeoutWrapper: <T>(promise: Promise<T>, timeoutMillis: number) => Promise<T>;
   private metricsTimeoutWrapper: <T>(promise: Promise<T>, timeoutMillis: number) => Promise<T>;
 
@@ -247,7 +248,7 @@ export class PromotedClientImpl implements PromotedClient {
           responseInsertions = response.insertion ?? [];
         }
       } catch (error) {
-        this.handleError(error);
+        this.handleRequestError(error, request.clientRequestId);
       }
     }
     if (!attemptedDeliveryApi && this.shouldSendAsShadowTraffic()) {
@@ -274,7 +275,7 @@ export class PromotedClientImpl implements PromotedClient {
 
     const logRequest = this.createLogRequest(request, deliveryLogToLog, cohortMembershipToLog);
     return {
-      log: this.createLogFn(logRequest),
+      log: this.createLogFn(logRequest, request.clientRequestId),
       responseInsertions,
       executionServer: insertionsFromDeliveryApi ? ExecutionServer.API : ExecutionServer.SDK,
       clientRequestId: request.clientRequestId,
@@ -304,11 +305,11 @@ export class PromotedClientImpl implements PromotedClient {
       },
     };
     // Swallow errors.
-    this.deliveryClient(singleRequest)
+    this.deliveryTimeoutWrapper(this.deliveryClient(singleRequest), this.deliveryTimeoutMillis)
       .then(() => {
         /* do nothing */
       })
-      .catch(this.handleError);
+      .catch((error) => this.handleRequestError(error, request.clientRequestId));
   }
 
   /**
@@ -325,9 +326,7 @@ export class PromotedClientImpl implements PromotedClient {
       return undefined;
     }
 
-    const logRequest: LogRequest = {};
-    // Try to use the Request fields.
-    mergeCommonFields(logRequest, request);
+    const logRequest = createBaseLogRequest(request);
     if (deliveryLogToLog) {
       logRequest.deliveryLog = [deliveryLogToLog];
       if (deliveryLogToLog.request) {
@@ -363,7 +362,7 @@ export class PromotedClientImpl implements PromotedClient {
   /**
    * Creates a function that can be used after sending the response.
    */
-  private createLogFn(logRequest: LogRequest | undefined): () => Promise<void> {
+  private createLogFn(logRequest: LogRequest | undefined, clientRequestId: string | undefined): () => Promise<void> {
     return async () => {
       if (logRequest === undefined) {
         // If no log records, short-cut.
@@ -373,7 +372,7 @@ export class PromotedClientImpl implements PromotedClient {
       try {
         await this.metricsTimeoutWrapper(this.metricsClient(logRequest), this.metricsTimeoutMillis);
       } catch (error) {
-        this.handleError(error);
+        this.handleRequestError(error, clientRequestId);
       }
       return Promise.resolve(undefined);
     };
@@ -393,6 +392,12 @@ export class PromotedClientImpl implements PromotedClient {
       request.clientRequestId = this.uuid();
     }
     return request;
+  };
+
+  // The wrapped Error loses the original stack trace.
+  private handleRequestError = (error: Error, clientRequestId: string | undefined) => {
+    const message = error.message ?? error.toString();
+    this.handleError(new Error(`${message}; clientRequestId=${clientRequestId}`));
   };
 }
 
@@ -441,20 +446,14 @@ const checkThatLogIdsNotSet = (deliveryRequest: DeliveryRequest): Error | undefi
   return undefined;
 };
 
-const mergeCommonFields = (logRequest: LogRequest, request: Request) => {
+const createBaseLogRequest = (request: Request): LogRequest => {
   const { platformId, userInfo, timing, clientInfo } = request;
-  if (platformId && !logRequest.platformId) {
-    logRequest.platformId = platformId;
-  }
-  if (userInfo && !logRequest.userInfo) {
-    logRequest.userInfo = userInfo;
-  }
-  if (timing && !logRequest.timing) {
-    logRequest.timing = timing;
-  }
-  if (clientInfo && !logRequest.clientInfo) {
-    logRequest.clientInfo = clientInfo;
-  }
+  return {
+    platformId,
+    userInfo,
+    timing,
+    clientInfo,
+  };
 };
 
 const deleteCommonFields = (request: Request) => {

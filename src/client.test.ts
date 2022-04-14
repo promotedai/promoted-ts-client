@@ -958,17 +958,18 @@ describe('deliver', () => {
         expect(request).toEqual(expectedLogReq);
       });
 
-      let numErrors = 0;
+      const numExpectedErrors = 1;
+      const errors: Error[] = [];
       const promotedClient = newFakePromotedClient({
         deliveryClient,
         metricsClient,
         deliveryTimeoutWrapper: () => Promise.reject(new Error('timeout')),
         handleError: (error: Error) => {
-          // Skip the first error.
-          if (numErrors > 0) {
+          errors.push(error);
+          if (errors.length > numExpectedErrors) {
+            // Throw early to make errors easier to debug.
             throw error;
           }
-          numErrors++;
         },
       });
 
@@ -993,6 +994,8 @@ describe('deliver', () => {
       await response.log();
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(1);
+      expect(errors.length).toBe(numExpectedErrors);
+      expect(errors[0].toString()).toEqual('Error: Delivery should not be called in timeout; clientRequestId=uuid0');
     });
 
     // This test does not fully test timeouts.
@@ -1034,17 +1037,18 @@ describe('deliver', () => {
         expect(request).toEqual(expectedLogReq);
       });
 
-      let numErrors = 0;
+      const numExpectedErrors = 1;
+      const errors: Error[] = [];
       const promotedClient = newFakePromotedClient({
         deliveryClient,
         metricsClient,
         metricsTimeoutWrapper: () => Promise.reject(new Error('timeout')),
         handleError: (error: Error) => {
-          // Skip the first error.
-          if (numErrors > 0) {
+          errors.push(error);
+          if (errors.length > numExpectedErrors) {
+            // Throw early to make errors easier to debug.
             throw error;
           }
-          numErrors++;
         },
       });
 
@@ -1069,6 +1073,74 @@ describe('deliver', () => {
       await response.log();
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(1);
+      expect(errors.length).toBe(numExpectedErrors);
+      expect(errors[0].toString()).toEqual('Error: timeout; clientRequestId=uuid0');
+    });
+
+    it('shadow traffic timeout', async () => {
+      // deliveryTimeoutWrapper is used instead.
+      const deliveryClient: any = jest.fn(() => Promise.reject(new Error('timeout')));
+      const expectedLogReq: LogRequest = {
+        ...expectedBaseLogRequest(),
+        deliveryLog: [
+          {
+            request: {
+              ...expectedRequestWithoutCommonFields(),
+              requestId: 'uuid1',
+            },
+            response: {
+              insertion: expectedResponseInsertionsForMetrics(),
+            },
+            execution: {
+              executionServer: 2,
+              serverVersion: SERVER_VERSION,
+            },
+          },
+        ],
+      };
+      const metricsClient: any = jest.fn((request) => {
+        expect(request).toEqual(expectedLogReq);
+      });
+
+      const numExpectedErrors = 1;
+      const errors: Error[] = [];
+      const promotedClient = newFakePromotedClient({
+        deliveryClient,
+        metricsClient,
+        shadowTrafficDeliveryRate: 1.0,
+        sampler: {
+          sampleRandom: () => true,
+        },
+        deliveryTimeoutWrapper: () => Promise.reject(new Error('timeout')),
+        handleError: (error: Error) => {
+          errors.push(error);
+          if (errors.length > numExpectedErrors) {
+            // Throw early to make errors easier to debug.
+            throw error;
+          }
+        },
+      });
+
+      const response = await promotedClient.deliver({
+        onlyLog: true,
+        request: request(),
+        insertionPageType: InsertionPageType.Unpaged,
+      });
+      expect(deliveryClient.mock.calls.length).toBe(1);
+      expect(metricsClient.mock.calls.length).toBe(0);
+
+      // SDK-provided positions
+      expect(response.responseInsertions).toEqual(expectedResponseInsertionsForMetrics());
+      expect(response.logRequest).toEqual(expectedLogReq);
+      expect(response.executionServer).toEqual(ExecutionServer.SDK);
+      expect(response.clientRequestId).toEqual('uuid0');
+
+      // Here is where clients will return their response.
+      await response.log();
+      expect(deliveryClient.mock.calls.length).toBe(1);
+      expect(metricsClient.mock.calls.length).toBe(1);
+      expect(errors.length).toBe(numExpectedErrors);
+      expect(errors[0].toString()).toEqual('Error: timeout; clientRequestId=uuid0');
     });
   });
 
@@ -1528,7 +1600,7 @@ describe('deliver with onlyLog=true', () => {
   });
 });
 
-describe('shadow requests in prepareForLogging', () => {
+describe('shadow requests', () => {
   async function runShadowRequestSamplingTest(
     samplingReturn: boolean,
     shouldCallDelivery: boolean,
