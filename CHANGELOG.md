@@ -1,3 +1,10 @@
+# [8.3.0](https://github.com/promotedai/promoted-ts-client/compare/v8.2.0...v8.3.0) (2022-04-14)
+
+
+### Features
+
+* add clientrequestid to errors ([#62](https://github.com/promotedai/promoted-ts-client/issues/62)) ([f62943a](https://github.com/promotedai/promoted-ts-client/commit/f62943ae1d7fece8cc26d6ed270267ee5996b881))
+
 # [8.2.0](https://github.com/promotedai/promoted-ts-client/compare/v8.1.0...v8.2.0) (2022-03-30)
 
 
