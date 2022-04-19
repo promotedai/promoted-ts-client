@@ -1078,8 +1078,8 @@ describe('deliver', () => {
     });
 
     it('shadow traffic timeout', async () => {
-      // deliveryTimeoutWrapper is used instead.
-      const deliveryClient: any = jest.fn(() => Promise.reject(new Error('timeout')));
+      // deliveryTimeoutWrapper is rejected instead so there's no need to do anything non-trivial here.
+      const deliveryClient: any = jest.fn().mockReturnValue(null);
       const expectedLogReq: LogRequest = {
         ...expectedBaseLogRequest(),
         deliveryLog: [
