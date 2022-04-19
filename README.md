@@ -35,6 +35,7 @@ const axiosApiClient = <Req, Res>(
     const response = await axios.post(url, request, {
         headers: {
             "Content-Type": "application/json",
+            "Accept-Encoding": "gzip",
             "x-api-key": apiKey
         },
         timeout
