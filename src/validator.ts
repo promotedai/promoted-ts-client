@@ -1,6 +1,10 @@
 import { DeliveryRequest } from './delivery-request';
 import { InsertionPageType } from './insertion-page-type';
 
+/**
+ * Validator helps with validation and debugging of delivery requests.
+ * It is only called when client.performChecks is true.
+ */
 export class Validator {
   private onlyLog: boolean;
   private shadowTrafficEnabled: boolean;
@@ -13,7 +17,7 @@ export class Validator {
   validate(deliveryRequest: DeliveryRequest): Error[] {
     const errors: Error[] = [];
 
-    const error = checkThatLogIdsNotSet(deliveryRequest);
+    const error = validateIds(deliveryRequest);
     if (error) {
       errors.push(error);
     }
@@ -31,10 +35,18 @@ export class Validator {
   }
 }
 
-const checkThatLogIdsNotSet = (deliveryRequest: DeliveryRequest): Error | undefined => {
+const validateIds = (deliveryRequest: DeliveryRequest): Error | undefined => {
   const { experiment, request } = deliveryRequest;
   if (request.requestId) {
     return new Error('Request.requestId should not be set');
+  }
+
+  if (!request.userInfo) {
+    return new Error('Request.userInfo should be set');
+  }
+
+  if (!request.userInfo.logUserId) {
+    return new Error('Request.userInfo.logUserId should be set');
   }
 
   const { insertion } = request;
