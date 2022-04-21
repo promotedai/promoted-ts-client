@@ -11,6 +11,7 @@ import type { DeliveryLog, Insertion, Request, Response } from './types/delivery
 import type { CohortMembership, LogRequest, LogResponse } from './types/event';
 import { Pager } from './pager';
 import { ExecutionServer } from './execution-server';
+import { Validator } from './validator';
 
 // Version number that semver will generate for the package.
 // Must be manually maintained.
@@ -184,17 +185,10 @@ export class PromotedClientImpl implements PromotedClient {
     let { insertionPageType, onlyLog, request } = deliveryRequest;
     onlyLog = onlyLog ?? this.defaultRequestValues.onlyLog;
     if (this.performChecks) {
-      const error = checkThatLogIdsNotSet(deliveryRequest);
-      if (error) {
-        this.handleError(error);
-      }
-
-      // Delivery requires unpaged insertions.
-      if (deliveryRequest.insertionPageType === InsertionPageType.PrePaged) {
-        if (!onlyLog) {
-          this.handleError(new Error('Delivery expects unpaged insertions'));
-        } else if (this.shadowTrafficDeliveryRate > 0) {
-          this.handleError(new Error('Insertions must be unpaged when shadow traffic is on'));
+      const validationErrors = new Validator(onlyLog, this.shadowTrafficDeliveryRate > 0).validate(deliveryRequest);
+      if (validationErrors) {
+        for (const error of validationErrors) {
+          this.handleError(error);
         }
       }
     }
@@ -411,39 +405,6 @@ const addInsertionIds = (responseInsertions: Insertion[], uuid: () => string) =>
 const defaultShouldApplyTreatment = (cohortMembership: CohortMembership) => {
   const arm = cohortMembership?.arm;
   return arm === undefined || arm !== 'CONTROL';
-};
-
-const checkThatLogIdsNotSet = (deliveryRequest: DeliveryRequest): Error | undefined => {
-  const { experiment, request } = deliveryRequest;
-  if (request.requestId) {
-    return new Error('Request.requestId should not be set');
-  }
-
-  const { insertion } = request;
-  for (const ins of insertion ?? []) {
-    if (ins.requestId) {
-      return new Error('Insertion.requestId should not be set');
-    }
-    if (ins.insertionId) {
-      return new Error('Insertion.insertionId should not be set');
-    }
-    if (!ins.contentId) {
-      return new Error('Insertion.contentId should be set');
-    }
-  }
-  if (experiment) {
-    // TODO - change the types to limit this.
-    if (experiment.platformId) {
-      return new Error('Experiment.platformId should not be set');
-    }
-    if (experiment.userInfo) {
-      return new Error('Experiment.userInfo should not be set');
-    }
-    if (experiment.timing) {
-      return new Error('Experiment.timing should not be set');
-    }
-  }
-  return undefined;
 };
 
 const createBaseLogRequest = (request: Request): LogRequest => {
