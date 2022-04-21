@@ -147,28 +147,28 @@ describe('validator', () => {
     const errors = v.validate(req);
     expect(errors.length).toEqual(0);
   });
-});
 
-it('forces user info to be set on request', () => {
-  const v = new Validator(false, false);
-  const req: DeliveryRequest = {
-    request: {},
-    insertionPageType: InsertionPageType.Unpaged,
-  };
+  it('forces user info to be set on request', () => {
+    const v = new Validator(false, false);
+    const req: DeliveryRequest = {
+      request: {},
+      insertionPageType: InsertionPageType.Unpaged,
+    };
 
-  const errors = v.validate(req);
-  expect(errors.length).toEqual(1);
-  expect(errors[0].message).toEqual('Request.userInfo should be set');
-});
+    const errors = v.validate(req);
+    expect(errors.length).toEqual(1);
+    expect(errors[0].message).toEqual('Request.userInfo should be set');
+  });
 
-it('forces log user id to be set on request user info', () => {
-  const v = new Validator(false, false);
-  const req: DeliveryRequest = {
-    request: { userInfo: { userId: 'aaa' } },
-    insertionPageType: InsertionPageType.Unpaged,
-  };
+  it('forces log user id to be set on request user info', () => {
+    const v = new Validator(false, false);
+    const req: DeliveryRequest = {
+      request: { userInfo: { userId: 'aaa' } },
+      insertionPageType: InsertionPageType.Unpaged,
+    };
 
-  const errors = v.validate(req);
-  expect(errors.length).toEqual(1);
-  expect(errors[0].message).toEqual('Request.userInfo.logUserId should be set');
+    const errors = v.validate(req);
+    expect(errors.length).toEqual(1);
+    expect(errors[0].message).toEqual('Request.userInfo.logUserId should be set');
+  });
 });
