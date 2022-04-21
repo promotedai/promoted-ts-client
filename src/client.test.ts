@@ -995,7 +995,9 @@ describe('deliver', () => {
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(1);
       expect(errors.length).toBe(numExpectedErrors);
-      expect(errors[0].toString()).toEqual('Error: Delivery should not be called in timeout; clientRequestId=uuid0');
+      expect(errors[0].toString()).toEqual(
+        'Error: Delivery should not be called in timeout; delivery, clientRequestId=uuid0'
+      );
     });
 
     // This test does not fully test timeouts.
@@ -1074,7 +1076,7 @@ describe('deliver', () => {
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(1);
       expect(errors.length).toBe(numExpectedErrors);
-      expect(errors[0].toString()).toEqual('Error: timeout; clientRequestId=uuid0');
+      expect(errors[0].toString()).toEqual('Error: timeout; metrics, clientRequestId=uuid0');
     });
 
     it('shadow traffic timeout', async () => {
@@ -1140,7 +1142,7 @@ describe('deliver', () => {
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(1);
       expect(errors.length).toBe(numExpectedErrors);
-      expect(errors[0].toString()).toEqual('Error: timeout; clientRequestId=uuid0');
+      expect(errors[0].toString()).toEqual('Error: timeout; shadow delivery, clientRequestId=uuid0');
     });
   });
 
