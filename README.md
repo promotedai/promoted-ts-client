@@ -26,6 +26,9 @@ PromotedClient avoids having direct dependencies so customers have more options 
 import { logOnError, newPromotedClient, throwOnError } from 'promoted-ts-client';
 import { v5 as uuid } from 'uuid';
 import axios from 'axios';
+import https from "https";
+
+const httpsAgent = new https.Agent({ keepAlive: true });
 
 const axiosApiClient = <Req, Res>(
     url: string,
@@ -38,6 +41,7 @@ const axiosApiClient = <Req, Res>(
             "Accept-Encoding": "gzip",
             "x-api-key": apiKey
         },
+        httpsAgent,
         timeout
     });
     return response.data;
