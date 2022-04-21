@@ -242,7 +242,7 @@ export class PromotedClientImpl implements PromotedClient {
           responseInsertions = response.insertion ?? [];
         }
       } catch (error) {
-        this.handleRequestError(error, request.clientRequestId);
+        this.handleRequestError(error, 'delivery', request.clientRequestId);
       }
     }
     if (!attemptedDeliveryApi && this.shouldSendAsShadowTraffic()) {
@@ -303,7 +303,7 @@ export class PromotedClientImpl implements PromotedClient {
       .then(() => {
         /* do nothing */
       })
-      .catch((error) => this.handleRequestError(error, request.clientRequestId));
+      .catch((error) => this.handleRequestError(error, 'shadow delivery', request.clientRequestId));
   }
 
   /**
@@ -366,7 +366,7 @@ export class PromotedClientImpl implements PromotedClient {
       try {
         await this.metricsTimeoutWrapper(this.metricsClient(logRequest), this.metricsTimeoutMillis);
       } catch (error) {
-        this.handleRequestError(error, clientRequestId);
+        this.handleRequestError(error, 'metrics', clientRequestId);
       }
       return Promise.resolve(undefined);
     };
@@ -389,9 +389,9 @@ export class PromotedClientImpl implements PromotedClient {
   };
 
   // The wrapped Error loses the original stack trace.
-  private handleRequestError = (error: Error, clientRequestId: string | undefined) => {
+  private handleRequestError = (error: Error, method: string, clientRequestId: string | undefined) => {
     const message = error.message ?? error.toString();
-    this.handleError(new Error(`${message}; clientRequestId=${clientRequestId}`));
+    this.handleError(new Error(`${message}; ${method}, clientRequestId=${clientRequestId}`));
   };
 }
 
