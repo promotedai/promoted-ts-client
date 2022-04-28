@@ -18,41 +18,21 @@ Client logging libraries:
 
 We recommend creating a PromotedClient in a separate file so it can be reused.
 
-PromotedClient avoids having direct dependencies so customers have more options for customization and can keep dependencies smaller.
-
-### `promotedClient.js`
+PromotedClient avoids having direct http client dependencies so customers have more options for customization and can keep dependencies smaller.
 
 ```typescript
 import { logOnError, newPromotedClient, throwOnError } from 'promoted-ts-client';
 import { v5 as uuid } from 'uuid';
-import axios from 'axios';
-import https from "https";
 
-const httpsAgent = new https.Agent({ keepAlive: true });
-
-const axiosApiClient = <Req, Res>(
-    url: string,
-    apiKey: string,
-    timeout: number
-) => async (request: Req): Promise<Res> => {
-    const response = await axios.post(url, request, {
-        headers: {
-            "Content-Type": "application/json",
-            "Accept-Encoding": "gzip",
-            "x-api-key": apiKey
-        },
-        httpsAgent,
-        timeout
-    });
-    return response.data;
-};
+// See section below.
+const apiClient = ...;
 
 // These values will vary depending on whether you are integrating with Promote's dev or prod environment.
 const deliveryApi = 'https://....com/...';
-const deliveryApiKey = 'AbCSomeRLongString1';
+const deliveryApiKey = 'LongString1';
 const deliveryTimeoutMillis = 250;
 const metricsApi = 'https://....com/...';
-const metricsApiKey = 'AbCSomeRLongString2';
+const metricsApiKey = 'LongString2';
 const metricsTimeoutMillis = 3000;
 
 // NextJS example.  For errors, if inDev then throw else log.
@@ -64,13 +44,73 @@ export const promotedClient = newPromotedClient({
   // TODO - Customize handleError for your server.
   // When developing using Node.js, throwOnError will give a scary unhandled promise warning.
   handleError: throwError ? throwOnError : logOnError;
-  deliveryClient: axiosApiClient(deliveryApi, deliveryApiKey, deliveryTimeoutMillis),
-  metricsClient: axiosApiClient(metricsApi, metricsApiKey, metricsTimeoutMillis),
+  deliveryClient: apiClient(deliveryApi, deliveryApiKey, deliveryTimeoutMillis),
+  metricsClient: apiClient(metricsApi, metricsApiKey, metricsTimeoutMillis),
   uuid,
   deliveryTimeoutMillis,
   metricsTimeoutMillis,
 });
 ```
+
+For HTTP clients:
+- `node-fetch` has good latency but takes a little more work to setup.  Make sure to test out the timeout logic.
+- `axios` is a little slower but is easier to setup.
+- `got` is harder to setup but provides `HTTP/2` support.
+
+### Using `node-fetch`
+
+`node-fetch` can be slightly faster than `axios`.
+
+```typescript
+import fetch from "node-fetch";
+import https from "https";
+
+const agent = new https.Agent({
+  keepAlive: true,
+  // You need to optimize this.
+  maxSockets: 50,
+});
+
+const apiClient = <Req, Res>(
+  url: string,
+  apiKey: string,
+  timeoutMs: number
+) => async (request: Req): Promise<Res> => {
+  // AbortController was added in node v14.17.0 globally.
+  // This can brought in as a normal import too.
+  const AbortController = globalThis.AbortController || await import('abort-controller')
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => {
+    controller.abort();
+  }, timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      body: JSON.stringify(request),
+      headers: {
+        "Content-Type": "application/json",
+        "Accept-Encoding": "gzip",
+        "x-api-key": apiKey
+      },
+      agent,
+      signal: controller.signal,
+    });
+    return response.json();
+  } finally {
+    clearTimeout(timeout);
+  }
+};
+```
+
+### Using `axios`
+
+[Axios example](axios.md)
+
+### Using `got`
+
+[got example](got.md)
 
 ### Client Configuration Parameters
 
