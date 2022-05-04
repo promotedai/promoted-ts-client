@@ -227,9 +227,10 @@ export class PromotedClientImpl implements PromotedClient {
           const singleRequest: Request = {
             ...request,
             clientInfo: {
-              ...request.clientInfo,
               trafficType: TrafficType_PRODUCTION,
               clientType: ClientType_PLATFORM_SERVER,
+              // Expand `request.clientInfo` after so we can use client-specified trafficType or clientType.
+              ...request.clientInfo,
             },
           };
 
@@ -293,9 +294,10 @@ export class PromotedClientImpl implements PromotedClient {
     const singleRequest: Request = {
       ...request,
       clientInfo: {
-        ...request.clientInfo,
         trafficType: TrafficType_SHADOW,
         clientType: ClientType_PLATFORM_SERVER,
+        // Expand `request.clientInfo` after so we can use client-specified trafficType or clientType.
+        ...request.clientInfo,
       },
     };
     // Swallow errors.
@@ -333,9 +335,12 @@ export class PromotedClientImpl implements PromotedClient {
       // Ignore any common fields set on CohortMembership.
     }
 
-    logRequest.clientInfo = { ...logRequest.clientInfo };
-    logRequest.clientInfo.clientType = ClientType_PLATFORM_SERVER;
-    logRequest.clientInfo.trafficType = TrafficType_PRODUCTION;
+    logRequest.clientInfo = {
+      clientType: ClientType_PLATFORM_SERVER,
+      trafficType: TrafficType_PRODUCTION,
+      // Expand `request.clientInfo` after so we can use client-specified trafficType or clientType.
+      ...logRequest.clientInfo,
+    };
 
     // TODO - strip redundant fields off of child records.
 
