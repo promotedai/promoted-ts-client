@@ -1,3 +1,10 @@
+# [8.4.0](https://github.com/promotedai/promoted-ts-client/compare/v8.3.2...v8.4.0) (2022-05-04)
+
+
+### Features
+
+* support client-specified clientinfo ([#71](https://github.com/promotedai/promoted-ts-client/issues/71)) ([1393ef4](https://github.com/promotedai/promoted-ts-client/commit/1393ef40056fea8e9a758f858af641a090479e34))
+
 ## [8.3.2](https://github.com/promotedai/promoted-ts-client/compare/v8.3.1...v8.3.2) (2022-04-21)
 
 
