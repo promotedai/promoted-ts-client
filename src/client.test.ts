@@ -411,6 +411,52 @@ describe('deliver', () => {
     expect(metricsClient.mock.calls.length).toBe(0);
   });
 
+  it('client-specified clientInfo', async () => {
+    const deliveryClient = jest.fn((request) => {
+      expect(request).toEqual({
+        ...expectedRequest(),
+        clientInfo: {
+          trafficType: 'LOAD_TEST',
+          clientType: 'PLATFORM_CLIENT',
+        },
+        insertion: [],
+      });
+      return Promise.resolve({
+        insertion: [],
+      });
+    });
+    const metricsClient = jest.fn(failFunction('All data should be logged in Delivery API'));
+
+    const promotedClient = newFakePromotedClient({
+      deliveryClient,
+      metricsClient,
+    });
+
+    const response = await promotedClient.deliver({
+      request: {
+        ...request(),
+        clientInfo: {
+          trafficType: 'LOAD_TEST',
+          clientType: 'PLATFORM_CLIENT',
+        },
+        insertion: [],
+      },
+      insertionPageType: InsertionPageType.Unpaged,
+    });
+    expect(deliveryClient.mock.calls.length).toBe(1);
+    expect(metricsClient.mock.calls.length).toBe(0);
+
+    expect(response.responseInsertions).toEqual([]);
+
+    expect(response.executionServer).toEqual(ExecutionServer.API);
+    expect(response.clientRequestId).toEqual('uuid0');
+
+    // Here is where clients will return their response.
+    await response.log();
+    expect(deliveryClient.mock.calls.length).toBe(1);
+    expect(metricsClient.mock.calls.length).toBe(0);
+  });
+
   describe('using cohorts', () => {
     it('arm=CONTROL', async () => {
       const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in CONTROL'));
@@ -1361,6 +1407,67 @@ describe('deliver with onlyLog=true', () => {
       onlyLog: true,
       request: {
         ...request(),
+        insertion: [],
+      },
+      insertionPageType: InsertionPageType.Unpaged,
+    });
+    expect(deliveryClient.mock.calls.length).toBe(0);
+    expect(metricsClient.mock.calls.length).toBe(0);
+
+    expect(response.responseInsertions).toEqual([]);
+    expect(response.logRequest).toEqual(expectedLogReq);
+    expect(response.executionServer).toEqual(2);
+    expect(response.clientRequestId).toEqual('uuid0');
+
+    // Here is where clients will return their response.
+    await response.log();
+    expect(deliveryClient.mock.calls.length).toBe(0);
+    expect(metricsClient.mock.calls.length).toBe(1);
+  });
+
+  it('client-specified clientInfo', async () => {
+    const deliveryClient: any = jest.fn(failFunction('Delivery should not be called when logging only'));
+    // Log request doesn't set position.
+    const expectedLogReq: LogRequest = {
+      ...expectedBaseLogRequest(),
+      clientInfo: {
+        trafficType: 'LOAD_TEST',
+        clientType: 'PLATFORM_CLIENT',
+      },
+      deliveryLog: [
+        {
+          request: {
+            ...expectedRequestWithoutCommonFields(),
+            requestId: 'uuid1',
+            insertion: [],
+          },
+          response: {
+            insertion: [],
+          },
+          execution: {
+            executionServer: 2,
+            serverVersion: SERVER_VERSION,
+          },
+        },
+      ],
+    };
+    const metricsClient: any = jest.fn((request) => {
+      expect(request).toEqual(expectedLogReq);
+    });
+
+    const promotedClient = newFakePromotedClient({
+      deliveryClient,
+      metricsClient,
+    });
+
+    const response = await promotedClient.deliver({
+      onlyLog: true,
+      request: {
+        ...request(),
+        clientInfo: {
+          trafficType: 'LOAD_TEST',
+          clientType: 'PLATFORM_CLIENT',
+        },
         insertion: [],
       },
       insertionPageType: InsertionPageType.Unpaged,

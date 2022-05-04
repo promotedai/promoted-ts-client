@@ -18,8 +18,8 @@ export interface Properties {
   struct?: any;
 }
 
-export type TrafficType = 0 | 1 | 2 | 4;
-export type ClientType = 0 | 1 | 2;
+export type TrafficType = 0 | 1 | 2 | 4 | 5 | 'UNKNOWN_TRAFFIC_TYPE' | 'PRODUCTION' | 'REPLAY' | 'SHADOW' | 'LOAD_TEST';
+export type ClientType = 0 | 1 | 2 | 'UNKNOWN_REQUEST_CLIENT' | 'PLATFORM_SERVER' | 'PLATFORM_CLIENT';
 
 export interface ClientInfo {
   trafficType?: TrafficType;
