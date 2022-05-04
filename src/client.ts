@@ -15,7 +15,7 @@ import { Validator } from './validator';
 
 // Version number that semver will generate for the package.
 // Must be manually maintained.
-export const SERVER_VERSION = 'ts.8.3.2';
+export const SERVER_VERSION = 'ts.8.4.0';
 
 /**
  * Design-wise
