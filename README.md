@@ -473,6 +473,62 @@ const experimentMembership = experimentActivated
   : null;
 ```
 
+### Advanced example
+
+Here's a more complex example that supports:
+- Running an experiment.
+- Separate configuration for internal users.
+- Also supports skipping the experiment and only logging (or only calling Delivery API)
+  through the same method.
+
+```typescript
+/**
+ * @param userInfo { userId, logUserId, isInternalUser }
+ * @param overrideOnlyLog If set, skips the experiment and forces the onlyLog option.
+ */
+static async callPromoted(
+    products: Product[],
+    userInfo: UserInfo,
+    overrideOnlyLog : boolean | undefined): Insertion[] {
+
+  let onlyLog ?: boolean = undefined;
+  let experiment ?: CohortMembership = undefined;
+  if (overrideOnlyLog != undefined) {
+    onlyLog = overrideOnlyLog;
+    // Do not specify experiment when overrideOnlyLog is specified.
+  } else if (userInfo.isInternalUser) {
+    // Call Promoted Delivery API for internal users.
+    onlyLog = false;
+    // Keep experiment undefined for internal users.
+  } else {
+    // Normal external user for a call that should run as an experiment.
+    experiment = twoArmExperimentMembership(logUserId, experimentConfig);
+  }
+
+  const response = await promotedClient.deliver({
+    onlyLog,
+    experiment,
+    request: {
+      userInfo,
+      ...
+    }
+  });
+
+  // Construct the map while the RPC is happening.
+  const productIdToProduct = products.reduce((map, product) => {
+      map[product.id] = product;
+      return map;
+  }, {});
+  const clientResponse = await responsePromise;
+  // Do not block.  Log asynchronously.
+  clientResponse.log().catch(handleError);
+  return toContents<Product>(
+      clientResponse.insertion,
+      productIdToProduct
+  );
+}
+```
+
 # Improving this library
 
 ## Tech used
