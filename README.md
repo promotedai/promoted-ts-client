@@ -355,13 +355,17 @@ static async getProducts(req: any, res: Response) {
 We would modify to something like this:
 
 ```typescript
-static async promotedDeliver(req: any, products: Product[], res: Response) {
+/**
+ * @param userInfo { userId, logUserId, isInternalUser }
+ * @return Product[].  This code will set `Product.insertionId`.
+ */
+async function callPromoted(
+    products: Product[],
+    userInfo: UserInfo): Promise<Product[]> {
   const responsePromise = promotedClient.deliver({
     // onlyLog: true - if you want to only log to Promoted.
     request: {
-      userInfo: {
-        logUserId: req.logUserId,
-      },
+      userInfo,
       useCase: 'FEED',
       // TODO - add `query` for the search query.
       properties: {
@@ -381,24 +385,22 @@ static async promotedDeliver(req: any, products: Product[], res: Response) {
         },
       })),
     },
+    // It's okay to use Prepaged temporarily while only logging.
+    insertionPageType: InsertionPageType.Unpaged,
   });
   // Construct the map while the RPC is happening.
   const productIdToProduct = products.reduce((map, product) => {
-      map[product.id] = product;
+      map[product.id] = {...product};
       return map;
   }, {});
   const clientResponse = await responsePromise;
   // Do not block.  Log asynchronously.
   clientResponse.log().catch(handleError);
-  const responseProducts = toContents<Product>(
-      clientResponse.insertion,
+  // Also adds `insertionId` field to the product.
+  return toContents<Product>(
+      clientResponse.responseInsertions,
       productIdToProduct
   );
-
-  // Change the response Product list to use the values in the returned Insertions.
-  sendSuccessToClient(res, {
-    products: responseProducts),
-  });
 }
 ```
 
@@ -432,14 +434,14 @@ Promoted supports the ability to run Promoted-side experiments. Sometimes it is 
 // Create a small config indicating the experiment is a 50-50 experiment where 10% of the users are activated.
 const experimentConfig = twoArmExperimentConfig5050("promoted-v1", 5, 5);
 
-static async getProducts(req: any, res: Response) {
-  const products = ...;
+async function callPromoted(
+    products: Product[],
+    userInfo: UserInfo): Promise<Insertion[]> {
 
   // This gets the anonymous user id from the request.
-  const logUserId = getLogUserId(req);
-  const experimentMembership = twoArmExperimentMembership(logUserId, experimentConfig);
+  const experimentMembership = twoArmExperimentMembership(userInfo.logUserId, experimentConfig);
 
-  const response = await promotedClient.deliver({
+  const responsePromise = promotedClient.deliver({
     ...
     // If experimentActivated can be false (e.g. only 5% of users get put into an experiment) and
     // you want the non-activated behavior to not call Delivery API, then you need to specify onlyLog to false.
@@ -450,7 +452,8 @@ static async getProducts(req: any, res: Response) {
     experiment: experimentMembership,
     ...
   });
-  ...
+
+  return ...
 }
 ```
 
@@ -471,6 +474,63 @@ const experimentMembership = experimentActivated
       arm: inTreatment ? 'TREATMENT' : 'CONTROL',
     }
   : null;
+```
+
+### Advanced example
+
+Here's a more complex example that supports:
+- Running an experiment.
+- Separate configuration for internal users.
+- Also supports skipping the experiment and only logging (or only calling Delivery API)
+  through the same method.
+
+```typescript
+/**
+ * @param userInfo { userId, logUserId, isInternalUser }
+ * @param overrideOnlyLog If set, skips the experiment and forces the onlyLog option.
+ */
+async function callPromoted(
+    products: Product[],
+    userInfo: UserInfo,
+    overrideOnlyLog : boolean | undefined): Promise<Insertion[]> {
+
+  let onlyLog: boolean | undefined = undefined;
+  let experiment: CohortMembership | undefined = undefined;
+  if (overrideOnlyLog != undefined) {
+    onlyLog = overrideOnlyLog;
+    // Do not specify experiment when overrideOnlyLog is specified.
+  } else if (userInfo.isInternalUser) {
+    // Call Promoted Delivery API for internal users.
+    onlyLog = false;
+    // Keep experiment undefined for internal users.
+  } else {
+    // Normal external user for a call that should run as an experiment.
+    experiment = twoArmExperimentMembership(logUserId, experimentConfig);
+  }
+
+  const responsePromise = promotedClient.deliver({
+    onlyLog,
+    experiment,
+    request: {
+      userInfo,
+      ...
+    },
+    insertionPageType: InsertionPageType.Unpaged,
+  });
+
+  // Construct the map while the RPC is happening.
+  const productIdToProduct = products.reduce((map, product) => {
+      map[product.id] = {...product};
+      return map;
+  }, {});
+  const clientResponse = await responsePromise;
+  // Do not block.  Log asynchronously.
+  clientResponse.log().catch(handleError);
+  return toContents<Product>(
+      clientResponse.responseInsertions,
+      productIdToProduct
+  );
+}
 ```
 
 # Improving this library
