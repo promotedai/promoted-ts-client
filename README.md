@@ -112,6 +112,21 @@ const apiClient = <Req, Res>(
 
 [got example](got.md)
 
+### Optimization - DNS cache
+
+```typescript
+// `szmarczak/cacheable-lookup` is owned by the same person as `got`.
+import CacheableLookup from "cacheable-lookup";
+
+// https://github.com/szmarczak/cacheable-lookup/blob/master/README.md#api
+const cacheable = new CacheableLookup({
+    lookup: false,
+    // TODO - review other options.
+});
+
+cacheable.install(httpsAgent);
+```
+
 ### Client Configuration Parameters
 
 | Name                        | Type                                                           | Description                                                                                                                                                                                                                                                                               |
