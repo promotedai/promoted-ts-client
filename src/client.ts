@@ -184,7 +184,7 @@ export class PromotedClientImpl implements PromotedClient {
     let { onlyLog, request } = deliveryRequest;
     onlyLog = onlyLog ?? this.defaultRequestValues.onlyLog;
     if (this.performChecks) {
-      const validationErrors = new Validator(onlyLog, this.shadowTrafficDeliveryRate > 0).validate(deliveryRequest);
+      const validationErrors = new Validator().validate(deliveryRequest);
       if (validationErrors) {
         for (const error of validationErrors) {
           this.handleError(error);
