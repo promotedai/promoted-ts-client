@@ -2,7 +2,6 @@ import { log, newPromotedClient, noopFn, NoopPromotedClient, throwOnError } from
 import type { Insertion, Request } from './types/delivery';
 import { ClientType_PLATFORM_SERVER, TrafficType_PRODUCTION, TrafficType_SHADOW, SERVER_VERSION } from './client';
 import { PromotedClientArguments } from './client-args';
-import { InsertionPageType } from './insertion-page-type';
 import { DeliveryRequest } from './delivery-request';
 import { ExecutionServer } from './execution-server';
 import { LogRequest } from './types/event';
@@ -188,7 +187,7 @@ describe('no-op', () => {
           ...expectedRequest(),
           insertion: toRequestInsertions(products3()),
         },
-        insertionPageType: InsertionPageType.Unpaged,
+        insertionStart: 0,
       });
 
       const expectedRespInsertions = [
@@ -213,7 +212,7 @@ describe('no-op', () => {
           ...request(),
           insertion: [],
         },
-        insertionPageType: InsertionPageType.Unpaged,
+        insertionStart: 0,
       });
 
       expect(response.responseInsertions).toEqual([]);
@@ -236,7 +235,7 @@ describe('no-op', () => {
             size: 1,
           },
         },
-        insertionPageType: InsertionPageType.Unpaged,
+        insertionStart: 0,
       });
 
       const expectedRespInsertions = [{ contentId: 'product3', position: 0 }];
@@ -249,60 +248,6 @@ describe('no-op', () => {
 });
 
 describe('deliver', () => {
-  it('allows you to set unpaged', async () => {
-    const deliveryClient = jest.fn(() => {
-      return Promise.resolve({});
-    });
-    const metricsClient = jest.fn(failFunction('All data should be logged in Delivery API'));
-    let gotError = false;
-
-    const promotedClient = newFakePromotedClient({
-      deliveryClient,
-      metricsClient,
-      handleError: () => {
-        gotError = true;
-      },
-    });
-
-    await promotedClient.deliver({
-      request: {
-        ...request(),
-        insertion: toRequestInsertions(products3()),
-      },
-      insertionPageType: InsertionPageType.Unpaged,
-    });
-    expect(deliveryClient.mock.calls.length).toBe(1);
-    expect(gotError).toBeFalsy();
-  });
-
-  it('errors if you say prepaged', async () => {
-    const deliveryClient = jest.fn(() => {
-      return Promise.resolve({});
-    });
-    const metricsClient = jest.fn(failFunction('All data should be logged in Delivery API'));
-    let gotError = false;
-
-    const promotedClient = newFakePromotedClient({
-      deliveryClient,
-      metricsClient,
-      handleError: () => {
-        gotError = true;
-      },
-    });
-
-    const deliveryReq: DeliveryRequest = {
-      request: {
-        ...request(),
-        insertion: toRequestInsertions(products3()),
-      },
-      insertionPageType: InsertionPageType.PrePaged,
-    };
-
-    await promotedClient.deliver(deliveryReq);
-    expect(deliveryClient.mock.calls.length).toBe(1); // note our precondition checks don't actually throw
-    expect(gotError).toBeTruthy();
-  });
-
   it('simple good case', async () => {
     const deliveryClient = jest.fn((request) => {
       expect(request).toEqual(expectedRequest());
@@ -319,7 +264,7 @@ describe('deliver', () => {
 
     const response = await promotedClient.deliver({
       request: request(),
-      insertionPageType: InsertionPageType.Unpaged,
+      insertionStart: 0,
     });
     expect(deliveryClient.mock.calls.length).toBe(1);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -358,7 +303,7 @@ describe('deliver', () => {
 
     const response = await promotedClient.deliver({
       request: request(),
-      insertionPageType: InsertionPageType.Unpaged,
+      insertionStart: 0,
     });
     expect(deliveryClient.mock.calls.length).toBe(1);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -395,7 +340,7 @@ describe('deliver', () => {
         ...request(),
         insertion: [],
       },
-      insertionPageType: InsertionPageType.Unpaged,
+      insertionStart: 0,
     });
     expect(deliveryClient.mock.calls.length).toBe(1);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -441,7 +386,7 @@ describe('deliver', () => {
         },
         insertion: [],
       },
-      insertionPageType: InsertionPageType.Unpaged,
+      insertionStart: 0,
     });
     expect(deliveryClient.mock.calls.length).toBe(1);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -456,6 +401,8 @@ describe('deliver', () => {
     expect(deliveryClient.mock.calls.length).toBe(1);
     expect(metricsClient.mock.calls.length).toBe(0);
   });
+
+  // TODO - Add a Delivery test for insertionStart != 0.  It shouldn't have any impact when Delivery API is called.
 
   describe('using cohorts', () => {
     it('arm=CONTROL', async () => {
@@ -505,7 +452,7 @@ describe('deliver', () => {
           cohortId: 'HOLD_OUT',
           arm: 'CONTROL',
         },
-        insertionPageType: InsertionPageType.Unpaged,
+        insertionStart: 0,
       });
       expect(deliveryClient.mock.calls.length).toBe(0);
       expect(metricsClient.mock.calls.length).toBe(0);
@@ -586,7 +533,7 @@ describe('deliver', () => {
           cohortId: 'HOLD_OUT',
           arm: 'CONTROL',
         },
-        insertionPageType: InsertionPageType.Unpaged,
+        insertionStart: 0,
       });
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(0);
@@ -644,7 +591,7 @@ describe('deliver', () => {
           cohortId: 'HOLD_OUT',
           arm: 'TREATMENT',
         },
-        insertionPageType: InsertionPageType.Unpaged,
+        insertionStart: 0,
       });
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(0);
@@ -708,7 +655,7 @@ describe('deliver', () => {
           cohortId: 'HOLD_OUT',
           arm: 'TREATMENT',
         },
-        insertionPageType: InsertionPageType.Unpaged,
+        insertionStart: 0,
       });
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(0);
@@ -781,7 +728,7 @@ describe('deliver', () => {
         cohortId: 'HOLD_OUT',
         arm: 'CONTROL',
       },
-      insertionPageType: InsertionPageType.Unpaged,
+      insertionStart: 0,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -837,7 +784,7 @@ describe('deliver', () => {
         ...request(),
         insertion: toRequestInsertions(products3()),
       },
-      insertionPageType: InsertionPageType.Unpaged,
+      insertionStart: 0,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -907,7 +854,7 @@ describe('deliver', () => {
         cohortId: 'HOLD_OUT',
         arm: 'CONTROL',
       },
-      insertionPageType: InsertionPageType.Unpaged,
+      insertionStart: 0,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -947,7 +894,7 @@ describe('deliver', () => {
 
     const response = await promotedClient.deliver({
       request: request(),
-      insertionPageType: InsertionPageType.Unpaged,
+      insertionStart: 0,
     });
     expect(deliveryClient.mock.calls.length).toBe(1);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -1025,7 +972,7 @@ describe('deliver', () => {
           cohortId: 'HOLD_OUT',
           arm: 'TREATMENT',
         },
-        insertionPageType: InsertionPageType.Unpaged,
+        insertionStart: 0,
       });
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(0);
@@ -1106,7 +1053,7 @@ describe('deliver', () => {
           cohortId: 'HOLD_OUT',
           arm: 'TREATMENT',
         },
-        insertionPageType: InsertionPageType.Unpaged,
+        insertionStart: 0,
       };
       const response = await promotedClient.deliver(deliveryReq);
       expect(deliveryClient.mock.calls.length).toBe(1);
@@ -1172,7 +1119,7 @@ describe('deliver', () => {
       const response = await promotedClient.deliver({
         onlyLog: true,
         request: request(),
-        insertionPageType: InsertionPageType.Unpaged,
+        insertionStart: 0,
       });
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(0);
@@ -1201,7 +1148,7 @@ describe('deliver', () => {
             ...expectedRequest(),
             requestId: 'uuid0',
           },
-          insertionPageType: InsertionPageType.Unpaged,
+          insertionStart: 0,
         })
       ).rejects.toEqual(new Error('Request.requestId should not be set'));
     });
@@ -1221,7 +1168,7 @@ describe('deliver', () => {
               toRequestInsertion(newProduct('1')),
             ],
           },
-          insertionPageType: InsertionPageType.Unpaged,
+          insertionStart: 0,
         })
       ).rejects.toEqual(new Error('Insertion.requestId should not be set'));
     });
@@ -1241,7 +1188,7 @@ describe('deliver', () => {
               toRequestInsertion(newProduct('1')),
             ],
           },
-          insertionPageType: InsertionPageType.Unpaged,
+          insertionStart: 0,
         })
       ).rejects.toEqual(new Error('Insertion.insertionId should not be set'));
     });
@@ -1254,7 +1201,7 @@ describe('deliver', () => {
             ...request(),
             insertion: [{}, toRequestInsertion(newProduct('2')), toRequestInsertion(newProduct('1'))],
           },
-          insertionPageType: InsertionPageType.Unpaged,
+          insertionStart: 0,
         })
       ).rejects.toEqual(new Error('Insertion.contentId should be set'));
     });
@@ -1267,7 +1214,7 @@ describe('deliver', () => {
           experiment: {
             platformId: 1,
           },
-          insertionPageType: InsertionPageType.Unpaged,
+          insertionStart: 0,
         })
       ).rejects.toEqual(new Error('Experiment.platformId should not be set'));
     });
@@ -1280,7 +1227,7 @@ describe('deliver', () => {
           experiment: {
             userInfo: {},
           },
-          insertionPageType: InsertionPageType.Unpaged,
+          insertionStart: 0,
         })
       ).rejects.toEqual(new Error('Experiment.userInfo should not be set'));
     });
@@ -1293,7 +1240,7 @@ describe('deliver', () => {
           experiment: {
             timing: {},
           },
-          insertionPageType: InsertionPageType.Unpaged,
+          insertionStart: 0,
         })
       ).rejects.toEqual(new Error('Experiment.timing should not be set'));
     });
@@ -1356,7 +1303,7 @@ describe('deliver with onlyLog=true', () => {
     const response = await promotedClient.deliver({
       onlyLog: true,
       request: request(),
-      insertionPageType: InsertionPageType.Unpaged,
+      insertionStart: 0,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -1409,7 +1356,7 @@ describe('deliver with onlyLog=true', () => {
         ...request(),
         insertion: [],
       },
-      insertionPageType: InsertionPageType.Unpaged,
+      insertionStart: 0,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -1470,7 +1417,7 @@ describe('deliver with onlyLog=true', () => {
         },
         insertion: [],
       },
-      insertionPageType: InsertionPageType.Unpaged,
+      insertionStart: 0,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -1526,7 +1473,7 @@ describe('deliver with onlyLog=true', () => {
           size: 1,
         },
       },
-      insertionPageType: InsertionPageType.Unpaged,
+      insertionStart: 0,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -1585,7 +1532,7 @@ describe('deliver with onlyLog=true', () => {
           offset: 100,
         },
       },
-      insertionPageType: InsertionPageType.PrePaged,
+      insertionStart: 100,
     });
     expect(response.responseInsertions).toEqual([toResponseInsertion('product3', 'uuid2', 100)]);
 
@@ -1637,7 +1584,7 @@ describe('deliver with onlyLog=true', () => {
           offset: 1,
         },
       },
-      insertionPageType: InsertionPageType.Unpaged,
+      insertionStart: 0,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -1692,7 +1639,7 @@ describe('deliver with onlyLog=true', () => {
         sessionId: 'uuid10',
         viewId: 'uuid11',
       },
-      insertionPageType: InsertionPageType.Unpaged,
+      insertionStart: 0,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -1783,7 +1730,7 @@ describe('shadow requests', () => {
         ...request(),
         insertion: toRequestInsertions(products),
       },
-      insertionPageType: InsertionPageType.Unpaged,
+      insertionStart: 0,
     };
     const response = await promotedClient.deliver(deliveryRequest);
     const deliveryCallCount = shouldCallDelivery ? 1 : 0;
@@ -1813,35 +1760,6 @@ describe('shadow requests', () => {
   it('does not make a shadow request - sampling not turned on', async () => {
     await runShadowRequestSamplingTest(true, false, 0);
   });
-
-  async function runPagingTypeErrorTest(insertionPagingType: InsertionPageType) {
-    const deliveryClient: any = jest.fn(failFunction('Delivery should not be called in the error case'));
-    const metricsClient: any = jest.fn(failFunction('Metrics should not be called in the error case'));
-
-    const promotedClient = newFakePromotedClient({
-      deliveryClient,
-      metricsClient,
-      shadowTrafficDeliveryRate: 0.5,
-      handleError: throwOnError,
-      performChecks: true,
-    });
-
-    const products = [newProduct('3')];
-    return promotedClient.deliver({
-      onlyLog: true,
-      request: {
-        ...request(),
-        insertion: toRequestInsertions(products),
-      },
-      insertionPageType: insertionPagingType,
-    });
-  }
-
-  it('throws an error with the wrong paging type', async () => {
-    return expect(runPagingTypeErrorTest(InsertionPageType.PrePaged)).rejects.toThrow(
-      'Insertions must be unpaged when shadow traffic is on'
-    );
-  });
 });
 
 describe('log helper method', () => {
@@ -1865,7 +1783,7 @@ describe('noop promoted client', () => {
     const client = new NoopPromotedClient();
     const resp = client.deliver({
       request: request(),
-      insertionPageType: InsertionPageType.Unpaged,
+      insertionStart: 0,
     });
     const logReq = (await resp).logRequest;
     expect(logReq).toBeUndefined();
@@ -1873,7 +1791,7 @@ describe('noop promoted client', () => {
     const resp2 = client.deliver({
       onlyLog: true,
       request: request(),
-      insertionPageType: InsertionPageType.Unpaged,
+      insertionStart: 0,
     });
     const logReq2 = (await resp2).logRequest;
     expect(logReq2).toBeUndefined();

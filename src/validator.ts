@@ -1,19 +1,11 @@
 import { DeliveryRequest } from './delivery-request';
-import { InsertionPageType } from './insertion-page-type';
+import { getOffset, getSize } from './pager';
 
 /**
  * Validator helps with validation and debugging of delivery requests.
  * It is only called when client.performChecks is true.
  */
 export class Validator {
-  private onlyLog: boolean;
-  private shadowTrafficEnabled: boolean;
-
-  constructor(onlyLog: boolean, shadowTrafficEnabled: boolean) {
-    this.onlyLog = onlyLog;
-    this.shadowTrafficEnabled = shadowTrafficEnabled;
-  }
-
   validate(deliveryRequest: DeliveryRequest): Error[] {
     const errors: Error[] = [];
 
@@ -21,16 +13,10 @@ export class Validator {
     if (error) {
       errors.push(error);
     }
-
-    // Delivery requires unpaged insertions.
-    if (deliveryRequest.insertionPageType === InsertionPageType.PrePaged) {
-      if (!this.onlyLog) {
-        errors.push(new Error('Delivery expects unpaged insertions'));
-      } else if (this.shadowTrafficEnabled) {
-        errors.push(new Error('Insertions must be unpaged when shadow traffic is on'));
-      }
+    const pagingError = validatePaging(deliveryRequest);
+    if (pagingError) {
+      errors.push(pagingError);
     }
-
     return errors;
   }
 }
@@ -72,6 +58,23 @@ const validateIds = (deliveryRequest: DeliveryRequest): Error | undefined => {
     if (experiment.timing) {
       return new Error('Experiment.timing should not be set');
     }
+  }
+  return undefined;
+};
+
+const validatePaging = (deliveryRequest: DeliveryRequest): Error | undefined => {
+  const {
+    insertionStart,
+    request: { insertion, paging },
+  } = deliveryRequest;
+
+  const offset = getOffset(paging);
+  const size = getSize(paging, insertion ?? []);
+  if (offset < insertionStart) {
+    return new Error('offset should be >= insertionStart.  offset should be the global position.');
+  }
+  if (offset > insertionStart + size) {
+    return new Error('offset should be <= `insertionStart + size`');
   }
   return undefined;
 };

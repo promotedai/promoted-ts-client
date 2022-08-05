@@ -8,7 +8,6 @@ export * from './error-handler';
 export * from './execution-server';
 export * from './experiment';
 export * from './hash';
-export * from './insertion-page-type';
 export * from './map-response';
 
 // Updated manually.

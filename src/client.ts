@@ -3,7 +3,6 @@ import { RequiredBaseRequest } from './base-request';
 import { PromotedClientArguments } from './client-args';
 import { ClientResponse } from './client-response';
 import { DeliveryRequest } from './delivery-request';
-import { InsertionPageType } from './insertion-page-type';
 import { Sampler, SamplerImpl } from './sampler';
 import { timeoutWrapper } from './timeout';
 import type { ErrorHandler } from './error-handler';
@@ -99,7 +98,7 @@ export class NoopPromotedClient implements PromotedClient {
     const { request } = deliveryRequest;
     const responseInsertions = this.pager.applyPaging(
       request.insertion ?? [],
-      deliveryRequest.insertionPageType,
+      deliveryRequest.insertionStart,
       request?.paging
     );
     return Promise.resolve({
@@ -182,7 +181,7 @@ export class PromotedClientImpl implements PromotedClient {
    * Used to optimize a list of content.  This function modifies deliveryRequest.
    */
   public async deliver(deliveryRequest: DeliveryRequest): Promise<ClientResponse> {
-    let { insertionPageType, onlyLog, request } = deliveryRequest;
+    let { onlyLog, request } = deliveryRequest;
     onlyLog = onlyLog ?? this.defaultRequestValues.onlyLog;
     if (this.performChecks) {
       const validationErrors = new Validator(onlyLog, this.shadowTrafficDeliveryRate > 0).validate(deliveryRequest);
@@ -192,11 +191,6 @@ export class PromotedClientImpl implements PromotedClient {
         }
       }
     }
-    // Delivery requests should always use unpaged insertions.
-    if (!onlyLog) {
-      insertionPageType = InsertionPageType.Unpaged;
-    }
-
     request = this.fillInRequestFields(request);
 
     // TODO - if response only passes back IDs that are passed in, then we can
@@ -260,7 +254,7 @@ export class PromotedClientImpl implements PromotedClient {
       // If we did not call the API for any reason, apply the expected
       // paging to the full insertions here.
       // If you update this, update the no-op version too.
-      responseInsertions = this.pager.applyPaging(request.insertion, insertionPageType, request.paging);
+      responseInsertions = this.pager.applyPaging(request.insertion, deliveryRequest.insertionStart, request.paging);
       addInsertionIds(responseInsertions, this.uuid);
       const responseToLog = {
         insertion: responseInsertions,
