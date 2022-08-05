@@ -1,11 +1,7 @@
 import { Insertion, Paging } from './types/delivery';
 
 export const getOffset = (paging: Paging | undefined) => {
-  const offset = paging?.offset ?? 0;
-  if (offset <= 0) {
-    return 0;
-  }
-  return offset;
+  return Math.max(0, paging?.offset ?? 0);
 };
 
 const getSize = (paging: Paging | undefined, requestInsertions: Insertion[]) => {
