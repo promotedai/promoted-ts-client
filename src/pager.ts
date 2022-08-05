@@ -8,7 +8,7 @@ export const getOffset = (paging: Paging | undefined) => {
   return offset;
 };
 
-export const getSize = (paging: Paging | undefined, requestInsertions: Insertion[]) => {
+const getSize = (paging: Paging | undefined, requestInsertions: Insertion[]) => {
   const size = paging?.size ?? -1;
   if (size <= 0) {
     return requestInsertions.length;
@@ -28,6 +28,7 @@ export class Pager {
    */
   applyPaging = (requestInsertions: Insertion[], requestInsertionStart: number, paging?: Paging): Insertion[] => {
     let offset = getOffset(paging);
+    // validator.ts makes sure that index is positive.
     let index = offset - requestInsertionStart;
     const size = getSize(paging, requestInsertions);
 

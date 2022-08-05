@@ -169,43 +169,9 @@ describe('validator', () => {
 
       const errors = v.validate(req);
       expect(errors.length).toEqual(1);
-      expect(errors[0].message).toEqual('offset should be >= insertionStart.  offset should be the global position.');
+      expect(errors[0].message).toEqual(
+        'offset(0) should be >= insertionStart(10).  offset should be the global position.'
+      );
     });
-
-    it('success with offset <= insertionStart + size', () => {
-      const v = new Validator();
-      const req: DeliveryRequest = {
-        request: {
-          userInfo: { logUserId: 'a' },
-          paging: {
-            offset: 100,
-            size: 50,
-          },
-        },
-        insertionStart: 50,
-      };
-
-      const errors = v.validate(req);
-      expect(errors.length).toEqual(0);
-    });
-    it('errors with offset > insertionStart + size', () => {
-      const v = new Validator();
-      const req: DeliveryRequest = {
-        request: {
-          userInfo: { logUserId: 'a' },
-          paging: {
-            offset: 100,
-            size: 50,
-          },
-        },
-        insertionStart: 49,
-      };
-
-      const errors = v.validate(req);
-      expect(errors.length).toEqual(1);
-      expect(errors[0].message).toEqual('offset should be <= `insertionStart + size`');
-    });
-
-    // TODO - add tests with empty requestInsertion list or empty paging.
   });
 });

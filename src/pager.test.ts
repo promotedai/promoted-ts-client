@@ -54,21 +54,91 @@ describe('apply paging', () => {
     expect(resIns[1].position).toEqual(2);
   });
 
-  it('pages a window when insertionStart != 0', () => {
-    const paging: Paging = {
-      size: 2,
-      offset: 1,
-    };
-    const resIns = pager.applyPaging(insertions, 1, paging);
-    expect(resIns.length).toEqual(insertions.length - 1);
+  describe('pages a window when insertionStart != 0', () => {
+    it('offset - insertionStart = 0', () => {
+      const insertionStart = 5;
+      // This is a different block of request insertions (starting at 5).
+      insertions = [
+        {
+          contentId: '5',
+        },
+        {
+          contentId: '6',
+        },
+        {
+          contentId: '7',
+        },
+      ];
+      // This should return [6, 7].
+      const paging: Paging = {
+        size: 2,
+        offset: 5,
+      };
+      const resIns = pager.applyPaging(insertions, insertionStart, paging);
+      expect(resIns.length).toEqual(insertions.length - 1);
 
-    // We take a page size of 2 starting at the beginning since prepaged.
-    expect(resIns[0].contentId).toEqual(insertions[0].contentId);
-    expect(resIns[1].contentId).toEqual(insertions[1].contentId);
+      // We take a page size of 2 starting at the beginning since prepaged.
+      expect(resIns[0].contentId).toEqual(insertions[0].contentId);
+      expect(resIns[1].contentId).toEqual(insertions[1].contentId);
 
-    // Positions start at offset.
-    expect(resIns[0].position).toEqual(1);
-    expect(resIns[1].position).toEqual(2);
+      // Positions start at offset.
+      expect(resIns[0].position).toEqual(5);
+      expect(resIns[1].position).toEqual(6);
+    });
+
+    it('offset - insertionStart = 1', () => {
+      const insertionStart = 5;
+      // This is a different block of request insertions (starting at 5).
+      insertions = [
+        {
+          contentId: '5',
+        },
+        {
+          contentId: '6',
+        },
+        {
+          contentId: '7',
+        },
+      ];
+      // This should return [6, 7].
+      const paging: Paging = {
+        size: 2,
+        offset: 6,
+      };
+      const resIns = pager.applyPaging(insertions, insertionStart, paging);
+      expect(resIns.length).toEqual(insertions.length - 1);
+
+      // We take a page size of 2 starting at the beginning since prepaged.
+      expect(resIns[0].contentId).toEqual(insertions[1].contentId);
+      expect(resIns[1].contentId).toEqual(insertions[2].contentId);
+
+      // Positions start at offset.
+      expect(resIns[0].position).toEqual(6);
+      expect(resIns[1].position).toEqual(7);
+    });
+
+    it('offset outside of size', () => {
+      const insertionStart = 5;
+      // This is a different block of request insertions (starting at 5).
+      insertions = [
+        {
+          contentId: '5',
+        },
+        {
+          contentId: '6',
+        },
+        {
+          contentId: '7',
+        },
+      ];
+      // This should return [6, 7].
+      const paging: Paging = {
+        size: 2,
+        offset: 8,
+      };
+      const resIns = pager.applyPaging(insertions, insertionStart, paging);
+      expect(resIns.length).toEqual(0);
+    });
   });
 
   it('returns everything with no paging provided', () => {

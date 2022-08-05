@@ -402,7 +402,41 @@ describe('deliver', () => {
     expect(metricsClient.mock.calls.length).toBe(0);
   });
 
-  // TODO - Add a Delivery test for insertionStart != 0.  It shouldn't have any impact when Delivery API is called.
+  // insertionStart is a fallback concept in the SDK.
+  it('insertionStart is ignored for Delivery API', async () => {
+    const deliveryClient = jest.fn((request) => {
+      const expectedReq = expectedRequest();
+      expectedReq.paging = { offset: 520, size: 10 };
+      expect(request).toEqual(expectedReq);
+      return Promise.resolve({
+        insertion: expectedResponseInsertionsForDelivery(),
+      });
+    });
+    const metricsClient = jest.fn(failFunction('All data should be logged in Delivery API'));
+
+    const promotedClient = newFakePromotedClient({
+      deliveryClient,
+      metricsClient,
+    });
+
+    const req = request();
+    req.paging = { offset: 520, size: 10 };
+    const response = await promotedClient.deliver({
+      request: req,
+      insertionStart: 500,
+    });
+    expect(deliveryClient.mock.calls.length).toBe(1);
+    expect(metricsClient.mock.calls.length).toBe(0);
+
+    expect(response.responseInsertions).toEqual(expectedResponseInsertionsForDelivery());
+    expect(response.executionServer).toEqual(ExecutionServer.API);
+    expect(response.clientRequestId).toEqual('uuid0');
+
+    // Here is where clients will return their response.
+    await response.log();
+    expect(deliveryClient.mock.calls.length).toBe(1);
+    expect(metricsClient.mock.calls.length).toBe(0);
+  });
 
   describe('using cohorts', () => {
     it('arm=CONTROL', async () => {

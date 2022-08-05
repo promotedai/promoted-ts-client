@@ -1,5 +1,5 @@
 import { DeliveryRequest } from './delivery-request';
-import { getOffset, getSize } from './pager';
+import { getOffset } from './pager';
 
 /**
  * Validator helps with validation and debugging of delivery requests.
@@ -65,16 +65,14 @@ const validateIds = (deliveryRequest: DeliveryRequest): Error | undefined => {
 const validatePaging = (deliveryRequest: DeliveryRequest): Error | undefined => {
   const {
     insertionStart,
-    request: { insertion, paging },
+    request: { paging },
   } = deliveryRequest;
 
   const offset = getOffset(paging);
-  const size = getSize(paging, insertion ?? []);
   if (offset < insertionStart) {
-    return new Error('offset should be >= insertionStart.  offset should be the global position.');
-  }
-  if (offset > insertionStart + size) {
-    return new Error('offset should be <= `insertionStart + size`');
+    return new Error(
+      `offset(${offset}) should be >= insertionStart(${insertionStart}).  offset should be the global position.`
+    );
   }
   return undefined;
 };

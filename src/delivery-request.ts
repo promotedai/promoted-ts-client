@@ -31,6 +31,15 @@ export interface DeliveryRequest {
    * This field is required because an incorrect value could result in a bad bug.
    * If you only send the first X request insertions, then insertionStart=0.
    *
+   * If you are only sending the first X insertions to Promoted, you can set
+   * insertionStart=0.
+   *
+   * For now, Promoted requires that `insertionStart <= paging.offset`.
+   * This will reduce the chance of errors and allow the SDK to fallback to
+   *
+   * Promoted recommends that the block size is a multiple of the page size.
+   * This reduces the chance of page size issues.
+   *
    * Follow this link for more details.
    * https://docs.promoted.ai/docs/ranking-requests#sending-even-more-request-insertions
    */
