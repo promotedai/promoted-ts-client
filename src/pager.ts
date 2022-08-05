@@ -1,37 +1,32 @@
-import { InsertionPageType } from './insertion-page-type';
 import { Insertion, Paging } from './types/delivery';
+
+export const getOffset = (paging: Paging | undefined) => {
+  return Math.max(0, paging?.offset ?? 0);
+};
+
+const getSize = (paging: Paging | undefined, requestInsertions: Insertion[]) => {
+  const size = paging?.size ?? -1;
+  if (size <= 0) {
+    return requestInsertions.length;
+  }
+  return size;
+};
 
 export class Pager {
   /**
    * Sets the position field on each assertion based on paging parameters and takes
    * a page of request insertions (if necessary).
    * @param requestInsertions the request insertions
-   * @param insertionPageType the type of paging the client wants
+   * @param requestInsertionStart in the global set of all request insertions, how
+   *                              far down is the subset of requestInsertions
    * @param paging paging info, may be nil
    * @returns the modified page of insertions
    */
-  applyPaging = (
-    requestInsertions: Insertion[],
-    insertionPageType: InsertionPageType,
-    paging?: Paging
-  ): Insertion[] => {
-    let offset = paging?.offset ?? 0;
-    if (offset <= 0) {
-      offset = 0;
-    }
-
-    let index = offset;
-    if (insertionPageType === InsertionPageType.PrePaged) {
-      // When insertions are pre-paged, we don't use offset to
-      // window into the provided assertions, although we do use it
-      // when assigning positions.
-      index = 0;
-    }
-
-    let size = paging?.size ?? -1;
-    if (size <= 0) {
-      size = requestInsertions.length;
-    }
+  applyPaging = (requestInsertions: Insertion[], requestInsertionStart: number, paging?: Paging): Insertion[] => {
+    let offset = getOffset(paging);
+    // validator.ts makes sure that index is positive.
+    let index = offset - requestInsertionStart;
+    const size = getSize(paging, requestInsertions);
 
     const finalInsertionSize = Math.min(size, requestInsertions.length - index);
     if (finalInsertionSize <= 0) {
