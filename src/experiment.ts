@@ -1,4 +1,4 @@
-import { combineHash, hashCode } from './hash';
+import { combineHash, hashCode, mod } from './hash';
 import type { CohortMembership } from './types/event';
 
 /**
@@ -42,14 +42,24 @@ export interface ProcessedTwoArmExperimentConfig extends TwoArmExperimentConfig 
  * @param cohortId name of the experiment
  * @param controlPercent percent of total to activate into the control arm. Range=[0,50]
  * @param treatmentPercent percent of total to activate into the treatment arm. Range=[0,50]
+ * @param numBuckets the number of user buckets.  Defaults to 1k.
+ *                   Change this value if you need more than 0.1 precision for percents.
  */
-export const twoArmExperimentConfig5050 = (cohortId: string, controlPercent: number, treatmentPercent: number) => {
+export const twoArmExperimentConfig5050 = (
+  cohortId: string,
+  controlPercent: number,
+  treatmentPercent: number,
+  numBuckets?: number
+) => {
+  if (numBuckets === undefined) {
+    numBuckets = 1000.0;
+  }
   return prepareTwoArmExperimentConfig({
     cohortId,
-    numActiveControlBuckets: controlPercent,
-    numControlBuckets: 50,
-    numActiveTreatmentBuckets: treatmentPercent,
-    numTreatmentBuckets: 50,
+    numActiveControlBuckets: (controlPercent * numBuckets) / 100.0,
+    numControlBuckets: numBuckets / 2,
+    numActiveTreatmentBuckets: (treatmentPercent * numBuckets) / 100.0,
+    numTreatmentBuckets: numBuckets / 2,
   });
 };
 
@@ -91,7 +101,7 @@ export const twoArmExperimentMembership = (
   config: ProcessedTwoArmExperimentConfig
 ): CohortMembership | undefined => {
   const hash = combineHash(hashCode(userId), config.cohortIdHash);
-  const bucket = hash % config.numTotalBuckets;
+  const bucket = mod(hash, config.numTotalBuckets);
   if (bucket < config.numActiveControlBuckets) {
     return {
       cohortId: config.cohortId,

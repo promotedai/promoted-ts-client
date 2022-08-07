@@ -1,4 +1,10 @@
-import { prepareTwoArmExperimentConfig, twoArmExperimentConfig5050, twoArmExperimentMembership } from '.';
+import { combineHash, hashCode } from './hash';
+import {
+  ProcessedTwoArmExperimentConfig,
+  prepareTwoArmExperimentConfig,
+  twoArmExperimentConfig5050,
+  twoArmExperimentMembership,
+} from '.';
 
 describe('prepare', () => {
   it('good', () => {
@@ -89,11 +95,24 @@ describe('twoArmExperimentConfig', () => {
     expect(twoArmExperimentConfig5050('HOLD_OUT1', 1, 1)).toEqual({
       cohortId: 'HOLD_OUT1',
       cohortIdHash: -276881853,
-      numActiveControlBuckets: 1,
-      numActiveTreatmentBuckets: 1,
-      numControlBuckets: 50,
-      numTotalBuckets: 100,
-      numTreatmentBuckets: 50,
+      numActiveControlBuckets: 10,
+      numActiveTreatmentBuckets: 10,
+      numControlBuckets: 500,
+      numTotalBuckets: 1000,
+      numTreatmentBuckets: 500,
+    });
+  });
+
+  it('partial bucket', () => {
+    // This is kinda buggy.
+    expect(twoArmExperimentConfig5050('v1', 2.5, 2.5)).toEqual({
+      cohortId: 'v1',
+      cohortIdHash: 3707,
+      numActiveControlBuckets: 25,
+      numActiveTreatmentBuckets: 25,
+      numControlBuckets: 500,
+      numTotalBuckets: 1000,
+      numTreatmentBuckets: 500,
     });
   });
 
@@ -150,4 +169,58 @@ describe('twoArmExperimentMembership', () => {
   it('not active', () => {
     expect(twoArmExperimentMembership('user3', experimentConfig)).toBeUndefined();
   });
+
+  describe('specific uidscheck for negative modulo', () => {
+    it('undefined', () => {
+      const config = twoArmExperimentConfig5050('v1', 2.5, 2.5, 1000);
+      const userId = 'C329D70D-1EAF-4D69-A373-12D78068BE86';
+      const hash = combineHash(hashCode(userId), config.cohortIdHash);
+      expect(hash).toEqual(-28423771053);
+      expect(twoArmExperimentMembership(userId, config)).toBeUndefined();
+    });
+
+    it('treatment', () => {
+      const config = twoArmExperimentConfig5050('v1', 50, 50);
+      const userId = 'C329D70D-1EAF-4D69-A373-12D78068BE86';
+      const hash = combineHash(hashCode(userId), config.cohortIdHash);
+      expect(hash).toEqual(-28423771053);
+      expect(twoArmExperimentMembership(userId, config)).toEqual({ arm: 'TREATMENT', cohortId: 'v1' });
+    });
+  });
+});
+
+describe('check distribution', () => {
+  it('not enough buckets', () => {
+    const config = twoArmExperimentConfig5050('v1', 2.5, 2.5, 100);
+    expect(runForSampleUsers(config, 1000)).toEqual({
+      CONTROL: 34,
+      TREATMENT: 26,
+      undefined: 940,
+    });
+  });
+
+  it('need more buckets', () => {
+    const config = twoArmExperimentConfig5050('v1', 2.5, 2.5);
+    expect(runForSampleUsers(config, 1000)).toEqual({
+      CONTROL: 27,
+      TREATMENT: 24,
+      undefined: 949,
+    });
+  });
+
+  const runForSampleUsers = (config: ProcessedTwoArmExperimentConfig, count: number) => {
+    return Array(count)
+      .fill(0)
+      .map((_, i) => {
+        const membership = twoArmExperimentMembership('' + i, config);
+        if (membership == undefined) {
+          return 'undefined';
+        }
+        return membership.arm?.toString() ?? '';
+      })
+      .reduce((counts, expValue) => {
+        counts[expValue] = counts[expValue] ? counts[expValue] + 1 : 1;
+        return counts;
+      }, {});
+  };
 });
