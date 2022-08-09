@@ -104,7 +104,6 @@ describe('twoArmExperimentConfig', () => {
   });
 
   it('partial bucket', () => {
-    // This is kinda buggy.
     expect(twoArmExperimentConfig5050('v1', 2.5, 2.5)).toEqual({
       cohortId: 'v1',
       cohortIdHash: 3707,
