@@ -1,3 +1,21 @@
+# [10.0.0](https://github.com/promotedai/promoted-ts-client/compare/v9.0.0...v10.0.0) (2022-08-09)
+
+
+### Bug Fixes
+
+* experiment modulo; default buckets ([#76](https://github.com/promotedai/promoted-ts-client/issues/76)) ([bedb64c](https://github.com/promotedai/promoted-ts-client/commit/bedb64cda6b9d8871e065920c264f516a1ea3bfd))
+
+
+### BREAKING CHANGES
+
+* This changes the experiment arms that users will be in.
+
+This fixes two issues:
+1. The modulo logic is wrong for negative numbers.  Typescript '%' is a remainder function.
+2. Change the default user buckets to 1k so experiment arm percents work down to 0.1%.
+
+TESTING=unit tests
+
 # [9.0.0](https://github.com/promotedai/promoted-ts-client/compare/v8.4.0...v9.0.0) (2022-08-09)
 
 
