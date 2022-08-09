@@ -24,3 +24,8 @@ export const combineHash = (hash1: number, hash2: number): number => {
   hash = hash * 31 + hash2;
   return hash;
 };
+
+// Supports negative numbers.  '%' is remainder in Typescript.
+export const mod = (value: number, modulo: number): number => {
+  return ((value % modulo) + modulo) % modulo;
+};
