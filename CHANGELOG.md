@@ -1,3 +1,27 @@
+# [9.0.0](https://github.com/promotedai/promoted-ts-client/compare/v8.4.0...v9.0.0) (2022-08-09)
+
+
+### Bug Fixes
+
+* build ([#75](https://github.com/promotedai/promoted-ts-client/issues/75)) ([6b1da46](https://github.com/promotedai/promoted-ts-client/commit/6b1da465b6810585ceaa878ed4aa9e457663a7cd))
+
+
+### Features
+
+* switch pagetype to insertionstart ([#74](https://github.com/promotedai/promoted-ts-client/issues/74)) ([62dd4e8](https://github.com/promotedai/promoted-ts-client/commit/62dd4e88c177382806b3989d3c2e110750ab8708))
+
+
+### BREAKING CHANGES
+
+* putting this on this PR since the last one failed to build.
+
+This PR also updates the version in package.json
+* This does a breaking change to the DeliveryRequest interface.
+
+Motivation: support sending request insertions in blocks.
+
+TESTING=unit tests
+
 # [8.4.0](https://github.com/promotedai/promoted-ts-client/compare/v8.3.2...v8.4.0) (2022-05-04)
 
 
