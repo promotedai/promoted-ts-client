@@ -291,13 +291,8 @@ export class PromotedClientImpl implements PromotedClient {
    * @param request the underlying request.
    */
   private deliverNonBlockingShadowTraffic(request: Request) {
-    const singleRequest = this.createShadowTraffic(request);
-    // Swallow errors.
-    this.deliveryTimeoutWrapper(this.deliveryClient(singleRequest), this.deliveryTimeoutMillis)
-      .then(() => {
-        /* do nothing */
-      })
-      .catch((error) => this.handleRequestError(error, 'shadow delivery', request.clientRequestId));
+    // Do not await on the Promise.
+    this.deliverBlockingShadowTraffic(request);
   }
 
   /**
@@ -305,24 +300,22 @@ export class PromotedClientImpl implements PromotedClient {
    * @param request the underlying request.
    */
   private async deliverBlockingShadowTraffic(request: Request): Promise<void> {
-    const singleRequest = this.createShadowTraffic(request);
+    const singleRequest: Request = {
+      ...request,
+      clientInfo: {
+        trafficType: TrafficType_SHADOW,
+        clientType: ClientType_PLATFORM_SERVER,
+        // Expand `request.clientInfo` after so we can use client-specified trafficType or clientType.
+        ...request.clientInfo,
+      },
+    };
     // Swallow errors.
-    await this.deliveryTimeoutWrapper(this.deliveryClient(singleRequest), this.deliveryTimeoutMillis)
+    return this.deliveryTimeoutWrapper(this.deliveryClient(singleRequest), this.deliveryTimeoutMillis)
       .then(() => {
         /* do nothing */
       })
       .catch((error) => this.handleRequestError(error, 'shadow delivery', request.clientRequestId));
   }
-
-  private createShadowTraffic = (request: Request): Request => ({
-    ...request,
-    clientInfo: {
-      trafficType: TrafficType_SHADOW,
-      clientType: ClientType_PLATFORM_SERVER,
-      // Expand `request.clientInfo` after so we can use client-specified trafficType or clientType.
-      ...request.clientInfo,
-    },
-  });
 
   /**
    * On-demand creation of a LogRequest suitable for sending to the metrics client.
