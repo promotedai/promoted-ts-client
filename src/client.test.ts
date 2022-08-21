@@ -1694,7 +1694,7 @@ describe('shadow requests', () => {
   async function runShadowRequestSamplingTest(
     samplingReturn: boolean,
     shouldCallDelivery: boolean,
-    shadowTrafficDeliveryRate: number
+    clientArgs: Partial<PromotedClientArguments>
   ) {
     let deliveryClient: any = jest.fn(failFunction('Delivery should not be called when shadow is not selected'));
     const products = [newProduct('3')];
@@ -1752,9 +1752,9 @@ describe('shadow requests', () => {
     };
 
     const promotedClient = newFakePromotedClient({
+      ...clientArgs,
       deliveryClient,
       metricsClient,
-      shadowTrafficDeliveryRate: shadowTrafficDeliveryRate,
       sampler: sampler,
     });
 
@@ -1783,16 +1783,25 @@ describe('shadow requests', () => {
     expect(metricsClient.mock.calls.length).toBe(1);
   }
 
-  it('makes a shadow request', async () => {
-    await runShadowRequestSamplingTest(true, true, 0.5);
+  it('makes a non-blocking shadow request', async () => {
+    await runShadowRequestSamplingTest(true, true, { shadowTrafficDeliveryRate: 0.5 });
   });
 
-  it('does not make a shadow request - not sampled in', async () => {
-    await runShadowRequestSamplingTest(false, false, 0.5);
+  describe('sampled test', () => {
+    it('does not make a shadow request - not sampled in', async () => {
+      await runShadowRequestSamplingTest(false, false, { shadowTrafficDeliveryRate: 0.5 });
+    });
+
+    it('does not make a shadow request - sampling not turned on', async () => {
+      await runShadowRequestSamplingTest(true, false, { shadowTrafficDeliveryRate: 0 });
+    });
   });
 
-  it('does not make a shadow request - sampling not turned on', async () => {
-    await runShadowRequestSamplingTest(true, false, 0);
+  it('makes a blocking shadow request', async () => {
+    await runShadowRequestSamplingTest(true, true, {
+      shadowTrafficDeliveryRate: 0.5,
+      blockingShadowTraffic: true,
+    });
   });
 });
 

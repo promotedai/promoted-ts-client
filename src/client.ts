@@ -123,6 +123,7 @@ export class PromotedClientImpl implements PromotedClient {
   private metricsClient: ApiClient<LogRequest, LogResponse>;
   private performChecks: boolean;
   private shadowTrafficDeliveryRate: number;
+  private blockingShadowTraffic: boolean;
   private defaultRequestValues: RequiredBaseRequest;
   private handleError: ErrorHandler;
   private uuid: () => string;
@@ -155,6 +156,7 @@ export class PromotedClientImpl implements PromotedClient {
     if (this.shadowTrafficDeliveryRate < 0 || this.shadowTrafficDeliveryRate > 1) {
       throw new RangeError('shadowTrafficDeliveryRate must be between 0 and 1');
     }
+    this.blockingShadowTraffic = args.blockingShadowTraffic ?? false;
 
     this.sampler = args.sampler ?? new SamplerImpl();
     const { defaultRequestValues: { onlyLog } = {} } = args;
@@ -241,7 +243,11 @@ export class PromotedClientImpl implements PromotedClient {
       }
     }
     if (!attemptedDeliveryApi && this.shouldSendAsShadowTraffic()) {
-      this.deliverShadowTraffic(request);
+      if (this.blockingShadowTraffic) {
+        await this.deliverBlockingShadowTraffic(request);
+      } else {
+        this.deliverNonBlockingShadowTraffic(request);
+      }
     }
     // If defined, log the Request to Metrics API.
     let deliveryLogToLog: DeliveryLog | undefined = undefined;
@@ -281,10 +287,19 @@ export class PromotedClientImpl implements PromotedClient {
     this.shadowTrafficDeliveryRate && this.sampler.sampleRandom(this.shadowTrafficDeliveryRate);
 
   /**
-   * Creates a shadow traffic request to delivery.
+   * Creates a non-blocking shadow traffic request to delivery.
    * @param request the underlying request.
    */
-  private deliverShadowTraffic(request: Request) {
+  private deliverNonBlockingShadowTraffic(request: Request) {
+    // Do not await on the Promise.
+    this.deliverBlockingShadowTraffic(request);
+  }
+
+  /**
+   * Creates a blocking shadow traffic request to delivery.
+   * @param request the underlying request.
+   */
+  private async deliverBlockingShadowTraffic(request: Request): Promise<void> {
     const singleRequest: Request = {
       ...request,
       clientInfo: {
@@ -295,7 +310,7 @@ export class PromotedClientImpl implements PromotedClient {
       },
     };
     // Swallow errors.
-    this.deliveryTimeoutWrapper(this.deliveryClient(singleRequest), this.deliveryTimeoutMillis)
+    return this.deliveryTimeoutWrapper(this.deliveryClient(singleRequest), this.deliveryTimeoutMillis)
       .then(() => {
         /* do nothing */
       })

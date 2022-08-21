@@ -40,6 +40,12 @@ export interface PromotedClientArguments {
   shadowTrafficDeliveryRate?: number;
 
   /**
+   * Option to make shadow traffic a blocking (as opposed to background)
+   * call to delivery API, defaults to False.
+   */
+  blockingShadowTraffic?: boolean;
+
+  /**
    * Default values to use on DeliveryRequests.
    */
   defaultRequestValues?: BaseRequest;
