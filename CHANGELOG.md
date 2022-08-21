@@ -1,3 +1,10 @@
+# [10.1.0](https://github.com/promotedai/promoted-ts-client/compare/v10.0.0...v10.1.0) (2022-08-21)
+
+
+### Features
+
+* blocking shadow traffic ([#77](https://github.com/promotedai/promoted-ts-client/issues/77)) ([26cc11e](https://github.com/promotedai/promoted-ts-client/commit/26cc11e10c3214961337fa1d0c085d88af4b0352))
+
 # [10.0.0](https://github.com/promotedai/promoted-ts-client/compare/v9.0.0...v10.0.0) (2022-08-09)
 
 
