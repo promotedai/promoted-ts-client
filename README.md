@@ -454,7 +454,7 @@ async function callPromoted(
     products: Product[],
     userInfo: UserInfo): Promise<Insertion[]> {
 
-  // This gets the anonymous user id from the request.
+  // logUserId is the anonymous user id from the request.
   const experimentMembership = twoArmExperimentMembership(userInfo.logUserId, experimentConfig);
 
   const responsePromise = promotedClient.deliver({
@@ -476,8 +476,9 @@ async function callPromoted(
 Here's an example using custom arm assignment logic (not using `twoArmExperimentConfig5050`).
 
 ```typescript
-// If you already use an experiment framework, it'll have the ability to return
-// (1) if a user is activated into an experiment and
+// Or use your own custom experiment memberships (e.g. `getExperimentActivationAndArm`)
+// and send Promoted:
+// (1) if the user is activated into the experiment and
 // (2) which arm to perform.
 //
 // [boolean, boolean]
