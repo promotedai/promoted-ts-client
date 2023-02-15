@@ -43,7 +43,7 @@ const throwError =
 export const promotedClient = newPromotedClient({
   // TODO - Customize handleError for your server.
   // When developing using Node.js, throwOnError will give a scary unhandled promise warning.
-  handleError: throwError ? throwOnError : logOnError;
+  handleError: throwError ? throwOnError : logOnError,
   deliveryClient: apiClient(deliveryApi, deliveryApiKey, deliveryTimeoutMillis),
   metricsClient: apiClient(metricsApi, metricsApiKey, metricsTimeoutMillis),
   uuid,
