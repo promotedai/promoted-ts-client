@@ -25,7 +25,7 @@ export interface DeliveryRequest {
    *    then insertionStart=0.
    * c. If there are 10,000 items and we want to send items [500,1000) on
    *    `request.insertion`, then insertionStart=500.
-   * c. If there are 10,000 items and we want to send the last page [9500,10000)
+   * d. If there are 10,000 items and we want to send the last page [9500,10000)
    *    on `request.insertion`, then insertionStart=9500.
    *
    * This field is required because an incorrect value could result in a bad bug.

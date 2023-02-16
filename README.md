@@ -401,8 +401,6 @@ async function callPromoted(
         },
       })),
     },
-    // It's okay to use Prepaged temporarily while only logging.
-    insertionPageType: InsertionPageType.Unpaged,
   });
   // Construct the map while the RPC is happening.
   const productIdToProduct = products.reduce((map, product) => {
@@ -426,13 +424,33 @@ You can use `deliver` but add a `onlyLog: true` property.
 
 ## Pagination
 
-- When calling `deliver` with `onlyLog=false`, we expect that you will pass an unpaged (complete) list of insertions, and the SDK assumes this to be the case. To help you catch this scenario, the SDK will call handleError in the pre-paged case if performChecks is turned on.
+When calling `deliver` with `onlyLog=false`, we expect that you will pass an unpaged (complete) list of insertions, and the SDK assumes this to be the case. To help you catch this scenario, the SDK will call handleError in the pre-paged case if performChecks is turned on.
 
-- When calling `deliver` with `onlyLog=true` and shadow traffic turned on, we also expect an unpaged list of insertions, since in this case we are simulating delivery.
+When calling `deliver` with `onlyLog=true` and shadow traffic turned on, we also expect an unpaged list of insertions, since in this case we are simulating delivery.
 
-- When calling `deliver` with `onlyLog=true` otherwise, you may choose to pass "pre-paged" or "unpaged" insertions based on the `insertionPageType` field on the `MetricsRequest`.
-  - When `insertionPageType` is "unpaged", the `Request.paging.offset` and `Request.paging.size` parameters are used to log a "window" of insertions.
-  - When `insertionPageType` is "pre-paged", the SDK will not handle pagination of the insertions that are part of the resulting lot request.
+When you want to send a different server-side page of Request Insertions, you'll want to set `insertionStart`.
+
+### `insertionStart`
+
+Clients can send a subset of all request insertions to Promoted on `request.insertion`.  The `insertionStart` specifies the start index of the array `request.insertion` in the list of all request insertions.
+
+`request.paging.offset` should be set to the zero-based position in all request insertions (not the relative position in `request.insertion`s).
+
+Examples:
+1. If there are 10 items and all 10 items are in `request.insertion`, then insertionStart=0.
+2. If there are 10,000 items and the first 500 items are on `request.insertion`, then insertionStart=0.
+3. If there are 10,000 items and we want to send items [500,1000) on `request.insertion`, then insertionStart=500.
+4. If there are 10,000 items and we want to send the last page [9500,10000) on `request.insertion`, then insertionStart=9500.
+
+This field is required because an incorrect value could result in a bad bug.  If you only send the first X request insertions, then insertionStart=0.
+
+If you are only sending the first X insertions to Promoted, you can set insertionStart=0.
+
+For now, Promoted requires that `insertionStart <= paging.offset`.  This will reduce the chance of errors and allow the SDK to fallback to
+
+Promoted recommends that the block size is a multiple of the page size.  This reduces the chance of page size issues.
+
+Follow [this link](https://docs.promoted.ai/docs/ranking-requests#sending-even-more-request-insertions) for more details.  If you have questions, reach out to Promoted's support team.
 
 ### Position
 
@@ -440,7 +458,8 @@ Do not set the insertion `position` field in client code. The SDK and Delivery A
 
 Clients are responsible for setting `retrievalRank`.
 
-If you want to log using paginated data, you can use `insertionPageType=PrePaged` to log a page of data. When calling using shadow traffic or blocking to Delivery API, `deliver` needs as many request insertions as can be sent (probably max of 1,000).
+If you want to log using paginated data, please review the `# insertionStart` section.
+
 
 ### Experiments
 
@@ -532,7 +551,6 @@ async function callPromoted(
       userInfo,
       ...
     },
-    insertionPageType: InsertionPageType.Unpaged,
   });
 
   // Construct the map while the RPC is happening.
