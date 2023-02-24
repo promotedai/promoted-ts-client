@@ -1,3 +1,10 @@
+## [10.1.1](https://github.com/promotedai/promoted-ts-client/compare/v10.1.0...v10.1.1) (2023-02-24)
+
+
+### Bug Fixes
+
+* the promoted-ts-client version string ([#83](https://github.com/promotedai/promoted-ts-client/issues/83)) ([de2f02b](https://github.com/promotedai/promoted-ts-client/commit/de2f02bb4e1a06ed6462da57a15f8ee96db603e4))
+
 # [10.1.0](https://github.com/promotedai/promoted-ts-client/compare/v10.0.0...v10.1.0) (2022-08-21)
 
 
