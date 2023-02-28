@@ -4,6 +4,7 @@ import { ErrorHandler } from './error-handler';
 import { Sampler } from './sampler';
 import type { Request, Response } from './types/delivery';
 import type { CohortMembership, LogRequest, LogResponse } from './types/event';
+import type { ValidatorArguments } from './validator';
 
 /**
  * Arguments for the client so values can be overriden
@@ -67,6 +68,11 @@ export interface PromotedClientArguments {
    * ```
    */
   handleError: ErrorHandler;
+
+  /**
+   * Allows for customizing the client side validation.
+   */
+  validatorArguments?: ValidatorArguments;
 
   /**
    * Required as a dependency so clients can load reduce dependency on multiple

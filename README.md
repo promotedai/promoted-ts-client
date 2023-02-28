@@ -131,16 +131,18 @@ cacheable.install(httpsAgent);
 
 | Name                        | Type                                                           | Description                                                                                                                                                                                                                                                                               |
 | --------------------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `deliveryClient`            | ApiClient                                                      | API client to make a POST request to the Delivery API endpoint including the `x-api-key` header, endpoint and header value obtained from Promoted                                                                                                                                         |
-| `metricsClient`             | ApiClient                                                      | API client to make a POST request to the Delivery API endpoint including the `x-api-key` header, endpoint and header value obtained from Promoted                                                                                                                                         |
-| `performChecks`             | Boolean                                                        | Whether or not to perform detailed input validation, defaults to true but may be disabled for performance                                                                                                                                                                                 |
-| `shadowTrafficDeliveryRate` | Number between 0 and 1                                         | % of traffic that gets directed to Delivery API as "shadow traffic". Only applies to cases where Delivery API is not called. Defaults to 0 (no shadow traffic).                                                                                                                           |
+| `deliveryClient`            | ApiClient                                                      | API client to make a POST request to the Delivery API endpoint including the `x-api-key` header, endpoint and header value obtained from Promoted |
+| `metricsClient`             | ApiClient                                                      | API client to make a POST request to the Delivery API endpoint including the `x-api-key` header, endpoint and header value obtained from Promoted |
+| `performChecks`             | Boolean                                                        | Whether or not to perform detailed input validation, defaults to true but may be disabled for performance |
+| `shadowTrafficDeliveryRate` | Number between 0 and 1                                         | % of traffic that gets directed to Delivery API as "shadow traffic". Only applies to cases where Delivery API is not called. Defaults to 0 (no shadow traffic). |
 | `blockingShadowTraffic`     | Boolean                                                        | Option to make shadow traffic a blocking (as opposed to background) call to delivery API, defaults to False. |
-| `defaultRequestValues`      | BaseRequest                                                    | Default values to use on every request. Only supports `onlyLog` setting.                                                                                                                                                                                                                  |
-| `deliveryTimeoutMillis`     | Number                                                         | Timeout on the Delivery API call. Defaults to 250.                                                                                                                                                                                                                                        |
-| `metricsTimeoutMillis`      | Number                                                         | Timeout on the Metrics API call. Defaults to 3000.                                                                                                                                                                                                                                        |
+| `defaultRequestValues`      | BaseRequest                                                    | Default values to use on every request. Only supports `onlyLog` setting. |
+| `handleError`               | `(err: Error) => void`                                         | A handler for errors that are encountered.  Can be used to log or throw on error.  See examples in this README for example values. |
+| `validationArguments`       | ValidationArguments (Optional)                                 | A config that specifies which SDK-side validations to run. |
+| `deliveryTimeoutMillis`     | Number                                                         | Timeout on the Delivery API call. Defaults to 250. |
+| `metricsTimeoutMillis`      | Number                                                         | Timeout on the Metrics API call. Defaults to 3000. |
 | `shouldApplyTreatment`      | `(cohortMembership: CohortMembership \| undefined) => boolean` | Called during delivery, accepts an experiment and returns a Boolean indicating whether the request should be considered part of the control group (false) or in the treatment arm of an experiment (true). If not set, the default behavior of checking the experiement `arm` is applied. |
-| `maxRequestInsertions`      | Number                                                         | Maximum number of request insertions that will be passed to Delivery API on a single request (any more will be truncated by the SDK). Defaults to 1000.                                                                                                                                   |
+| `maxRequestInsertions`      | Number                                                         | Maximum number of request insertions that will be passed to Delivery API on a single request (any more will be truncated by the SDK). Defaults to 1000. |
 
 ## Data Types
 
@@ -153,6 +155,17 @@ export interface ApiClient<Req, Res> {
   (request: Req): Promise<Res>;
 }
 ```
+
+---
+
+### ValidationArguments
+
+Configures the SDK-side validator.
+Field Name | Type | Optional? | Description
+---------- | ---- | --------- | -----------
+`validateLogUserIdSet` | Boolean | Yes | If set to false, skips this validation check.  Otherwise, runs the validation check.
+
+---
 
 ### UserInfo
 

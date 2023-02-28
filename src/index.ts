@@ -33,3 +33,4 @@ export type {
   LogRequest,
   LogResponse,
 } from './types/event';
+export type { ValidatorArguments } from './validator';
