@@ -1,3 +1,10 @@
+# [10.2.0](https://github.com/promotedai/promoted-ts-client/compare/v10.1.1...v10.2.0) (2023-02-28)
+
+
+### Features
+
+* support customizing validator arguments ([#84](https://github.com/promotedai/promoted-ts-client/issues/84)) ([827ed61](https://github.com/promotedai/promoted-ts-client/commit/827ed6138c38d94a8a41b8f88f0e4ec416bf3bc3))
+
 ## [10.1.1](https://github.com/promotedai/promoted-ts-client/compare/v10.1.0...v10.1.1) (2023-02-24)
 
 
