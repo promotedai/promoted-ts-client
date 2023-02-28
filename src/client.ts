@@ -126,6 +126,7 @@ export class PromotedClientImpl implements PromotedClient {
   private blockingShadowTraffic: boolean;
   private defaultRequestValues: RequiredBaseRequest;
   private handleError: ErrorHandler;
+  private validator: Validator;
   private uuid: () => string;
   private deliveryTimeoutMillis: number;
   private metricsTimeoutMillis: number;
@@ -164,6 +165,7 @@ export class PromotedClientImpl implements PromotedClient {
       onlyLog: onlyLog === undefined ? false : onlyLog,
     };
     this.handleError = args.handleError;
+    this.validator = new Validator(args.validatorArguments ?? {});
     this.uuid = args.uuid;
     this.deliveryTimeoutMillis = args.deliveryTimeoutMillis ?? DEFAULT_DELIVERY_TIMEOUT_MILLIS;
     this.metricsTimeoutMillis = args.metricsTimeoutMillis ?? DEFAULT_METRICS_TIMEOUT_MILLIS;
@@ -186,7 +188,7 @@ export class PromotedClientImpl implements PromotedClient {
     let { onlyLog, request } = deliveryRequest;
     onlyLog = onlyLog ?? this.defaultRequestValues.onlyLog;
     if (this.performChecks) {
-      const validationErrors = new Validator().validate(deliveryRequest);
+      const validationErrors = this.validator.validate(deliveryRequest);
       if (validationErrors) {
         for (const error of validationErrors) {
           this.handleError(error);
