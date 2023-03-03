@@ -1,3 +1,10 @@
+## [11.0.2](https://github.com/promotedai/promoted-ts-client/compare/v11.0.1...v11.0.2) (2023-03-03)
+
+
+### Bug Fixes
+
+* validate the response to shadow traffic ([#88](https://github.com/promotedai/promoted-ts-client/issues/88)) ([a25801b](https://github.com/promotedai/promoted-ts-client/commit/a25801b561bc30ce9a31f3374ffd967f10ff42a2))
+
 ## [11.0.1](https://github.com/promotedai/promoted-ts-client/compare/v11.0.0...v11.0.1) (2023-03-03)
 
 
