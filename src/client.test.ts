@@ -529,7 +529,7 @@ describe('deliver', () => {
         });
         return Promise.resolve({
           // This is ignored since it's shadow traffic.
-          requestId: request.requestId,
+          requestId: 'uuid1',
           insertion: [
             toResponseInsertion('product1', 'uuid4', 0),
             toResponseInsertion('product2', 'uuid5', 1),
@@ -1836,7 +1836,10 @@ describe('shadow requests', () => {
       };
       deliveryClient = jest.fn((request) => {
         expect(request).toEqual(expectedDeliveryReq);
-        return Promise.resolve({});
+        return Promise.resolve({
+          requestId: 'uuid1',
+          insertion: [],
+        });
       });
     }
 

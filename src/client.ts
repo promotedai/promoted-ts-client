@@ -14,7 +14,7 @@ import { Validator, validateResponse } from './validator';
 
 // Version number that semver will generate for the package.
 // Must be manually maintained.
-export const SERVER_VERSION = 'ts.11.0.1';
+export const SERVER_VERSION = 'ts.11.0.2';
 
 /**
  * Design-wise
@@ -233,9 +233,7 @@ export class PromotedClientImpl implements PromotedClient {
           };
 
           attemptedDeliveryApi = true;
-          const response = validateResponse(
-            await this.deliveryTimeoutWrapper(this.deliveryClient(singleRequest), this.deliveryTimeoutMillis)
-          );
+          const response = await this.callDelivery(singleRequest);
           insertionsFromDeliveryApi = true;
           responseInsertions = response.insertion;
         }
@@ -291,20 +289,27 @@ export class PromotedClientImpl implements PromotedClient {
   private shouldSendAsShadowTraffic = () =>
     this.shadowTrafficDeliveryRate && this.sampler.sampleRandom(this.shadowTrafficDeliveryRate);
 
+  /** Calls Delivery API and validates the response. */
+  private callDelivery = async (request: Request): Promise<Response> => {
+    return validateResponse(
+      await this.deliveryTimeoutWrapper(this.deliveryClient(request), this.deliveryTimeoutMillis)
+    );
+  };
+
   /**
    * Creates a non-blocking shadow traffic request to delivery.
    * @param request the underlying request.
    */
-  private deliverNonBlockingShadowTraffic(request: Request) {
+  private deliverNonBlockingShadowTraffic = (request: Request) => {
     // Do not await on the Promise.
     this.deliverBlockingShadowTraffic(request);
-  }
+  };
 
   /**
    * Creates a blocking shadow traffic request to delivery.
    * @param request the underlying request.
    */
-  private async deliverBlockingShadowTraffic(request: Request): Promise<void> {
+  private deliverBlockingShadowTraffic = async (request: Request): Promise<void> => {
     const singleRequest: Request = {
       ...request,
       clientInfo: {
@@ -315,12 +320,12 @@ export class PromotedClientImpl implements PromotedClient {
       },
     };
     // Swallow errors.
-    return this.deliveryTimeoutWrapper(this.deliveryClient(singleRequest), this.deliveryTimeoutMillis)
+    this.callDelivery(singleRequest)
       .then(() => {
         /* do nothing */
       })
       .catch((error) => this.handleRequestError(error, 'shadow delivery', request.clientRequestId));
-  }
+  };
 
   /**
    * On-demand creation of a LogRequest suitable for sending to the metrics client.

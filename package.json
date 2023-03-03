@@ -1,6 +1,6 @@
 {
   "name": "promoted-ts-client",
-  "version": "11.0.1",
+  "version": "11.0.2",
   "description": "A Typescript Client to contact Promoted APIs.",
   "scripts": {
     "prettier": "prettier '**/*.{js,ts}' --ignore-path ./.prettierignore",
