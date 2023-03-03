@@ -1,5 +1,5 @@
 import copy from 'rollup-plugin-copy';
-import { terser } from 'rollup-plugin-terser';
+// import { terser } from 'rollup-plugin-terser';
 import typescript from 'rollup-plugin-typescript2';
 import del from 'rollup-plugin-delete';
 import generatePackageJson from 'rollup-plugin-generate-package-json';
@@ -34,7 +34,8 @@ export default [
           config: undefined,
         }),
       }),
-      terser(),
+      // Commenting out to make it easier to debug.
+      // terser(),
     ],
     output: [
       {
