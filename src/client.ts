@@ -7,10 +7,10 @@ import { Sampler, SamplerImpl } from './sampler';
 import { timeoutWrapper } from './timeout';
 import type { ErrorHandler } from './error-handler';
 import type { DeliveryLog, Insertion, Request, Response } from './types/delivery';
-import type { CohortMembership, LogRequest, LogResponse } from './types/event';
+import type { CohortMembership, LogRequest } from './types/event';
 import { Pager } from './pager';
 import { ExecutionServer } from './execution-server';
-import { Validator } from './validator';
+import { Validator, validateResponse } from './validator';
 
 // Version number that semver will generate for the package.
 // Must be manually maintained.
@@ -119,8 +119,8 @@ export class NoopPromotedClient implements PromotedClient {
  * A PromotedClient implementation that calls Promoted's APIs.
  */
 export class PromotedClientImpl implements PromotedClient {
-  private deliveryClient: ApiClient<Request, Response>;
-  private metricsClient: ApiClient<LogRequest, LogResponse>;
+  private deliveryClient: ApiClient<Request, any>;
+  private metricsClient: ApiClient<LogRequest, any>;
   private performChecks: boolean;
   private shadowTrafficDeliveryRate: number;
   private blockingShadowTraffic: boolean;
@@ -233,12 +233,11 @@ export class PromotedClientImpl implements PromotedClient {
           };
 
           attemptedDeliveryApi = true;
-          const response = await this.deliveryTimeoutWrapper(
-            this.deliveryClient(singleRequest),
-            this.deliveryTimeoutMillis
+          const response = validateResponse(
+            await this.deliveryTimeoutWrapper(this.deliveryClient(singleRequest), this.deliveryTimeoutMillis)
           );
           insertionsFromDeliveryApi = true;
-          responseInsertions = response.insertion ?? [];
+          responseInsertions = response.insertion;
         }
       } catch (error) {
         this.handleRequestError(error, 'delivery', request.clientRequestId);
@@ -254,9 +253,10 @@ export class PromotedClientImpl implements PromotedClient {
     // If defined, log the Request to Metrics API.
     let deliveryLogToLog: DeliveryLog | undefined = undefined;
     if (!insertionsFromDeliveryApi) {
+      const requestId = this.uuid();
       const requestToLog = {
         ...request,
-        requestId: this.uuid(),
+        requestId,
       };
       // Insertions from Promoted are paged on the API side.
       // If we did not call the API for any reason, apply the expected
@@ -265,7 +265,10 @@ export class PromotedClientImpl implements PromotedClient {
       responseInsertions = this.pager.applyPaging(request.insertion, deliveryRequest.insertionStart, request.paging);
       addInsertionIds(responseInsertions, this.uuid);
       const responseToLog = {
+        requestId,
         insertion: responseInsertions,
+        // TODO - implement SDK paging info.
+        pagingInfo: {},
       };
       deliveryLogToLog = this.createSdkDeliveryLog(requestToLog, responseToLog);
     }

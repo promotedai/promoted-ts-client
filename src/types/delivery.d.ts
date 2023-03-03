@@ -40,8 +40,9 @@ export interface PagingInfo {
 }
 
 export interface Response {
-  insertion?: Array<Insertion>;
-  pagingInfo?: PagingInfo;
+  requestId: string;
+  insertion: Array<Insertion>;
+  pagingInfo: PagingInfo;
 }
 
 export interface DeliveryExecution {

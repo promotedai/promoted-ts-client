@@ -252,7 +252,9 @@ describe('deliver', () => {
     const deliveryClient = jest.fn((request) => {
       expect(request).toEqual(expectedRequest());
       return Promise.resolve({
+        requestId: 'uuid1',
         insertion: expectedResponseInsertionsForDelivery(),
+        pagingInfo: {},
       });
     });
     const metricsClient = jest.fn(failFunction('All data should be logged in Delivery API'));
@@ -290,7 +292,9 @@ describe('deliver', () => {
         insertion: toRequestInsertions([newProduct('3'), newProduct('2')]),
       });
       return Promise.resolve({
+        requestId: 'uuid1',
         insertion: responseInsertions,
+        pagingInfo: {},
       });
     });
     const metricsClient = jest.fn(failFunction('All data should be logged in Delivery API'));
@@ -325,7 +329,9 @@ describe('deliver', () => {
         insertion: [],
       });
       return Promise.resolve({
+        requestId: 'uuid1',
         insertion: [],
+        pagingInfo: {},
       });
     });
     const metricsClient = jest.fn(failFunction('All data should be logged in Delivery API'));
@@ -367,7 +373,9 @@ describe('deliver', () => {
         insertion: [],
       });
       return Promise.resolve({
+        requestId: 'uuid1',
         insertion: [],
+        pagingInfo: {},
       });
     });
     const metricsClient = jest.fn(failFunction('All data should be logged in Delivery API'));
@@ -409,7 +417,9 @@ describe('deliver', () => {
       expectedReq.paging = { offset: 520, size: 10 };
       expect(request).toEqual(expectedReq);
       return Promise.resolve({
+        requestId: 'uuid1',
         insertion: expectedResponseInsertionsForDelivery(),
+        pagingInfo: {},
       });
     });
     const metricsClient = jest.fn(failFunction('All data should be logged in Delivery API'));
@@ -460,6 +470,8 @@ describe('deliver', () => {
             },
             response: {
               insertion: expectedResponseInsertionsForMetrics(),
+              pagingInfo: {},
+              requestId: 'uuid1',
             },
             execution: {
               executionServer: 2,
@@ -517,11 +529,13 @@ describe('deliver', () => {
         });
         return Promise.resolve({
           // This is ignored since it's shadow traffic.
+          requestId: request.requestId,
           insertion: [
             toResponseInsertion('product1', 'uuid4', 0),
             toResponseInsertion('product2', 'uuid5', 1),
             toResponseInsertion('product3', 'uuid6', 2),
           ],
+          pagingInfo: {},
         });
       });
       const expectedLogReq: LogRequest = {
@@ -542,7 +556,9 @@ describe('deliver', () => {
               device: TEST_DEVICE,
             },
             response: {
+              requestId: 'uuid1',
               insertion: expectedResponseInsertionsForMetrics(),
+              pagingInfo: {},
             },
             execution: {
               executionServer: 2,
@@ -596,6 +612,7 @@ describe('deliver', () => {
           insertion: toRequestInsertions([newProduct('3'), newProduct('2'), newProduct('1')]),
         });
         return Promise.resolve({
+          requestId: 'uuid1',
           insertion: expectedResponseInsertionsForDelivery(),
         });
       });
@@ -662,7 +679,9 @@ describe('deliver', () => {
               device: TEST_DEVICE,
             },
             response: {
+              requestId: 'uuid1',
               insertion: expectedResponseInsertionsForMetrics(),
+              pagingInfo: {},
             },
             execution: {
               executionServer: 2,
@@ -732,7 +751,9 @@ describe('deliver', () => {
             device: TEST_DEVICE,
           },
           response: {
+            requestId: 'uuid1',
             insertion: [toResponseInsertion('product3', 'uuid2', 0)],
+            pagingInfo: {},
           },
           execution: {
             executionServer: 2,
@@ -794,7 +815,9 @@ describe('deliver', () => {
             device: TEST_DEVICE,
           },
           response: {
+            requestId: 'uuid1',
             insertion: expectedResponseInsertionsForMetrics(),
+            pagingInfo: {},
           },
           execution: {
             executionServer: 2,
@@ -858,7 +881,9 @@ describe('deliver', () => {
             device: TEST_DEVICE,
           },
           response: {
+            requestId: 'uuid1',
             insertion: expectedResponseInsertionsForMetrics(),
+            pagingInfo: {},
           },
           execution: {
             executionServer: 2,
@@ -909,6 +934,7 @@ describe('deliver', () => {
     const deliveryClient = jest.fn((request) => {
       expect(request).toEqual(expectedRequest());
       return Promise.resolve({
+        requestId: 'uuid1',
         insertion: [
           {
             insertionId: 'uuid1',
@@ -917,6 +943,7 @@ describe('deliver', () => {
           toResponseInsertion('product2', 'uuid2', 1),
           toResponseInsertion('product3', 'uuid3', 2),
         ],
+        pagingInfo: {},
       });
     });
     const metricsClient = jest.fn(failFunction('All data should be logged in Delivery API'));
@@ -972,7 +999,9 @@ describe('deliver', () => {
               requestId: 'uuid1',
             },
             response: {
+              requestId: 'uuid1',
               insertion: expectedResponseInsertionsForMetrics(),
+              pagingInfo: {},
             },
             execution: {
               executionServer: 2,
@@ -1042,6 +1071,7 @@ describe('deliver', () => {
           clientRequestId: 'uuid0',
         });
         return Promise.resolve({
+          requestId: 'uuid1',
           insertion: expectedResponseInsertionsForMetrics(),
         });
       });
@@ -1118,7 +1148,9 @@ describe('deliver', () => {
               requestId: 'uuid1',
             },
             response: {
+              requestId: 'uuid1',
               insertion: expectedResponseInsertionsForMetrics(),
+              pagingInfo: {},
             },
             execution: {
               executionServer: 2,
@@ -1312,11 +1344,13 @@ describe('deliver with onlyLog=true', () => {
             requestId: 'uuid1',
           },
           response: {
+            requestId: 'uuid1',
             insertion: [
               toResponseInsertion('product3', 'uuid2', 0),
               toResponseInsertion('product2', 'uuid3', 1),
               toResponseInsertion('product1', 'uuid4', 2),
             ],
+            pagingInfo: {},
           },
           execution: {
             executionServer: 2,
@@ -1366,7 +1400,9 @@ describe('deliver with onlyLog=true', () => {
             insertion: [],
           },
           response: {
+            requestId: 'uuid1',
             insertion: [],
+            pagingInfo: {},
           },
           execution: {
             executionServer: 2,
@@ -1423,7 +1459,9 @@ describe('deliver with onlyLog=true', () => {
             insertion: [],
           },
           response: {
+            requestId: 'uuid1',
             insertion: [],
+            pagingInfo: {},
           },
           execution: {
             executionServer: 2,
@@ -1481,7 +1519,9 @@ describe('deliver with onlyLog=true', () => {
             },
           },
           response: {
+            requestId: 'uuid1',
             insertion: [toResponseInsertion('product3', 'uuid2', 0)],
+            pagingInfo: {},
           },
           execution: {
             executionServer: 2,
@@ -1539,7 +1579,9 @@ describe('deliver with onlyLog=true', () => {
             },
           },
           response: {
+            requestId: 'uuid1',
             insertion: [toResponseInsertion('product3', 'uuid2', 100)],
+            pagingInfo: {},
           },
           execution: {
             executionServer: 2,
@@ -1591,7 +1633,9 @@ describe('deliver with onlyLog=true', () => {
             },
           },
           response: {
+            requestId: 'uuid1',
             insertion: [toResponseInsertion('product2', 'uuid2', 1)],
+            pagingInfo: {},
           },
           execution: {
             executionServer: 2,
@@ -1648,7 +1692,9 @@ describe('deliver with onlyLog=true', () => {
             viewId: 'uuid11',
           },
           response: {
+            requestId: 'uuid1',
             insertion: expectedResponseInsertionsForMetrics(),
+            pagingInfo: {},
           },
           execution: {
             executionServer: 2,
@@ -1731,7 +1777,9 @@ describe('shadow requests', () => {
             device: TEST_DEVICE,
           },
           response: {
+            requestId: 'uuid1',
             insertion: [toResponseInsertion('product3', 'uuid2', 0)],
+            pagingInfo: {},
           },
           execution: {
             executionServer: 2,

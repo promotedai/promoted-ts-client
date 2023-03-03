@@ -1,4 +1,4 @@
-import { Validator } from './validator';
+import { Validator, validateResponse } from './validator';
 import { DeliveryRequest } from './delivery-request';
 
 describe('validator', () => {
@@ -198,5 +198,70 @@ describe('validator', () => {
         'offset(0) should be >= insertionStart(10).  offset should be the global position.'
       );
     });
+  });
+});
+
+describe('validateResponse', () => {
+  it('valid w/o insertion', () => {
+    const response = validateResponse({
+      requestId: 'uuid1',
+    });
+    expect(response).toEqual({
+      requestId: 'uuid1',
+      insertion: [],
+      pagingInfo: {},
+    });
+  });
+
+  it('valid w/ optional fields set', () => {
+    const response = validateResponse({
+      requestId: 'uuid1',
+      insertion: [{ contentId: '1' }],
+      pagingInfo: { cursor: 'cursor1' },
+    });
+    expect(response).toEqual({
+      requestId: 'uuid1',
+      insertion: [{ contentId: '1' }],
+      pagingInfo: { cursor: 'cursor1' },
+    });
+  });
+
+  it('valid as json', () => {
+    const responseInput = {
+      requestId: 'uuid1',
+      insertion: [{ contentId: '1' }],
+      pagingInfo: { cursor: 'cursor1' },
+    };
+    const response = validateResponse(JSON.stringify(responseInput));
+    expect(response).toEqual({
+      requestId: 'uuid1',
+      insertion: [{ contentId: '1' }],
+      pagingInfo: { cursor: 'cursor1' },
+    });
+  });
+
+  it('empty', () => {
+    expect(() => validateResponse({})).toThrow('Invalid Delivery Response.  Expected requestId.');
+  });
+
+  it('error json parsing', () => {
+    expect(() => validateResponse('not json')).toThrow(`Invalid Delivery Response.  Not valid JSON.`);
+  });
+
+  it('error', () => {
+    expect(() =>
+      validateResponse({
+        error: 'some error',
+      })
+    ).toThrow(`Invalid Delivery Response.  'error' was encountered.`);
+  });
+
+  it('error insertion not an array', () => {
+    expect(() =>
+      validateResponse({
+        requestId: 'uuid1',
+        insertion: 'somestring',
+      })
+    ).toThrow('Invalid Delivery Response.  Expected insertions as Array.');
   });
 });
