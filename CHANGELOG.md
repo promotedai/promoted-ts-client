@@ -1,3 +1,10 @@
+## [11.0.1](https://github.com/promotedai/promoted-ts-client/compare/v11.0.0...v11.0.1) (2023-03-03)
+
+
+### Bug Fixes
+
+* remove terser ([#87](https://github.com/promotedai/promoted-ts-client/issues/87)) ([3f42a1a](https://github.com/promotedai/promoted-ts-client/commit/3f42a1a45fe84a84fd2d0c7082880b0a300d2376))
+
 # [11.0.0](https://github.com/promotedai/promoted-ts-client/compare/v10.2.0...v11.0.0) (2023-03-03)
 
 
