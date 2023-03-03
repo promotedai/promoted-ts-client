@@ -1,3 +1,21 @@
+# [11.0.0](https://github.com/promotedai/promoted-ts-client/compare/v10.2.0...v11.0.0) (2023-03-03)
+
+
+### Features
+
+* improve response validation ([#85](https://github.com/promotedai/promoted-ts-client/issues/85)) ([a1bebd3](https://github.com/promotedai/promoted-ts-client/commit/a1bebd3586c713d0a1659fbb5be726bc25634451))
+
+
+### BREAKING CHANGES
+
+* This changes the interface to ApiClient.
+
+This PR supports:
+- Validating the Delivery Response.  It checks for `requestId`.
+- Simplify the ApiClient code by accepting `any` and handling the validation internally.
+
+TESTING=Unit tests.  I'll try this in a code base after merging the PR.
+
 # [10.2.0](https://github.com/promotedai/promoted-ts-client/compare/v10.1.1...v10.2.0) (2023-02-28)
 
 
