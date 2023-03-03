@@ -978,6 +978,81 @@ describe('deliver', () => {
     expect(metricsClient.mock.calls.length).toBe(0);
   });
 
+  it('delivery response invalid', async () => {
+    const deliveryClient: any = jest.fn(() => {
+      return 'bad response';
+    });
+    const expectedLogReq: LogRequest = {
+      ...expectedBaseLogRequest(),
+      cohortMembership: [
+        {
+          arm: 'TREATMENT',
+          cohortId: 'HOLD_OUT',
+        },
+      ],
+      deliveryLog: [
+        {
+          request: {
+            ...expectedRequestWithoutCommonFields(),
+            requestId: 'uuid1',
+          },
+          response: {
+            requestId: 'uuid1',
+            insertion: expectedResponseInsertionsForMetrics(),
+            pagingInfo: {},
+          },
+          execution: {
+            executionServer: 2,
+            serverVersion: SERVER_VERSION,
+          },
+        },
+      ],
+    };
+    const metricsClient: any = jest.fn((request) => {
+      expect(request).toEqual(expectedLogReq);
+    });
+
+    const numExpectedErrors = 1;
+    const errors: Error[] = [];
+    const promotedClient = newFakePromotedClient({
+      deliveryClient,
+      metricsClient,
+      handleError: (error: Error) => {
+        errors.push(error);
+        if (errors.length > numExpectedErrors) {
+          // Throw early to make errors easier to debug.
+          throw error;
+        }
+      },
+    });
+
+    const response = await promotedClient.deliver({
+      request: request(),
+      experiment: {
+        cohortId: 'HOLD_OUT',
+        arm: 'TREATMENT',
+      },
+      insertionStart: 0,
+    });
+    expect(deliveryClient.mock.calls.length).toBe(1);
+    expect(metricsClient.mock.calls.length).toBe(0);
+
+    // SDK-provided positions
+    expect(response.responseInsertions).toEqual(expectedResponseInsertionsForMetrics());
+    expect(response.logRequest).toEqual(expectedLogReq);
+    expect(response.executionServer).toEqual(ExecutionServer.SDK);
+    expect(response.clientRequestId).toEqual('uuid0');
+
+    // Here is where clients will return their response.
+    await response.log();
+    expect(deliveryClient.mock.calls.length).toBe(1);
+    expect(metricsClient.mock.calls.length).toBe(1);
+    expect(errors.length).toBe(numExpectedErrors);
+    expect(errors[0].toString()).toEqual(
+      'Error: Invalid Delivery Response.  Not valid JSON.  Response=bad response; delivery, clientRequestId=uuid0'
+    );
+  });
+
   describe('timeout error', () => {
     // This test does not fully test timeouts.
     // This test mocks out the timeout wrapper and fails before the Delivery
