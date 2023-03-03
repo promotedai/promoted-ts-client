@@ -13,7 +13,7 @@ const apiClient = <Req, Res>(
   apiKey: string,
   timeout: number
 ) => async (requestBody: Req): Promise<Res> => {
-  return got.post(
+  const response = got.post(
     urlString,
     {
       json: requestBody,

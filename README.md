@@ -75,7 +75,7 @@ const apiClient = <Req, Res>(
   url: string,
   apiKey: string,
   timeoutMs: number
-) => async (request: Req): Promise<Res> => {
+) => async (request: Req): Promise<any> => {
   // AbortController was added in node v14.17.0 globally.
   // This can brought in as a normal import too.
   const AbortController = globalThis.AbortController || await import('abort-controller')
@@ -97,7 +97,11 @@ const apiClient = <Req, Res>(
       agent,
       signal: controller.signal,
     });
-    return response.json();
+    const responseText = await response.text();
+    if (!response.ok) {
+      throw new Error(`Promoted ${name} API call failed; response=${responseText}`);
+    }
+    return responseText;
   } finally {
     clearTimeout(timeout);
   }
@@ -148,11 +152,11 @@ cacheable.install(httpsAgent);
 
 ### ApiClient
 
-Wrapper for API clients used to make Delivery and Metrics API calls to Promoted.
+Wrapper for API clients used to make Delivery and Metrics API calls to Promoted.  Return either the response as a JSON string or parsed object.
 
 ```typescript
-export interface ApiClient<Req, Res> {
-  (request: Req): Promise<Res>;
+export interface ApiClient<Req> {
+  (request: Req): Promise<any>;
 }
 ```
 

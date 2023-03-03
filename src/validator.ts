@@ -1,5 +1,6 @@
 import { DeliveryRequest } from './delivery-request';
 import { getOffset } from './pager';
+import type { Response } from './types/delivery';
 
 export interface ValidatorArguments {
   // Whether to validate logUserId being set.  Undefined means to validate.
@@ -86,4 +87,47 @@ const validatePaging = (deliveryRequest: DeliveryRequest): Error | undefined => 
     );
   }
   return undefined;
+};
+
+/**
+ * Validate the Response object from the API.    This will catch most bugs.
+ */
+export const validateResponse = (response: any): Response => {
+  if (typeof response == 'string') {
+    try {
+      response = JSON.parse(response);
+    } catch (e) {
+      throw new Error(`Invalid Delivery Response.  Not valid JSON.  Response=${response}`);
+    }
+  }
+
+  const { error, requestId } = response;
+  // If there is an error field, throw.
+  if (!!error) {
+    throw new Error(`Invalid Delivery Response.  'error' was encountered.  Response=${JSON.stringify(response)}`);
+  }
+  let { insertion, pagingInfo } = response;
+  // The only required field from the API is requestId.
+  if (!requestId) {
+    throw new Error(`Invalid Delivery Response.  Expected requestId.  Response=${JSON.stringify(response)}`);
+  }
+  // The server response JSON strips empty values.  If there are no insertions, there won't be an insertion field.
+  if (insertion) {
+    if (!Array.isArray(insertion)) {
+      throw new Error(
+        `Invalid Delivery Response.  Expected insertions as Array.  Response=${JSON.stringify(response)}`
+      );
+    }
+  } else {
+    insertion = [];
+  }
+  // Same for pagingInfo.
+  if (!pagingInfo) {
+    pagingInfo = {};
+  }
+  return {
+    requestId,
+    insertion,
+    pagingInfo,
+  };
 };
