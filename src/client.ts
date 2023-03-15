@@ -320,7 +320,7 @@ export class PromotedClientImpl implements PromotedClient {
       },
     };
     // Swallow errors.
-    this.callDelivery(singleRequest)
+    return this.callDelivery(singleRequest)
       .then(() => {
         /* do nothing */
       })
