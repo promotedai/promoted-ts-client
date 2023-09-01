@@ -3,7 +3,7 @@
 
 export interface UserInfo {
   userId?: string;
-  logUserId?: string;
+  anonUserId?: string;
   isInternalUser?: boolean;
 }
 
