@@ -1,3 +1,17 @@
+# [12.0.0](https://github.com/promotedai/promoted-ts-client/compare/v11.0.3...v12.0.0) (2023-09-08)
+
+
+### Features
+
+* rename logUserId to anonUserId ([#90](https://github.com/promotedai/promoted-ts-client/issues/90)) ([c3b4b18](https://github.com/promotedai/promoted-ts-client/commit/c3b4b18f9c84e305f3e3748aaa9967eff7ad2b0d))
+
+
+### BREAKING CHANGES
+
+* renames an existing field.
+
+TESTING=unit tests
+
 ## [11.0.3](https://github.com/promotedai/promoted-ts-client/compare/v11.0.2...v11.0.3) (2023-03-15)
 
 
