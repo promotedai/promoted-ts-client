@@ -120,7 +120,7 @@ const newBaseRequest = (): Partial<Request> => ({
 const request = (): Request => ({
   ...newBaseRequest(),
   userInfo: {
-    logUserId: 'logUserId1',
+    anonUserId: 'anonUserId1',
   },
   insertion: toRequestInsertions(products3()),
 });
@@ -134,7 +134,7 @@ const expectedRequestWithoutCommonFields = (): Request => ({
 const expectedRequest = (): Request => ({
   ...expectedRequestWithoutCommonFields(),
   userInfo: {
-    logUserId: 'logUserId1',
+    anonUserId: 'anonUserId1',
   },
   timing: {
     clientLogTimestamp: 12345678,
@@ -144,7 +144,7 @@ const expectedRequest = (): Request => ({
 
 const expectedBaseLogRequest = (): Partial<LogRequest> => ({
   userInfo: {
-    logUserId: 'logUserId1',
+    anonUserId: 'anonUserId1',
   },
   timing: {
     clientLogTimestamp: 12345678,
@@ -1153,7 +1153,7 @@ describe('deliver', () => {
 
       const expectedLogReq: LogRequest = {
         userInfo: {
-          logUserId: 'logUserId1',
+          anonUserId: 'anonUserId1',
         },
         timing: {
           clientLogTimestamp: 12345678,

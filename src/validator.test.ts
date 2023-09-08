@@ -5,7 +5,7 @@ describe('validator', () => {
   it('forces request id to be unset on request', () => {
     const v = new Validator({});
     const req: DeliveryRequest = {
-      request: { requestId: 'aaa', userInfo: { logUserId: 'aaa' } },
+      request: { requestId: 'aaa', userInfo: { anonUserId: 'aaa' } },
       insertionStart: 0,
     };
 
@@ -17,7 +17,7 @@ describe('validator', () => {
   it('forces request id to be unset on insertion', () => {
     const v = new Validator({});
     const req: DeliveryRequest = {
-      request: { insertion: [{ requestId: 'a', contentId: 'zzz' }], userInfo: { logUserId: 'aaa' } },
+      request: { insertion: [{ requestId: 'a', contentId: 'zzz' }], userInfo: { anonUserId: 'aaa' } },
       insertionStart: 0,
     };
 
@@ -29,7 +29,7 @@ describe('validator', () => {
   it('forces insertion id to be unset on insertion', () => {
     const v = new Validator({});
     const req: DeliveryRequest = {
-      request: { insertion: [{ insertionId: 'a', contentId: 'zzz' }], userInfo: { logUserId: 'aaa' } },
+      request: { insertion: [{ insertionId: 'a', contentId: 'zzz' }], userInfo: { anonUserId: 'aaa' } },
       insertionStart: 0,
     };
 
@@ -41,7 +41,7 @@ describe('validator', () => {
   it('forces content id to be set on insertion', () => {
     const v = new Validator({});
     const req: DeliveryRequest = {
-      request: { insertion: [{ contentId: '' }], userInfo: { logUserId: 'aaa' } },
+      request: { insertion: [{ contentId: '' }], userInfo: { anonUserId: 'aaa' } },
       insertionStart: 0,
     };
 
@@ -53,7 +53,7 @@ describe('validator', () => {
   it('accepts a valid insertion on a request', () => {
     const v = new Validator({});
     const req: DeliveryRequest = {
-      request: { insertion: [{ contentId: 'aaa' }], userInfo: { logUserId: 'aaa' } },
+      request: { insertion: [{ contentId: 'aaa' }], userInfo: { anonUserId: 'aaa' } },
       insertionStart: 0,
     };
 
@@ -64,7 +64,7 @@ describe('validator', () => {
   it('forces experiment platform id to not be set', () => {
     const v = new Validator({});
     const req: DeliveryRequest = {
-      request: { insertion: [{ contentId: 'aaa' }], userInfo: { logUserId: 'aaa' } },
+      request: { insertion: [{ contentId: 'aaa' }], userInfo: { anonUserId: 'aaa' } },
       insertionStart: 0,
       experiment: { platformId: 9 },
     };
@@ -77,7 +77,7 @@ describe('validator', () => {
   it('forces experiment user info to not be set', () => {
     const v = new Validator({});
     const req: DeliveryRequest = {
-      request: { insertion: [{ contentId: 'aaa' }], userInfo: { logUserId: 'aaa' } },
+      request: { insertion: [{ contentId: 'aaa' }], userInfo: { anonUserId: 'aaa' } },
       insertionStart: 0,
       experiment: { userInfo: { userId: 'aaa' } },
     };
@@ -90,7 +90,7 @@ describe('validator', () => {
   it('forces experiment timing to not be set', () => {
     const v = new Validator({});
     const req: DeliveryRequest = {
-      request: { insertion: [{ contentId: 'aaa' }], userInfo: { logUserId: 'aaa' } },
+      request: { insertion: [{ contentId: 'aaa' }], userInfo: { anonUserId: 'aaa' } },
       insertionStart: 0,
       experiment: { timing: { clientLogTimestamp: 333 } },
     };
@@ -103,7 +103,7 @@ describe('validator', () => {
   it('allows a valid experiment', () => {
     const v = new Validator({});
     const req: DeliveryRequest = {
-      request: { insertion: [{ contentId: 'aaa' }], userInfo: { logUserId: 'aaa' } },
+      request: { insertion: [{ contentId: 'aaa' }], userInfo: { anonUserId: 'aaa' } },
       insertionStart: 0,
       experiment: { arm: 'TREATMENT', cohortId: 'aaa' },
     };
@@ -134,11 +134,11 @@ describe('validator', () => {
 
       const errors = v.validate(req);
       expect(errors.length).toEqual(1);
-      expect(errors[0].message).toEqual('Request.userInfo.logUserId should be set');
+      expect(errors[0].message).toEqual('Request.userInfo.anonUserId should be set');
     });
 
-    it('validateLogUserIdSet=true', () => {
-      const v = new Validator({ validateLogUserIdSet: true });
+    it('validateAnonUserIdSet=true', () => {
+      const v = new Validator({ validateAnonUserIdSet: true });
       const req: DeliveryRequest = {
         request: { userInfo: { userId: 'aaa' } },
         insertionStart: 0,
@@ -146,11 +146,11 @@ describe('validator', () => {
 
       const errors = v.validate(req);
       expect(errors.length).toEqual(1);
-      expect(errors[0].message).toEqual('Request.userInfo.logUserId should be set');
+      expect(errors[0].message).toEqual('Request.userInfo.anonUserId should be set');
     });
 
-    it('validateLogUserIdSet=false', () => {
-      const v = new Validator({ validateLogUserIdSet: false });
+    it('validateAnonUserIdSet=false', () => {
+      const v = new Validator({ validateAnonUserIdSet: false });
       const req: DeliveryRequest = {
         request: { userInfo: { userId: 'aaa' } },
         insertionStart: 0,
@@ -166,7 +166,7 @@ describe('validator', () => {
       const v = new Validator({});
       const req: DeliveryRequest = {
         request: {
-          userInfo: { logUserId: 'a' },
+          userInfo: { anonUserId: 'a' },
           paging: {
             offset: 0,
             size: 100,
@@ -183,7 +183,7 @@ describe('validator', () => {
       const v = new Validator({});
       const req: DeliveryRequest = {
         request: {
-          userInfo: { logUserId: 'a' },
+          userInfo: { anonUserId: 'a' },
           paging: {
             offset: 0,
             size: 100,

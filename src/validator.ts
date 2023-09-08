@@ -3,8 +3,8 @@ import { getOffset } from './pager';
 import type { Response } from './types/delivery';
 
 export interface ValidatorArguments {
-  // Whether to validate logUserId being set.  Undefined means to validate.
-  validateLogUserIdSet?: boolean;
+  // Whether to validate anonUserId being set.  Undefined means to validate.
+  validateAnonUserIdSet?: boolean;
 }
 
 /**
@@ -42,8 +42,8 @@ export class Validator {
       return new Error('Request.userInfo should be set');
     }
 
-    if (this.args.validateLogUserIdSet != false && !request.userInfo.logUserId) {
-      return new Error('Request.userInfo.logUserId should be set');
+    if (this.args.validateAnonUserIdSet != false && !request.userInfo.anonUserId) {
+      return new Error('Request.userInfo.anonUserId should be set');
     }
 
     const { insertion } = request;
