@@ -17,15 +17,15 @@ export class Pager {
    * Sets the position field on each assertion based on paging parameters and takes
    * a page of request insertions (if necessary).
    * @param requestInsertions the request insertions
-   * @param retrievalInsertionStart in the global set of all request insertions, how
+   * @param retrievalInsertionOffset in the global set of all request insertions, how
    *                              far down is the subset of requestInsertions
    * @param paging paging info, may be nil
    * @returns the modified page of insertions
    */
-  applyPaging = (requestInsertions: Insertion[], retrievalInsertionStart: number, paging?: Paging): Insertion[] => {
+  applyPaging = (requestInsertions: Insertion[], retrievalInsertionOffset: number, paging?: Paging): Insertion[] => {
     let offset = getOffset(paging);
     // validator.ts makes sure that index is positive.
-    let index = offset - retrievalInsertionStart;
+    let index = offset - retrievalInsertionOffset;
     const size = getSize(paging, requestInsertions);
 
     const finalInsertionSize = Math.min(size, requestInsertions.length - index);
