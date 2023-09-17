@@ -6,7 +6,7 @@ describe('validator', () => {
     const v = new Validator({});
     const req: DeliveryRequest = {
       request: { requestId: 'aaa', userInfo: { anonUserId: 'aaa' } },
-      insertionStart: 0,
+      retrievalInsertionOffset: 0,
     };
 
     const errors = v.validate(req);
@@ -18,7 +18,7 @@ describe('validator', () => {
     const v = new Validator({});
     const req: DeliveryRequest = {
       request: { insertion: [{ requestId: 'a', contentId: 'zzz' }], userInfo: { anonUserId: 'aaa' } },
-      insertionStart: 0,
+      retrievalInsertionOffset: 0,
     };
 
     const errors = v.validate(req);
@@ -30,7 +30,7 @@ describe('validator', () => {
     const v = new Validator({});
     const req: DeliveryRequest = {
       request: { insertion: [{ insertionId: 'a', contentId: 'zzz' }], userInfo: { anonUserId: 'aaa' } },
-      insertionStart: 0,
+      retrievalInsertionOffset: 0,
     };
 
     const errors = v.validate(req);
@@ -42,7 +42,7 @@ describe('validator', () => {
     const v = new Validator({});
     const req: DeliveryRequest = {
       request: { insertion: [{ contentId: '' }], userInfo: { anonUserId: 'aaa' } },
-      insertionStart: 0,
+      retrievalInsertionOffset: 0,
     };
 
     const errors = v.validate(req);
@@ -54,7 +54,7 @@ describe('validator', () => {
     const v = new Validator({});
     const req: DeliveryRequest = {
       request: { insertion: [{ contentId: 'aaa' }], userInfo: { anonUserId: 'aaa' } },
-      insertionStart: 0,
+      retrievalInsertionOffset: 0,
     };
 
     const errors = v.validate(req);
@@ -65,7 +65,7 @@ describe('validator', () => {
     const v = new Validator({});
     const req: DeliveryRequest = {
       request: { insertion: [{ contentId: 'aaa' }], userInfo: { anonUserId: 'aaa' } },
-      insertionStart: 0,
+      retrievalInsertionOffset: 0,
       experiment: { platformId: 9 },
     };
 
@@ -78,7 +78,7 @@ describe('validator', () => {
     const v = new Validator({});
     const req: DeliveryRequest = {
       request: { insertion: [{ contentId: 'aaa' }], userInfo: { anonUserId: 'aaa' } },
-      insertionStart: 0,
+      retrievalInsertionOffset: 0,
       experiment: { userInfo: { userId: 'aaa' } },
     };
 
@@ -91,7 +91,7 @@ describe('validator', () => {
     const v = new Validator({});
     const req: DeliveryRequest = {
       request: { insertion: [{ contentId: 'aaa' }], userInfo: { anonUserId: 'aaa' } },
-      insertionStart: 0,
+      retrievalInsertionOffset: 0,
       experiment: { timing: { clientLogTimestamp: 333 } },
     };
 
@@ -104,7 +104,7 @@ describe('validator', () => {
     const v = new Validator({});
     const req: DeliveryRequest = {
       request: { insertion: [{ contentId: 'aaa' }], userInfo: { anonUserId: 'aaa' } },
-      insertionStart: 0,
+      retrievalInsertionOffset: 0,
       experiment: { arm: 'TREATMENT', cohortId: 'aaa' },
     };
 
@@ -116,7 +116,7 @@ describe('validator', () => {
     const v = new Validator({});
     const req: DeliveryRequest = {
       request: {},
-      insertionStart: 0,
+      retrievalInsertionOffset: 0,
     };
 
     const errors = v.validate(req);
@@ -129,7 +129,7 @@ describe('validator', () => {
       const v = new Validator({});
       const req: DeliveryRequest = {
         request: { userInfo: { userId: 'aaa' } },
-        insertionStart: 0,
+        retrievalInsertionOffset: 0,
       };
 
       const errors = v.validate(req);
@@ -141,7 +141,7 @@ describe('validator', () => {
       const v = new Validator({ validateAnonUserIdSet: true });
       const req: DeliveryRequest = {
         request: { userInfo: { userId: 'aaa' } },
-        insertionStart: 0,
+        retrievalInsertionOffset: 0,
       };
 
       const errors = v.validate(req);
@@ -153,7 +153,7 @@ describe('validator', () => {
       const v = new Validator({ validateAnonUserIdSet: false });
       const req: DeliveryRequest = {
         request: { userInfo: { userId: 'aaa' } },
-        insertionStart: 0,
+        retrievalInsertionOffset: 0,
       };
 
       const errors = v.validate(req);
@@ -162,7 +162,7 @@ describe('validator', () => {
   });
 
   describe('paging', () => {
-    it('success with offset >= insertionStart', () => {
+    it('success with offset >= retrievalInsertionOffset', () => {
       const v = new Validator({});
       const req: DeliveryRequest = {
         request: {
@@ -172,14 +172,14 @@ describe('validator', () => {
             size: 100,
           },
         },
-        insertionStart: 0,
+        retrievalInsertionOffset: 0,
       };
 
       const errors = v.validate(req);
       expect(errors.length).toEqual(0);
     });
 
-    it('errors with offset < insertionStart', () => {
+    it('errors with offset < retrievalInsertionOffset', () => {
       const v = new Validator({});
       const req: DeliveryRequest = {
         request: {
@@ -189,13 +189,13 @@ describe('validator', () => {
             size: 100,
           },
         },
-        insertionStart: 10,
+        retrievalInsertionOffset: 10,
       };
 
       const errors = v.validate(req);
       expect(errors.length).toEqual(1);
       expect(errors[0].message).toEqual(
-        'offset(0) should be >= insertionStart(10).  offset should be the global position.'
+        'offset(0) should be >= retrievalInsertionOffset(10).  offset should be the global position.'
       );
     });
   });

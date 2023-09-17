@@ -187,7 +187,7 @@ describe('no-op', () => {
           ...expectedRequest(),
           insertion: toRequestInsertions(products3()),
         },
-        insertionStart: 0,
+        retrievalInsertionOffset: 0,
       });
 
       const expectedRespInsertions = [
@@ -212,7 +212,7 @@ describe('no-op', () => {
           ...request(),
           insertion: [],
         },
-        insertionStart: 0,
+        retrievalInsertionOffset: 0,
       });
 
       expect(response.responseInsertions).toEqual([]);
@@ -235,7 +235,7 @@ describe('no-op', () => {
             size: 1,
           },
         },
-        insertionStart: 0,
+        retrievalInsertionOffset: 0,
       });
 
       const expectedRespInsertions = [{ contentId: 'product3', position: 0 }];
@@ -266,7 +266,7 @@ describe('deliver', () => {
 
     const response = await promotedClient.deliver({
       request: request(),
-      insertionStart: 0,
+      retrievalInsertionOffset: 0,
     });
     expect(deliveryClient.mock.calls.length).toBe(1);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -307,7 +307,7 @@ describe('deliver', () => {
 
     const response = await promotedClient.deliver({
       request: request(),
-      insertionStart: 0,
+      retrievalInsertionOffset: 0,
     });
     expect(deliveryClient.mock.calls.length).toBe(1);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -346,7 +346,7 @@ describe('deliver', () => {
         ...request(),
         insertion: [],
       },
-      insertionStart: 0,
+      retrievalInsertionOffset: 0,
     });
     expect(deliveryClient.mock.calls.length).toBe(1);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -394,7 +394,7 @@ describe('deliver', () => {
         },
         insertion: [],
       },
-      insertionStart: 0,
+      retrievalInsertionOffset: 0,
     });
     expect(deliveryClient.mock.calls.length).toBe(1);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -410,8 +410,8 @@ describe('deliver', () => {
     expect(metricsClient.mock.calls.length).toBe(0);
   });
 
-  // insertionStart is a fallback concept in the SDK.
-  it('insertionStart is ignored for Delivery API', async () => {
+  // retrievalInsertionOffset is a fallback concept in the SDK.
+  it('retrievalInsertionOffset is ignored for Delivery API', async () => {
     const deliveryClient = jest.fn((request) => {
       const expectedReq = expectedRequest();
       expectedReq.paging = { offset: 520, size: 10 };
@@ -433,7 +433,7 @@ describe('deliver', () => {
     req.paging = { offset: 520, size: 10 };
     const response = await promotedClient.deliver({
       request: req,
-      insertionStart: 500,
+      retrievalInsertionOffset: 500,
     });
     expect(deliveryClient.mock.calls.length).toBe(1);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -498,7 +498,7 @@ describe('deliver', () => {
           cohortId: 'HOLD_OUT',
           arm: 'CONTROL',
         },
-        insertionStart: 0,
+        retrievalInsertionOffset: 0,
       });
       expect(deliveryClient.mock.calls.length).toBe(0);
       expect(metricsClient.mock.calls.length).toBe(0);
@@ -583,7 +583,7 @@ describe('deliver', () => {
           cohortId: 'HOLD_OUT',
           arm: 'CONTROL',
         },
-        insertionStart: 0,
+        retrievalInsertionOffset: 0,
       });
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(0);
@@ -642,7 +642,7 @@ describe('deliver', () => {
           cohortId: 'HOLD_OUT',
           arm: 'TREATMENT',
         },
-        insertionStart: 0,
+        retrievalInsertionOffset: 0,
       });
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(0);
@@ -708,7 +708,7 @@ describe('deliver', () => {
           cohortId: 'HOLD_OUT',
           arm: 'TREATMENT',
         },
-        insertionStart: 0,
+        retrievalInsertionOffset: 0,
       });
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(0);
@@ -783,7 +783,7 @@ describe('deliver', () => {
         cohortId: 'HOLD_OUT',
         arm: 'CONTROL',
       },
-      insertionStart: 0,
+      retrievalInsertionOffset: 0,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -841,7 +841,7 @@ describe('deliver', () => {
         ...request(),
         insertion: toRequestInsertions(products3()),
       },
-      insertionStart: 0,
+      retrievalInsertionOffset: 0,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -913,7 +913,7 @@ describe('deliver', () => {
         cohortId: 'HOLD_OUT',
         arm: 'CONTROL',
       },
-      insertionStart: 0,
+      retrievalInsertionOffset: 0,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -955,7 +955,7 @@ describe('deliver', () => {
 
     const response = await promotedClient.deliver({
       request: request(),
-      insertionStart: 0,
+      retrievalInsertionOffset: 0,
     });
     expect(deliveryClient.mock.calls.length).toBe(1);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -1032,7 +1032,7 @@ describe('deliver', () => {
         cohortId: 'HOLD_OUT',
         arm: 'TREATMENT',
       },
-      insertionStart: 0,
+      retrievalInsertionOffset: 0,
     });
     expect(deliveryClient.mock.calls.length).toBe(1);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -1110,7 +1110,7 @@ describe('deliver', () => {
           cohortId: 'HOLD_OUT',
           arm: 'TREATMENT',
         },
-        insertionStart: 0,
+        retrievalInsertionOffset: 0,
       });
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(0);
@@ -1192,7 +1192,7 @@ describe('deliver', () => {
           cohortId: 'HOLD_OUT',
           arm: 'TREATMENT',
         },
-        insertionStart: 0,
+        retrievalInsertionOffset: 0,
       };
       const response = await promotedClient.deliver(deliveryReq);
       expect(deliveryClient.mock.calls.length).toBe(1);
@@ -1260,7 +1260,7 @@ describe('deliver', () => {
       const response = await promotedClient.deliver({
         onlyLog: true,
         request: request(),
-        insertionStart: 0,
+        retrievalInsertionOffset: 0,
       });
       expect(deliveryClient.mock.calls.length).toBe(1);
       expect(metricsClient.mock.calls.length).toBe(0);
@@ -1289,7 +1289,7 @@ describe('deliver', () => {
             ...expectedRequest(),
             requestId: 'uuid0',
           },
-          insertionStart: 0,
+          retrievalInsertionOffset: 0,
         })
       ).rejects.toEqual(new Error('Request.requestId should not be set'));
     });
@@ -1309,7 +1309,7 @@ describe('deliver', () => {
               toRequestInsertion(newProduct('1')),
             ],
           },
-          insertionStart: 0,
+          retrievalInsertionOffset: 0,
         })
       ).rejects.toEqual(new Error('Insertion.requestId should not be set'));
     });
@@ -1329,7 +1329,7 @@ describe('deliver', () => {
               toRequestInsertion(newProduct('1')),
             ],
           },
-          insertionStart: 0,
+          retrievalInsertionOffset: 0,
         })
       ).rejects.toEqual(new Error('Insertion.insertionId should not be set'));
     });
@@ -1342,7 +1342,7 @@ describe('deliver', () => {
             ...request(),
             insertion: [{}, toRequestInsertion(newProduct('2')), toRequestInsertion(newProduct('1'))],
           },
-          insertionStart: 0,
+          retrievalInsertionOffset: 0,
         })
       ).rejects.toEqual(new Error('Insertion.contentId should be set'));
     });
@@ -1355,7 +1355,7 @@ describe('deliver', () => {
           experiment: {
             platformId: 1,
           },
-          insertionStart: 0,
+          retrievalInsertionOffset: 0,
         })
       ).rejects.toEqual(new Error('Experiment.platformId should not be set'));
     });
@@ -1368,7 +1368,7 @@ describe('deliver', () => {
           experiment: {
             userInfo: {},
           },
-          insertionStart: 0,
+          retrievalInsertionOffset: 0,
         })
       ).rejects.toEqual(new Error('Experiment.userInfo should not be set'));
     });
@@ -1381,7 +1381,7 @@ describe('deliver', () => {
           experiment: {
             timing: {},
           },
-          insertionStart: 0,
+          retrievalInsertionOffset: 0,
         })
       ).rejects.toEqual(new Error('Experiment.timing should not be set'));
     });
@@ -1446,7 +1446,7 @@ describe('deliver with onlyLog=true', () => {
     const response = await promotedClient.deliver({
       onlyLog: true,
       request: request(),
-      insertionStart: 0,
+      retrievalInsertionOffset: 0,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -1501,7 +1501,7 @@ describe('deliver with onlyLog=true', () => {
         ...request(),
         insertion: [],
       },
-      insertionStart: 0,
+      retrievalInsertionOffset: 0,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -1564,7 +1564,7 @@ describe('deliver with onlyLog=true', () => {
         },
         insertion: [],
       },
-      insertionStart: 0,
+      retrievalInsertionOffset: 0,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -1622,7 +1622,7 @@ describe('deliver with onlyLog=true', () => {
           size: 1,
         },
       },
-      insertionStart: 0,
+      retrievalInsertionOffset: 0,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -1683,7 +1683,7 @@ describe('deliver with onlyLog=true', () => {
           offset: 100,
         },
       },
-      insertionStart: 100,
+      retrievalInsertionOffset: 100,
     });
     expect(response.responseInsertions).toEqual([toResponseInsertion('product3', 'uuid2', 100)]);
 
@@ -1737,7 +1737,7 @@ describe('deliver with onlyLog=true', () => {
           offset: 1,
         },
       },
-      insertionStart: 0,
+      retrievalInsertionOffset: 0,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -1794,7 +1794,7 @@ describe('deliver with onlyLog=true', () => {
         sessionId: 'uuid10',
         viewId: 'uuid11',
       },
-      insertionStart: 0,
+      retrievalInsertionOffset: 0,
     });
     expect(deliveryClient.mock.calls.length).toBe(0);
     expect(metricsClient.mock.calls.length).toBe(0);
@@ -1890,7 +1890,7 @@ describe('shadow requests', () => {
         ...request(),
         insertion: toRequestInsertions(products),
       },
-      insertionStart: 0,
+      retrievalInsertionOffset: 0,
     };
     const response = await promotedClient.deliver(deliveryRequest);
     const deliveryCallCount = shouldCallDelivery ? 1 : 0;
@@ -1952,7 +1952,7 @@ describe('noop promoted client', () => {
     const client = new NoopPromotedClient();
     const resp = client.deliver({
       request: request(),
-      insertionStart: 0,
+      retrievalInsertionOffset: 0,
     });
     const logReq = (await resp).logRequest;
     expect(logReq).toBeUndefined();
@@ -1960,7 +1960,7 @@ describe('noop promoted client', () => {
     const resp2 = client.deliver({
       onlyLog: true,
       request: request(),
-      insertionStart: 0,
+      retrievalInsertionOffset: 0,
     });
     const logReq2 = (await resp2).logRequest;
     expect(logReq2).toBeUndefined();

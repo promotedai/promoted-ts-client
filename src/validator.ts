@@ -76,14 +76,14 @@ export class Validator {
 
 const validatePaging = (deliveryRequest: DeliveryRequest): Error | undefined => {
   const {
-    insertionStart,
+    retrievalInsertionOffset,
     request: { paging },
   } = deliveryRequest;
 
   const offset = getOffset(paging);
-  if (offset < insertionStart) {
+  if (offset < retrievalInsertionOffset) {
     return new Error(
-      `offset(${offset}) should be >= insertionStart(${insertionStart}).  offset should be the global position.`
+      `offset(${offset}) should be >= retrievalInsertionOffset(${retrievalInsertionOffset}).  offset should be the global position.`
     );
   }
   return undefined;

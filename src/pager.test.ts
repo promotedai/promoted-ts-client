@@ -20,7 +20,7 @@ describe('apply paging', () => {
     ];
   });
 
-  it('pages a window with insertionStart=0', () => {
+  it('pages a window with retrievalInsertionOffset=0', () => {
     const paging: Paging = {
       size: 2,
       offset: 1,
@@ -54,9 +54,9 @@ describe('apply paging', () => {
     expect(resIns[1].position).toEqual(2);
   });
 
-  describe('pages a window when insertionStart != 0', () => {
-    it('offset - insertionStart = 0', () => {
-      const insertionStart = 5;
+  describe('pages a window when retrievalInsertionOffset != 0', () => {
+    it('offset - retrievalInsertionOffset = 0', () => {
+      const retrievalInsertionOffset = 5;
       // This is a different block of request insertions (starting at 5).
       insertions = [
         {
@@ -74,7 +74,7 @@ describe('apply paging', () => {
         size: 2,
         offset: 5,
       };
-      const resIns = pager.applyPaging(insertions, insertionStart, paging);
+      const resIns = pager.applyPaging(insertions, retrievalInsertionOffset, paging);
       expect(resIns.length).toEqual(insertions.length - 1);
 
       // We take a page size of 2 starting at the beginning since prepaged.
@@ -86,8 +86,8 @@ describe('apply paging', () => {
       expect(resIns[1].position).toEqual(6);
     });
 
-    it('offset - insertionStart = 1', () => {
-      const insertionStart = 5;
+    it('offset - retrievalInsertionOffset = 1', () => {
+      const retrievalInsertionOffset = 5;
       // This is a different block of request insertions (starting at 5).
       insertions = [
         {
@@ -105,7 +105,7 @@ describe('apply paging', () => {
         size: 2,
         offset: 6,
       };
-      const resIns = pager.applyPaging(insertions, insertionStart, paging);
+      const resIns = pager.applyPaging(insertions, retrievalInsertionOffset, paging);
       expect(resIns.length).toEqual(insertions.length - 1);
 
       // We take a page size of 2 starting at the beginning since prepaged.
@@ -118,7 +118,7 @@ describe('apply paging', () => {
     });
 
     it('offset outside of size', () => {
-      const insertionStart = 5;
+      const retrievalInsertionOffset = 5;
       // This is a different block of request insertions (starting at 5).
       insertions = [
         {
@@ -136,7 +136,7 @@ describe('apply paging', () => {
         size: 2,
         offset: 8,
       };
-      const resIns = pager.applyPaging(insertions, insertionStart, paging);
+      const resIns = pager.applyPaging(insertions, retrievalInsertionOffset, paging);
       expect(resIns.length).toEqual(0);
     });
   });
@@ -165,12 +165,12 @@ describe('apply paging', () => {
     expect(resIns[2].position).toEqual(102);
   });
 
-  it('handles empty input for insertionStart=0', () => {
+  it('handles empty input for retrievalInsertionOffset=0', () => {
     const resIns = pager.applyPaging([], 0);
     expect(resIns.length).toEqual(0);
   });
 
-  it('handles empty input for insertionStart != 0', () => {
+  it('handles empty input for retrievalInsertionOffset != 0', () => {
     const paging: Paging = {
       size: 0,
       offset: 1,

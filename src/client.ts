@@ -98,7 +98,7 @@ export class NoopPromotedClient implements PromotedClient {
     const { request } = deliveryRequest;
     const responseInsertions = this.pager.applyPaging(
       request.insertion ?? [],
-      deliveryRequest.insertionStart,
+      deliveryRequest.retrievalInsertionOffset,
       request?.paging
     );
     return Promise.resolve({
@@ -260,7 +260,11 @@ export class PromotedClientImpl implements PromotedClient {
       // If we did not call the API for any reason, apply the expected
       // paging to the full insertions here.
       // If you update this, update the no-op version too.
-      responseInsertions = this.pager.applyPaging(request.insertion, deliveryRequest.insertionStart, request.paging);
+      responseInsertions = this.pager.applyPaging(
+        request.insertion,
+        deliveryRequest.retrievalInsertionOffset,
+        request.paging
+      );
       addInsertionIds(responseInsertions, this.uuid);
       const responseToLog = {
         requestId,
