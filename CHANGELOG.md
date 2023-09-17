@@ -1,3 +1,19 @@
+# [13.0.0](https://github.com/promotedai/promoted-ts-client/compare/v12.0.0...v13.0.0) (2023-09-17)
+
+
+### Code Refactoring
+
+* rename to `retrievalInsertionOffset` ([#91](https://github.com/promotedai/promoted-ts-client/issues/91)) ([f264736](https://github.com/promotedai/promoted-ts-client/commit/f26473639e3a2fb347cd5ba7e1c142bcbb8cb3bd))
+
+
+### BREAKING CHANGES
+
+* This changes the external interface.
+
+TESTING=Ran existing unit tests.
+
+* refactor: more renames
+
 # [12.0.0](https://github.com/promotedai/promoted-ts-client/compare/v11.0.3...v12.0.0) (2023-09-08)
 
 
