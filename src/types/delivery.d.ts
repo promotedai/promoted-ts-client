@@ -25,6 +25,7 @@ export interface Request {
   paging?: Paging;
   clientInfo?: proto_common_common_pb.ClientInfo;
   clientRequestId?: string;
+  disablePersonalization?: boolean;
 }
 
 export interface Paging {
