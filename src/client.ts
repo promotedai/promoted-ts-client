@@ -14,7 +14,7 @@ import { Validator, validateResponse } from './validator';
 
 // Version number that semver will generate for the package.
 // Must be manually maintained.
-export const SERVER_VERSION = 'ts.11.0.3';
+export const SERVER_VERSION = 'ts.13.1.0';
 
 /**
  * Design-wise

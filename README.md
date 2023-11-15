@@ -330,6 +330,7 @@ Field Name | Type | Optional? | Description
 `properties` | Properties | Yes | Any additional custom properties to associate.
 `paging` | Paging | Yes | Paging parameters
 `device` | Device | Yes | Device information (as available)
+`disablePersonalization` | Boolean | Yes | If true, disables personalized inputs into Delivery algorithm.
 
 ---
 
