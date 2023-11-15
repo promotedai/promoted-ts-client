@@ -1,3 +1,10 @@
+# [13.1.0](https://github.com/promotedai/promoted-ts-client/compare/v13.0.0...v13.1.0) (2023-11-15)
+
+
+### Features
+
+* add Request.disablePersonalization ([#92](https://github.com/promotedai/promoted-ts-client/issues/92)) ([c99c3d4](https://github.com/promotedai/promoted-ts-client/commit/c99c3d43194d906c209abea17c590fe53c1a98c5))
+
 # [13.0.0](https://github.com/promotedai/promoted-ts-client/compare/v12.0.0...v13.0.0) (2023-09-17)
 
 
