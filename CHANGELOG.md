@@ -1,3 +1,10 @@
+## [13.2.1](https://github.com/promotedai/promoted-ts-client/compare/v13.2.0...v13.2.1) (2024-06-28)
+
+
+### Bug Fixes
+
+* dependabot ([#94](https://github.com/promotedai/promoted-ts-client/issues/94)) ([ace1b11](https://github.com/promotedai/promoted-ts-client/commit/ace1b116e803738b141d021abb82c84ebbbce0ea))
+
 # [13.2.0](https://github.com/promotedai/promoted-ts-client/compare/v13.1.0...v13.2.0) (2024-06-28)
 
 
