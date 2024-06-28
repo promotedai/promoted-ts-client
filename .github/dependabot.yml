@@ -6,5 +6,5 @@ updates:
     interval: daily
   open-pull-requests-limit: 10
   target-branch: main
-  default_reviewers:
+  reviewers:
     - prm-dan
