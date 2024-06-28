@@ -1,3 +1,10 @@
+# [13.2.0](https://github.com/promotedai/promoted-ts-client/compare/v13.1.0...v13.2.0) (2024-06-28)
+
+
+### Features
+
+* update deps ([#93](https://github.com/promotedai/promoted-ts-client/issues/93)) ([7fb1e1b](https://github.com/promotedai/promoted-ts-client/commit/7fb1e1b901bd4f1acb75974b90d66e038e5908a8))
+
 # [13.1.0](https://github.com/promotedai/promoted-ts-client/compare/v13.0.0...v13.1.0) (2023-11-15)
 
 
