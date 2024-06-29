@@ -15,7 +15,7 @@ describe('prepare', () => {
         numControlBuckets: 50,
         numActiveTreatmentBuckets: 10,
         numTreatmentBuckets: 50,
-      })
+      }),
     ).toEqual({
       cohortId: 'HOLD_OUT',
       cohortIdHash: 268162990,
@@ -36,7 +36,7 @@ describe('prepare', () => {
           numControlBuckets: 50,
           numActiveTreatmentBuckets: 10,
           numTreatmentBuckets: 50,
-        })
+        }),
       ).toThrow('cohortId needs to be a non-empty string');
     });
 
@@ -48,7 +48,7 @@ describe('prepare', () => {
           numControlBuckets: 50,
           numActiveTreatmentBuckets: 10,
           numTreatmentBuckets: 50,
-        })
+        }),
       ).toThrow('numActiveControlBuckets needs to be non-negative');
     });
 
@@ -60,7 +60,7 @@ describe('prepare', () => {
           numControlBuckets: 50,
           numActiveTreatmentBuckets: -1,
           numTreatmentBuckets: 50,
-        })
+        }),
       ).toThrow('numActiveTreatmentBuckets needs to be non-negative');
     });
 
@@ -72,7 +72,7 @@ describe('prepare', () => {
           numControlBuckets: 50,
           numActiveTreatmentBuckets: 10,
           numTreatmentBuckets: 50,
-        })
+        }),
       ).toThrow('numActiveControlBuckets needs to be <= numControlBuckets');
     });
 
@@ -84,7 +84,7 @@ describe('prepare', () => {
           numControlBuckets: 50,
           numActiveTreatmentBuckets: 60,
           numTreatmentBuckets: 50,
-        })
+        }),
       ).toThrow('numActiveTreatmentBuckets needs to be <= numTreatmentBuckets');
     });
   });
@@ -118,25 +118,25 @@ describe('twoArmExperimentConfig', () => {
   describe('bad', () => {
     it('controlPercent too low', () => {
       expect(() => twoArmExperimentConfig5050('HOLD_OUT1', -1, 10)).toThrow(
-        'numActiveControlBuckets needs to be non-negative'
+        'numActiveControlBuckets needs to be non-negative',
       );
     });
 
     it('controlPercent too high', () => {
       expect(() => twoArmExperimentConfig5050('HOLD_OUT1', 60, 10)).toThrow(
-        'numActiveControlBuckets needs to be <= numControlBuckets'
+        'numActiveControlBuckets needs to be <= numControlBuckets',
       );
     });
 
     it('treatmentPercent too low', () => {
       expect(() => twoArmExperimentConfig5050('HOLD_OUT1', 10, -1)).toThrow(
-        'numActiveTreatmentBuckets needs to be non-negative'
+        'numActiveTreatmentBuckets needs to be non-negative',
       );
     });
 
     it('treatmentPercent too high', () => {
       expect(() => twoArmExperimentConfig5050('HOLD_OUT1', 10, 60)).toThrow(
-        'numActiveTreatmentBuckets needs to be <= numTreatmentBuckets'
+        'numActiveTreatmentBuckets needs to be <= numTreatmentBuckets',
       );
     });
   });
@@ -217,7 +217,7 @@ describe('check distribution', () => {
         }
         return membership.arm?.toString() ?? '';
       })
-      .reduce((counts, expValue) => {
+      .reduce((counts: { [expValue: string]: number }, expValue: string) => {
         counts[expValue] = counts[expValue] ? counts[expValue] + 1 : 1;
         return counts;
       }, {});

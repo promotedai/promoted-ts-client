@@ -1049,7 +1049,7 @@ describe('deliver', () => {
     expect(metricsClient.mock.calls.length).toBe(1);
     expect(errors.length).toBe(numExpectedErrors);
     expect(errors[0].toString()).toEqual(
-      'Error: Invalid Delivery Response.  Not valid JSON.  Response=bad response; delivery, clientRequestId=uuid0'
+      'Error: Invalid Delivery Response.  Not valid JSON.  Response=bad response; delivery, clientRequestId=uuid0',
     );
   });
 
@@ -1127,7 +1127,7 @@ describe('deliver', () => {
       expect(metricsClient.mock.calls.length).toBe(1);
       expect(errors.length).toBe(numExpectedErrors);
       expect(errors[0].toString()).toEqual(
-        'Error: Delivery should not be called in timeout; delivery, clientRequestId=uuid0'
+        'Error: Delivery should not be called in timeout; delivery, clientRequestId=uuid0',
       );
     });
 
@@ -1290,7 +1290,7 @@ describe('deliver', () => {
             requestId: 'uuid0',
           },
           retrievalInsertionOffset: 0,
-        })
+        }),
       ).rejects.toEqual(new Error('Request.requestId should not be set'));
     });
 
@@ -1310,7 +1310,7 @@ describe('deliver', () => {
             ],
           },
           retrievalInsertionOffset: 0,
-        })
+        }),
       ).rejects.toEqual(new Error('Insertion.requestId should not be set'));
     });
 
@@ -1330,7 +1330,7 @@ describe('deliver', () => {
             ],
           },
           retrievalInsertionOffset: 0,
-        })
+        }),
       ).rejects.toEqual(new Error('Insertion.insertionId should not be set'));
     });
 
@@ -1343,7 +1343,7 @@ describe('deliver', () => {
             insertion: [{}, toRequestInsertion(newProduct('2')), toRequestInsertion(newProduct('1'))],
           },
           retrievalInsertionOffset: 0,
-        })
+        }),
       ).rejects.toEqual(new Error('Insertion.contentId should be set'));
     });
 
@@ -1356,7 +1356,7 @@ describe('deliver', () => {
             platformId: 1,
           },
           retrievalInsertionOffset: 0,
-        })
+        }),
       ).rejects.toEqual(new Error('Experiment.platformId should not be set'));
     });
 
@@ -1369,7 +1369,7 @@ describe('deliver', () => {
             userInfo: {},
           },
           retrievalInsertionOffset: 0,
-        })
+        }),
       ).rejects.toEqual(new Error('Experiment.userInfo should not be set'));
     });
 
@@ -1382,7 +1382,7 @@ describe('deliver', () => {
             timing: {},
           },
           retrievalInsertionOffset: 0,
-        })
+        }),
       ).rejects.toEqual(new Error('Experiment.timing should not be set'));
     });
   });
@@ -1815,7 +1815,7 @@ describe('shadow requests', () => {
   async function runShadowRequestSamplingTest(
     samplingReturn: boolean,
     shouldCallDelivery: boolean,
-    clientArgs: Partial<PromotedClientArguments>
+    clientArgs: Partial<PromotedClientArguments>,
   ) {
     let deliveryClient: any = jest.fn(failFunction('Delivery should not be called when shadow is not selected'));
     const products = [newProduct('3')];

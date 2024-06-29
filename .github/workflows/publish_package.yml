@@ -32,7 +32,7 @@ jobs:
 
       - name: Semantic Release
         # Dan Hill reviewed this version.
-        uses: cycjimmy/semantic-release-action@v3.2.0
+        uses: cycjimmy/semantic-release-action@v4.1.0
         id: semantic
         with:
           branch: main

@@ -10,7 +10,7 @@ interface HasInsertionId {
  */
 export const toContents = <T extends HasInsertionId>(
   responseInsertions: Insertion[],
-  contentLookup: Record<string, T>
+  contentLookup: Record<string, T>,
 ): T[] => {
   return responseInsertions.reduce((results: T[], insertion: Insertion): T[] => {
     const { contentId } = insertion;
@@ -36,7 +36,7 @@ export const toContents = <T extends HasInsertionId>(
  */
 export const toContentsWithoutInsertionId = <T>(
   responseInsertions: Insertion[],
-  contentLookup: Record<string, any>
+  contentLookup: Record<string, any>,
 ): T[] => {
   return responseInsertions.reduce((results: T[], insertion: Insertion): T[] => {
     const { contentId } = insertion;

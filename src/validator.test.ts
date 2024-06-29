@@ -195,7 +195,7 @@ describe('validator', () => {
       const errors = v.validate(req);
       expect(errors.length).toEqual(1);
       expect(errors[0].message).toEqual(
-        'offset(0) should be >= retrievalInsertionOffset(10).  offset should be the global position.'
+        'offset(0) should be >= retrievalInsertionOffset(10).  offset should be the global position.',
       );
     });
   });
@@ -252,7 +252,7 @@ describe('validateResponse', () => {
     expect(() =>
       validateResponse({
         error: 'some error',
-      })
+      }),
     ).toThrow(`Invalid Delivery Response.  'error' was encountered.`);
   });
 
@@ -261,7 +261,7 @@ describe('validateResponse', () => {
       validateResponse({
         requestId: 'uuid1',
         insertion: 'somestring',
-      })
+      }),
     ).toThrow('Invalid Delivery Response.  Expected insertions as Array.');
   });
 });

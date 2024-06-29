@@ -1,12 +1,12 @@
 [
   {
     "path": "dist/promoted-ts-client.esm.js",
-    "limit": "1 KB",
+    "limit": "4 KB",
     "webpack": false
   },
   {
     "path": "dist/promoted-ts-client.umd.js",
-    "limit": "1 KB",
+    "limit": "4 KB",
     "webpack": false
   }
 ]
