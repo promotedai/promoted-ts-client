@@ -99,7 +99,7 @@ export class NoopPromotedClient implements PromotedClient {
     const responseInsertions = this.pager.applyPaging(
       request.insertion ?? [],
       deliveryRequest.retrievalInsertionOffset,
-      request?.paging
+      request?.paging,
     );
     return Promise.resolve({
       log: () => Promise.resolve(undefined),
@@ -263,7 +263,7 @@ export class PromotedClientImpl implements PromotedClient {
       responseInsertions = this.pager.applyPaging(
         request.insertion,
         deliveryRequest.retrievalInsertionOffset,
-        request.paging
+        request.paging,
       );
       addInsertionIds(responseInsertions, this.uuid);
       const responseToLog = {
@@ -296,7 +296,7 @@ export class PromotedClientImpl implements PromotedClient {
   /** Calls Delivery API and validates the response. */
   private callDelivery = async (request: Request): Promise<Response> => {
     return validateResponse(
-      await this.deliveryTimeoutWrapper(this.deliveryClient(request), this.deliveryTimeoutMillis)
+      await this.deliveryTimeoutWrapper(this.deliveryClient(request), this.deliveryTimeoutMillis),
     );
   };
 
@@ -339,7 +339,7 @@ export class PromotedClientImpl implements PromotedClient {
   private createLogRequest(
     request: Request,
     deliveryLogToLog?: DeliveryLog,
-    cohortMembershipToLog?: CohortMembership
+    cohortMembershipToLog?: CohortMembership,
   ): LogRequest | undefined {
     if (deliveryLogToLog === undefined && cohortMembershipToLog === undefined) {
       return undefined;

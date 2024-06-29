@@ -49,7 +49,7 @@ export const twoArmExperimentConfig5050 = (
   cohortId: string,
   controlPercent: number,
   treatmentPercent: number,
-  numBuckets?: number
+  numBuckets?: number,
 ) => {
   if (numBuckets === undefined) {
     numBuckets = 1000.0;
@@ -98,7 +98,7 @@ export const prepareTwoArmExperimentConfig = (config: TwoArmExperimentConfig): P
  */
 export const twoArmExperimentMembership = (
   userId: string,
-  config: ProcessedTwoArmExperimentConfig
+  config: ProcessedTwoArmExperimentConfig,
 ): CohortMembership | undefined => {
   const hash = combineHash(hashCode(userId), config.cohortIdHash);
   const bucket = mod(hash, config.numTotalBuckets);

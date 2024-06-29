@@ -83,7 +83,7 @@ const validatePaging = (deliveryRequest: DeliveryRequest): Error | undefined => 
   const offset = getOffset(paging);
   if (offset < retrievalInsertionOffset) {
     return new Error(
-      `offset(${offset}) should be >= retrievalInsertionOffset(${retrievalInsertionOffset}).  offset should be the global position.`
+      `offset(${offset}) should be >= retrievalInsertionOffset(${retrievalInsertionOffset}).  offset should be the global position.`,
     );
   }
   return undefined;
@@ -115,7 +115,7 @@ export const validateResponse = (response: any): Response => {
   if (insertion) {
     if (!Array.isArray(insertion)) {
       throw new Error(
-        `Invalid Delivery Response.  Expected insertions as Array.  Response=${JSON.stringify(response)}`
+        `Invalid Delivery Response.  Expected insertions as Array.  Response=${JSON.stringify(response)}`,
       );
     }
   } else {

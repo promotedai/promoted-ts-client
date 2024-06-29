@@ -76,3 +76,4 @@ dist/
 .history/
 promoted-ts-client.code-workspace
 .history
+.DS_Store
