@@ -1,3 +1,15 @@
+# [13.3.0](https://github.com/promotedai/promoted-ts-client/compare/v13.2.2...v13.3.0) (2024-06-30)
+
+
+### Bug Fixes
+
+* switch `.release.js` to `.release.cjs` ([#107](https://github.com/promotedai/promoted-ts-client/issues/107)) ([cde68b5](https://github.com/promotedai/promoted-ts-client/commit/cde68b59ce69c00cb02fec1fec5ef95aaed6c69b))
+
+
+### Features
+
+* update dependencies ([#106](https://github.com/promotedai/promoted-ts-client/issues/106)) ([7413a8a](https://github.com/promotedai/promoted-ts-client/commit/7413a8afc492982891fb54d0062a42161ca7db90))
+
 ## [13.2.2](https://github.com/promotedai/promoted-ts-client/compare/v13.2.1...v13.2.2) (2024-06-28)
 
 
