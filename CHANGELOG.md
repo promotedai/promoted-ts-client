@@ -1,3 +1,10 @@
+# [13.4.0](https://github.com/promotedai/promoted-ts-client/compare/v13.3.0...v13.4.0) (2024-07-05)
+
+
+### Features
+
+* update dependencies ([#111](https://github.com/promotedai/promoted-ts-client/issues/111)) ([e63bfce](https://github.com/promotedai/promoted-ts-client/commit/e63bfce438a44af5461a46c3e30c7634754fe1c3))
+
 # [13.3.0](https://github.com/promotedai/promoted-ts-client/compare/v13.2.2...v13.3.0) (2024-06-30)
 
 
