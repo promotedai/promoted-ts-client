@@ -64,6 +64,7 @@ For HTTP clients:
 ```typescript
 import fetch from "node-fetch";
 import https from "https";
+import * as abort from 'abort-controller';
 
 const agent = new https.Agent({
   keepAlive: true,
@@ -78,9 +79,7 @@ const apiClient = <Req, Res>(
 ) => async (request: Req): Promise<any> => {
   // AbortController was added in node v14.17.0 globally.
   // This can brought in as a normal import too.
-  const AbortController = globalThis.AbortController || await import('abort-controller')
-
-  const controller = new AbortController();
+  const controller = new abort.AbortController();
   const timeout = setTimeout(() => {
     controller.abort();
   }, timeoutMs);
@@ -389,6 +388,9 @@ static async getProducts(req: any, res: Response) {
 We would modify to something like this:
 
 ```typescript
+import type { UserInfo } from 'promoted-ts-client';
+import {DeliveryRequest, toContents} from 'promoted-ts-client';
+...
 /**
  * @param userInfo { userId, logUserId, isInternalUser }
  * @return Product[].  This code will set `Product.insertionId`.
@@ -421,7 +423,7 @@ async function callPromoted(
     },
   });
   // Construct the map while the RPC is happening.
-  const productIdToProduct = products.reduce((map, product) => {
+  const productIdToProduct = products.reduce<Record<string,Product>>((map, product) => {
       map[product.id] = {...product};
       return map;
   }, {});
@@ -484,6 +486,9 @@ If you want to log using paginated data, please review the `# insertionStart` se
 Promoted supports the ability to run Promoted-side experiments. Sometimes it is useful to run an experiment in your where `promoted-ts-client` is integrated (e.g. you want arm assignments to match your own internal experiment arm assignments).
 
 ```typescript
+import type { UserInfo } from 'promoted-ts-client';
+import {DeliveryRequest, toContents} from 'promoted-ts-client';
+...
 // Create a small config indicating the experiment is a 50-50 experiment where 10% of the users are activated.
 const experimentConfig = twoArmExperimentConfig5050("promoted-v1", 5, 5);
 
@@ -539,6 +544,9 @@ Here's a more complex example that supports:
   through the same method.
 
 ```typescript
+import type { UserInfo } from 'promoted-ts-client';
+import {DeliveryRequest, toContents} from 'promoted-ts-client';
+...
 /**
  * @param userInfo { userId, logUserId, isInternalUser }
  * @param overrideOnlyLog If set, skips the experiment and forces the onlyLog option.
@@ -572,7 +580,7 @@ async function callPromoted(
   });
 
   // Construct the map while the RPC is happening.
-  const productIdToProduct = products.reduce((map, product) => {
+  const productIdToProduct = products.reduce<Record<string,Product>>((map, product) => {
       map[product.id] = {...product};
       return map;
   }, {});
