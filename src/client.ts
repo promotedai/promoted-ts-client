@@ -10,7 +10,7 @@ import type { DeliveryLog, Insertion, Request, Response } from './types/delivery
 import type { CohortMembership, LogRequest } from './types/event';
 import { Pager } from './pager';
 import { ExecutionServer } from './execution-server';
-import { Validator, validateResponse } from './validator';
+import { validateRequest, validateResponse } from './validator';
 
 // Version number that semver will generate for the package.
 // Must be manually maintained.
@@ -121,12 +121,11 @@ export class NoopPromotedClient implements PromotedClient {
 export class PromotedClientImpl implements PromotedClient {
   private deliveryClient: ApiClient<Request, any>;
   private metricsClient: ApiClient<LogRequest, any>;
-  private performChecks: boolean;
+  private validateRequests: boolean;
   private shadowTrafficDeliveryRate: number;
   private blockingShadowTraffic: boolean;
   private defaultRequestValues: RequiredBaseRequest;
   private handleError: ErrorHandler;
-  private validator: Validator;
   private uuid: () => string;
   private deliveryTimeoutMillis: number;
   private metricsTimeoutMillis: number;
@@ -150,7 +149,7 @@ export class PromotedClientImpl implements PromotedClient {
     this.pager = new Pager();
     this.deliveryClient = args.deliveryClient;
     this.metricsClient = args.metricsClient;
-    this.performChecks = args.performChecks ?? true;
+    this.validateRequests = args.validateRequests ?? true;
     this.maxRequestInsertions = args.maxRequestInsertions ?? DEFAULT_MAX_REQUEST_INSERTIONS;
 
     this.shadowTrafficDeliveryRate = args.shadowTrafficDeliveryRate ?? 0;
@@ -165,7 +164,6 @@ export class PromotedClientImpl implements PromotedClient {
       onlyLog: onlyLog === undefined ? false : onlyLog,
     };
     this.handleError = args.handleError;
-    this.validator = new Validator(args.validatorArguments ?? {});
     this.uuid = args.uuid;
     this.deliveryTimeoutMillis = args.deliveryTimeoutMillis ?? DEFAULT_DELIVERY_TIMEOUT_MILLIS;
     this.metricsTimeoutMillis = args.metricsTimeoutMillis ?? DEFAULT_METRICS_TIMEOUT_MILLIS;
@@ -187,8 +185,8 @@ export class PromotedClientImpl implements PromotedClient {
   public async deliver(deliveryRequest: DeliveryRequest): Promise<ClientResponse> {
     let { onlyLog, request } = deliveryRequest;
     onlyLog = onlyLog ?? this.defaultRequestValues.onlyLog;
-    if (this.performChecks) {
-      const validationErrors = this.validator.validate(deliveryRequest);
+    if (this.validateRequests) {
+      const validationErrors = validateRequest(deliveryRequest);
       if (validationErrors) {
         for (const error of validationErrors) {
           this.handleError(error);

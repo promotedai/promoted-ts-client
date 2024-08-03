@@ -4,7 +4,6 @@ import { ErrorHandler } from './error-handler';
 import { Sampler } from './sampler';
 import type { Request, Response } from './types/delivery';
 import type { CohortMembership, LogRequest, LogResponse } from './types/event';
-import type { ValidatorArguments } from './validator';
 
 /**
  * Arguments for the client so values can be overriden
@@ -28,9 +27,9 @@ export interface PromotedClientArguments {
   metricsClient: ApiClient<LogRequest, LogResponse>;
 
   /**
-   * Performs extra dev checks.  Safer but slower.  Defaults to true.
+   * Whether to validate Requests.  Safer but slower.  Defaults to true.
    */
-  performChecks?: boolean;
+  validateRequests?: boolean;
 
   /**
    * Rate (in the range 0.0-1.0) of logging traffic to forward to
@@ -68,11 +67,6 @@ export interface PromotedClientArguments {
    * ```
    */
   handleError: ErrorHandler;
-
-  /**
-   * Allows for customizing the client side validation.
-   */
-  validatorArguments?: ValidatorArguments;
 
   /**
    * Required as a dependency so clients can load reduce dependency on multiple
