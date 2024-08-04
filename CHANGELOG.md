@@ -1,3 +1,19 @@
+# [14.0.0](https://github.com/promotedai/promoted-ts-client/compare/v13.4.0...v14.0.0) (2024-08-04)
+
+
+### Bug Fixes
+
+* remove anonuserid validation; change validation args ([#150](https://github.com/promotedai/promoted-ts-client/issues/150)) ([85cbc4d](https://github.com/promotedai/promoted-ts-client/commit/85cbc4d73993187b8faff76bebd57748d812eeb2))
+
+
+### BREAKING CHANGES
+
+* The client interface is changing.
+
+TESTING=ran automated tests
+
+* update docs
+
 # [13.4.0](https://github.com/promotedai/promoted-ts-client/compare/v13.3.0...v13.4.0) (2024-07-05)
 
 
