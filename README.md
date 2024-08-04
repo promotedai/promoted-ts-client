@@ -22,7 +22,7 @@ PromotedClient avoids having direct http client dependencies so customers have m
 
 ```typescript
 import { logOnError, newPromotedClient, throwOnError } from 'promoted-ts-client';
-import { v5 as uuid } from 'uuid';
+import { v7 as uuid } from 'uuid';
 
 // See section below.
 const apiClient = ...;
@@ -129,6 +129,24 @@ const cacheable = new CacheableLookup({
 });
 
 cacheable.install(httpsAgent);
+```
+
+### Wrap the API for debugging.
+
+The `deliveryClient` and `metricsClient` fields are simple functions and can be wrapped or mocked out.
+
+The SDK validates that the Delivery Response so a `requestId` needs to be set.
+
+```typescript
+  deliveryClient: async (req) => {
+    console.log(`delivery req=${JSON.stringify(req)}`);
+    return {
+      requestId: uuid(),
+    }
+  },
+  metricsClient: async (req) => {
+    return {};
+  },
 ```
 
 ### Client Configuration Parameters
@@ -331,6 +349,7 @@ Field Name | Type | Optional? | Description
 `paging` | Paging | Yes | Paging parameters
 `device` | Device | Yes | Device information (as available)
 `disablePersonalization` | Boolean | Yes | If true, disables personalized inputs into Delivery algorithm.
+`retrievalInsertionOffset` | Number | Yes |  Specifies the chunk of request insertion candidates that are passed into request.insertion.  See `retrievalInsertionOffset` section for more details.
 
 ---
 
@@ -418,6 +437,8 @@ async function callPromoted(
           },
         },
       })),
+      // Specifies the chunk of request insertion candidates that are passed into request.insertion.
+      retrievalInsertionOffset: 0
     },
   });
   // Construct the map while the RPC is happening.
@@ -434,6 +455,30 @@ async function callPromoted(
       productIdToProduct
   );
 }
+
+async function exampleServeProducts() {
+  const products: Product[] = [
+    {
+      id: "abc",
+      numReviews: 10,
+      ...
+    },
+    {
+      id: "def",
+      numReviews: 20,
+      ...
+    }
+  ];
+
+  const userInfo: UserInfo = {
+    userId: "authenticated user ID',
+    anonUserId: "anon user ID",
+    isInternalUser: false,
+  }
+
+  return callPromoted(products, userInfo);
+}
+
 ```
 
 ## Logging only
@@ -446,25 +491,25 @@ When calling `deliver` with `onlyLog=false`, we expect that you will pass an unp
 
 When calling `deliver` with `onlyLog=true` and shadow traffic turned on, we also expect an unpaged list of insertions, since in this case we are simulating delivery.
 
-When you want to send a different server-side page of Request Insertions, you'll want to set `insertionStart`.
+When you want to send a different server-side page of Request Insertions, you'll want to set `retrievalInsertionOffset`.
 
-### `insertionStart`
+### `retrievalInsertionOffset`
 
-Clients can send a subset of all request insertions to Promoted on `request.insertion`.  The `insertionStart` specifies the start index of the array `request.insertion` in the list of all request insertions.
+Clients can send a subset of all request insertions to Promoted on `request.insertion`.  The `retrievalInsertionOffset` specifies the start index of the array `request.insertion` in the list of all request insertions.
 
 `request.paging.offset` should be set to the zero-based position in all request insertions (not the relative position in `request.insertion`s).
 
 Examples:
-1. If there are 10 items and all 10 items are in `request.insertion`, then insertionStart=0.
-2. If there are 10,000 items and the first 500 items are on `request.insertion`, then insertionStart=0.
-3. If there are 10,000 items and we want to send items [500,1000) on `request.insertion`, then insertionStart=500.
-4. If there are 10,000 items and we want to send the last page [9500,10000) on `request.insertion`, then insertionStart=9500.
+1. If there are 10 items and all 10 items are in `request.insertion`, then `retrievalInsertionOffset=0`.
+2. If there are 10,000 items and the first 500 items are on `request.insertion`, then `retrievalInsertionOffset=0`.
+3. If there are 10,000 items and we want to send items [500,1000) on `request.insertion`, then `retrievalInsertionOffset=500`.
+4. If there are 10,000 items and we want to send the last page [9500,10000) on `request.insertion`, then `retrievalInsertionOffset=9500`.
 
-This field is required because an incorrect value could result in a bad bug.  If you only send the first X request insertions, then insertionStart=0.
+This field is required because an incorrect value could result in a bad bug.  If you only send the first X request insertions, then `retrievalInsertionOffset=0`.
 
-If you are only sending the first X insertions to Promoted, you can set insertionStart=0.
+If you are only sending the first X insertions to Promoted, you can set `retrievalInsertionOffset=0`.
 
-For now, Promoted requires that `insertionStart <= paging.offset`.  This will reduce the chance of errors and allow the SDK to fallback to
+For now, Promoted requires that `retrievalInsertionOffset <= paging.offset`.  This will reduce the chance of errors and allow the SDK to fallback to
 
 Promoted recommends that the block size is a multiple of the page size.  This reduces the chance of page size issues.
 
@@ -476,7 +521,7 @@ Do not set the insertion `position` field in client code. The SDK and Delivery A
 
 Clients are responsible for setting `retrievalRank`.
 
-If you want to log using paginated data, please review the `# insertionStart` section.
+If you want to log using paginated data, please review the `# retrievalInsertionOffset` section.
 
 
 ### Experiments
