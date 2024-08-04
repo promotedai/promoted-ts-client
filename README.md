@@ -137,7 +137,7 @@ cacheable.install(httpsAgent);
 | --------------------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `deliveryClient`            | ApiClient                                                      | API client to make a POST request to the Delivery API endpoint including the `x-api-key` header, endpoint and header value obtained from Promoted |
 | `metricsClient`             | ApiClient                                                      | API client to make a POST request to the Delivery API endpoint including the `x-api-key` header, endpoint and header value obtained from Promoted |
-| `performChecks`             | Boolean                                                        | Whether or not to perform detailed input validation, defaults to true but may be disabled for performance |
+| `validateRequests`          | Boolean                                                        | Whether or not to perform detailed input validation, defaults to true but may be disabled for performance |
 | `shadowTrafficDeliveryRate` | Number between 0 and 1                                         | % of traffic that gets directed to Delivery API as "shadow traffic". Only applies to cases where Delivery API is not called. Defaults to 0 (no shadow traffic). |
 | `blockingShadowTraffic`     | Boolean                                                        | Option to make shadow traffic a blocking (as opposed to background) call to delivery API, defaults to False. |
 | `defaultRequestValues`      | BaseRequest                                                    | Default values to use on every request. Only supports `onlyLog` setting. |
@@ -442,7 +442,7 @@ You can use `deliver` but add a `onlyLog: true` property.
 
 ## Pagination
 
-When calling `deliver` with `onlyLog=false`, we expect that you will pass an unpaged (complete) list of insertions, and the SDK assumes this to be the case. To help you catch this scenario, the SDK will call handleError in the pre-paged case if performChecks is turned on.
+When calling `deliver` with `onlyLog=false`, we expect that you will pass an unpaged (complete) list of insertions, and the SDK assumes this to be the case. To help you catch this scenario, the SDK will call handleError in the pre-paged case if `validateRequests` is turned on.
 
 When calling `deliver` with `onlyLog=true` and shadow traffic turned on, we also expect an unpaged list of insertions, since in this case we are simulating delivery.
 
