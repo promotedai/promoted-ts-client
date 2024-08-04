@@ -471,7 +471,7 @@ async function exampleServeProducts() {
   ];
 
   const userInfo: UserInfo = {
-    userId: "authenticated user ID',
+    userId: "authenticated user ID",
     anonUserId: "anon user ID",
     isInternalUser: false,
   }
