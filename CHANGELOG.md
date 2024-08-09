@@ -1,3 +1,11 @@
+## [14.0.1](https://github.com/promotedai/promoted-ts-client/compare/v14.0.0...v14.0.1) (2024-08-09)
+
+
+### Bug Fixes
+
+* attempt to fix typescript node esm imports ([#157](https://github.com/promotedai/promoted-ts-client/issues/157)) ([8308ed0](https://github.com/promotedai/promoted-ts-client/commit/8308ed0cdfc065a2cf011e4e3d0cac683c866d44))
+* semantic release package.json location ([#158](https://github.com/promotedai/promoted-ts-client/issues/158)) ([abd2751](https://github.com/promotedai/promoted-ts-client/commit/abd2751a99c7cde12b44ea2989507811829ffb2f))
+
 # [14.0.0](https://github.com/promotedai/promoted-ts-client/compare/v13.4.0...v14.0.0) (2024-08-04)
 
 
