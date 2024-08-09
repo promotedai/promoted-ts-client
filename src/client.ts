@@ -235,7 +235,7 @@ export class PromotedClientImpl implements PromotedClient {
           insertionsFromDeliveryApi = true;
           responseInsertions = response.insertion;
         }
-      } catch (error) {
+      } catch (error: any) {
         this.handleRequestError(error, 'delivery', request.clientRequestId);
       }
     }
@@ -391,7 +391,7 @@ export class PromotedClientImpl implements PromotedClient {
 
       try {
         await this.metricsTimeoutWrapper(this.metricsClient(logRequest), this.metricsTimeoutMillis);
-      } catch (error) {
+      } catch (error: any) {
         this.handleRequestError(error, 'metrics', clientRequestId);
       }
       return Promise.resolve(undefined);
@@ -428,7 +428,7 @@ const addInsertionIds = (responseInsertions: Insertion[], uuid: () => string) =>
 /**
  * Default function for 'shouldApplyTreatment'.
  */
-const defaultShouldApplyTreatment = (cohortMembership: CohortMembership) => {
+const defaultShouldApplyTreatment = (cohortMembership: CohortMembership | undefined) => {
   const arm = cohortMembership?.arm;
   return arm === undefined || arm !== 'CONTROL';
 };
