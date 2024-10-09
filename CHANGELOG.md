@@ -1,3 +1,10 @@
+## [14.1.1](https://github.com/promotedai/promoted-ts-client/compare/v14.1.0...v14.1.1) (2024-10-09)
+
+
+### Bug Fixes
+
+* eslint errors and upgrade deps ([#193](https://github.com/promotedai/promoted-ts-client/issues/193)) ([f5433a9](https://github.com/promotedai/promoted-ts-client/commit/f5433a958baa5970b57a54e30022bcd31093a6cd))
+
 # [14.1.0](https://github.com/promotedai/promoted-ts-client/compare/v14.0.1...v14.1.0) (2024-10-07)
 
 
