@@ -76,7 +76,7 @@ export const validateResponse = (response: any): Response => {
     try {
       response = JSON.parse(response);
     } catch (e) {
-      throw new Error(`Invalid Delivery Response.  Not valid JSON.  Response=${response}`);
+      throw new Error(`Invalid Delivery Response.  Not valid JSON.  Response=${response}. Error=${e}`);
     }
   }
 
