@@ -6,7 +6,7 @@
   "scripts": {
     "prettier": "prettier --write '**/*.{js,ts}' --ignore-path ./.prettierignore",
     "build": "tsup",
-    "types": "tsc",
+    "types": "tsc --noEmit",
     "clean": "rimraf dist && rimraf components",
     "updatelink": "npm run build && npm link",
     "clear_jest": "jest --clearCache",
