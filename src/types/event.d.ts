@@ -23,7 +23,7 @@ export interface LogRequest {
   deliveryLog?: Array<proto_delivery_delivery_pb.DeliveryLog>;
 }
 
-export type LogResponse = {};
+export type LogResponse = object;
 
 export interface CohortArmMap {
   UNKNOWN_GROUP: 0;

@@ -1049,7 +1049,7 @@ describe('deliver', () => {
     expect(metricsClient.mock.calls.length).toBe(1);
     expect(errors.length).toBe(numExpectedErrors);
     expect(errors[0].toString()).toEqual(
-      'Error: Invalid Delivery Response.  Not valid JSON.  Response=bad response; delivery, clientRequestId=uuid0',
+      'Error: Invalid Delivery Response.  Not valid JSON.  Response=bad response. Error=SyntaxError: Unexpected token \'b\', "bad response" is not valid JSON; delivery, clientRequestId=uuid0',
     );
   });
 
